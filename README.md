@@ -1,3 +1,3 @@
-# OpenSlides ... service
+# OpenSlides datastore service
 
 Service for OpenSlides which ...
