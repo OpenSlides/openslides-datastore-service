@@ -1,3 +1,8 @@
 pytest
+pytest-cov
 mypy
 mypy_extensions
+black
+isort
+flake8
+pytest-flask

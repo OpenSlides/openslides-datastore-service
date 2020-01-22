@@ -1,0 +1,132 @@
+from typing import Any, Optional
+
+import psycopg2
+from psycopg2.extras import Json
+
+from writer.di import service_as_singleton
+from writer.shared import EnvironmentService, ShutdownService
+
+from .connection_handler import DatabaseError
+
+
+# TODO: Test this. Add something like a @ensure_connection decorator, that wraps a
+# function that uses the database. It should ensure, that a transaction is running
+# and if the command fails with psycopg2.InterfaceError (=Connection reset) it should
+# be retried. Also it should create a connection, if it wasn't established before.
+
+
+class ENVIRONMENT_VARIABLES:
+    HOST = "db_host"
+    PORT = "db_port"
+    DATABASE = "db_database"
+    USER = "db_user"
+    PASSWORD = "db_password"
+
+
+class ConnectionContext:
+    def __init__(self, connection_handler):
+        self.connection_handler = connection_handler
+
+    def __enter__(self):
+        self.connection_handler.connection.__enter__()
+        self.connection_handler.set_transaction_running(True)
+
+    def __exit__(self, type, value, traceback):
+        self.connection_handler.set_transaction_running(False)
+        if self.connection_handler.connection:
+            self.connection_handler.connection.__exit__(type, value, traceback)
+
+
+@service_as_singleton
+class PgConnectionHandlerService:
+
+    connection: Optional[Any] = None
+    context = None
+
+    environment: EnvironmentService
+    shutdown_service: ShutdownService
+
+    def __init__(self, shutdown_service: ShutdownService):
+        self.set_transaction_running(False)
+        shutdown_service.register(self)
+
+    def set_transaction_running(self, value):
+        self.is_transaction_running = value
+
+    def get_connection_params(self):
+        return {
+            "host": self.environment.get(ENVIRONMENT_VARIABLES.HOST),
+            "port": int(self.environment.try_get(ENVIRONMENT_VARIABLES.PORT) or 5432),
+            "database": self.environment.get(ENVIRONMENT_VARIABLES.DATABASE),
+            "user": self.environment.get(ENVIRONMENT_VARIABLES.USER),
+            "password": self.environment.get(ENVIRONMENT_VARIABLES.PASSWORD),
+        }
+
+    def ensure_connection(self):
+        if not self.connection:
+            try:
+                self.connection = psycopg2.connect(**self.get_connection_params())
+                self.connection.autocommit = False
+            except psycopg2.Error as e:
+                self.raise_error(f"Database connection error {e.pgcode}: {e.pgerror}")
+        else:
+            # todo check if alive
+            pass
+
+    def get_connection_context(self):
+        if self.is_transaction_running:
+            raise RuntimeError("You cannot start multiple transactions at once!")
+
+        self.ensure_connection()
+        self.context = ConnectionContext(self)
+        return self.context
+
+    def to_json(self, data):
+        return Json(data)
+
+    def execute(self, statement, arguments):
+        connection = self.get_connection_with_open_transaction()
+        with connection.cursor() as cursor:
+            cursor.execute(statement, arguments)
+
+    def query(self, query, arguments):
+        connection = self.get_connection_with_open_transaction()
+        with connection.cursor() as cursor:
+            cursor.execute(query, arguments)
+            result = cursor.fetchall()
+            return result
+
+    def query_single_value(self, query, arguments):
+        connection = self.get_connection_with_open_transaction()
+        with connection.cursor() as cursor:
+            cursor.execute(query, arguments)
+            result = cursor.fetchone()
+
+            if result is None:
+                return None
+            return result[0]
+
+    def query_list_of_single_values(self, query, arguments):
+        result = self.query(query, arguments)
+        return list(map(lambda row: row[0], result))
+
+    def get_connection_with_open_transaction(self) -> Any:
+        if not self.connection:
+            raise RuntimeError(
+                "You should open a db connection first with `get_connection_context()`!"
+            )
+        if not self.is_transaction_running:
+            raise RuntimeError(
+                "You should start a transaction with `get_connection_context()`!"
+            )
+        return self.connection
+
+    def raise_error(self, msg):
+        # TODO: log the error!
+        raise DatabaseError(msg)
+
+    def shutdown(self):
+        if self.connection:
+            self.connection.close()
+            self.context = None
+            self.connection = None

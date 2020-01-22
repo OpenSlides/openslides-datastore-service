@@ -1,16 +1,16 @@
-# NOT TESTED YET
-
-FROM python:3.7
+FROM python:3.8.1
 
 RUN apt-get -y update && apt-get -y upgrade && \
-   apt-get install --no-install-recommends -y wait-for-it
+   apt-get install --no-install-recommends -y wait-for-it postgresql-client
 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -U -r requirements.txt
-COPY ./todolist ./todolist
+COPY ./writer ./writer
+COPY prod-entrypoint.sh .
 
 EXPOSE 8000
-COPY entrypoint /usr/local/bin
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+ENV PYTHONPATH /app/
+
+ENTRYPOINT ["./prod-entrypoint.sh"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "writer.app:application"]

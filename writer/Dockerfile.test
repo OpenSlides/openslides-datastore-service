@@ -1,11 +1,16 @@
-FROM python:3.7
+FROM python:3.8.1
 
 RUN apt-get -y update && apt-get -y upgrade && \
-   apt-get install --no-install-recommends -y wait-for-it
+    apt-get install --no-install-recommends -y wait-for-it postgresql-client redis-tools
 
 WORKDIR /app
+COPY requirements.txt .
 COPY requirements-development.txt .
-RUN pip install -U -r requirements-development.txt
+RUN pip install -U -r requirements.txt -r requirements-development.txt
+COPY cleanup.sh .
+COPY setup.cfg .
+COPY psql.sh .
+COPY redis-cli.sh .
 ENV PYTHONPATH /app/
 
 CMD ["pytest"]
