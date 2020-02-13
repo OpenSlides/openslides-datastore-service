@@ -42,6 +42,7 @@ def create_application():
 
     atexit.register(shutdown)
 
+    # TODO: set flask logging to the gunicorn logger, if available
     application = FlaskFrontend.create_application()
     return application
 

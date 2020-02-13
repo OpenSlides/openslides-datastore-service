@@ -1,16 +1,16 @@
 FROM python:3.8.1
 
 RUN apt-get -y update && apt-get -y upgrade && \
-   apt-get install --no-install-recommends -y wait-for-it postgresql-client
+    apt-get install --no-install-recommends -y wait-for-it postgresql-client
 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -U -r requirements.txt
-COPY ./writer ./writer
 COPY entrypoint.sh .
-
-EXPOSE 8000
 ENV PYTHONPATH /app/
 
+ENV FLASK_APP=writer.app
+ENV FLASK_ENV=development
+
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "writer.app:application"]
+CMD ["flask", "run", "--host", "0.0.0.0", "--port", "8000"]

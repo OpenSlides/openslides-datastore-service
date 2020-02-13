@@ -5,8 +5,8 @@ RUN apt-get -y update && apt-get -y upgrade && \
 
 WORKDIR /app
 COPY requirements.txt .
-COPY requirements-development.txt .
-RUN pip install -U -r requirements.txt -r requirements-development.txt
+COPY requirements-testing.txt .
+RUN pip install -U -r requirements.txt -r requirements-testing.txt
 COPY cleanup.sh .
 COPY setup.cfg .
 COPY psql.sh .
