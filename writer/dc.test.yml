@@ -10,11 +10,11 @@ services:
             - postgresql
             - redis
         environment:
-            - db_host=postgresql
-            - db_user=openslides
-            - db_password=openslides
-            - db_database=openslides
-            - redis_host=redis
+            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_PASSWORD=openslides
+            - DATASTORE_DATABASE_NAME=openslides
+            - MESSAGE_BUS_HOST=redis
         networks:
             - postgresql
             - redis

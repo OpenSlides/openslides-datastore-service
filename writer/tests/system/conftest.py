@@ -21,10 +21,12 @@ from writer.postgresql_backend import (
     SqlReadDatabaseBackendService,
     setup_di as postgresql_setup_di,
 )
+from writer.postgresql_backend.pg_connection_handler import ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES
 from writer.redis_backend import (
     RedisMessagingBackendService,
     setup_di as redis_setup_di,
 )
+from writer.redis_backend.redis_connection_handler import ENVIRONMENT_VARIABLES as REDIS_ENVIRONMENT_VARIABLES
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 from writer.shared import setup_di as shared_setup_di
 
@@ -44,11 +46,11 @@ _db_connection = None
 def setup_db_connection():
     global _db_connection
     _db_connection = psycopg2.connect(
-        host=get_env("db_host"),
-        port=int(get_env("db_port") or 5432),
-        database=get_env("db_database"),
-        user=get_env("db_user"),
-        password=get_env("db_password"),
+        host=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.HOST),
+        port=int(get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.PORT) or 5432),
+        database=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.NAME),
+        user=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.USER),
+        password=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.PASSWORD),
     )
     _db_connection.autocommit = False
     yield _db_connection
@@ -116,7 +118,7 @@ def xadd_callback_noop(response, **options):
 def setup_redis_connection():
     global _redis_connection
     _redis_connection = redis.Redis(
-        host=get_env("redis_host"), port=int(get_env("redis_port") or 6379),
+        host=get_env(REDIS_ENVIRONMENT_VARIABLES.HOST), port=int(get_env(REDIS_ENVIRONMENT_VARIABLES.PORT) or 6379),
     )
     _redis_connection.set_response_callback("XREAD", xadd_callback_noop)
     yield _redis_connection

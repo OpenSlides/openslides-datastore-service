@@ -13,8 +13,8 @@ from writer.shared import EnvironmentService, ShutdownService
 
 
 class ENVIRONMENT_VARIABLES:
-    HOST = "redis_host"
-    PORT = "redis_port"
+    HOST = "MESSAGE_BUS_HOST"
+    PORT = "MESSAGE_BUS_PORT"
 
 
 @service_as_singleton
