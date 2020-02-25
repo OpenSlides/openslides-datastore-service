@@ -30,9 +30,9 @@ CREATE TABLE IF NOT EXISTS events (
     position INTEGER REFERENCES positions(position) ON DELETE CASCADE,
     fqid VARCHAR(48) NOT NULL,
     type event_type NOT NULL,
-    data JSON,
-    fields JSONB NOT NULL
+    data JSON
 );
+CREATE INDEX IF NOT EXISTS events_fqid_idx ON events (fqid);
 
 CREATE TABLE IF NOT EXISTS models_lookup (
     fqid VARCHAR(48) PRIMARY KEY,
@@ -45,8 +45,16 @@ CREATE TABLE IF NOT EXISTS id_sequences (
 );
 
 CREATE TABLE IF NOT EXISTS collectionfields (
-    collectionfield VARCHAR(255) PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
+    collectionfield VARCHAR(255) UNIQUE NOT NULL,
     position INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS collectionfields_collectionfield_idx on collectionfields (collectionfield);
+
+CREATE TABLE IF NOT EXISTS events_to_collectionfields (
+    event_id BIGINT REFERENCES events(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    collectionfield_id BIGINT REFERENCES collectionfields(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT events_to_collectionfields_pkey PRIMARY KEY (event_id, collectionfield_id)
 );
 
 CREATE TABLE IF NOT EXISTS models (
