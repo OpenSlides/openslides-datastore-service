@@ -16,11 +16,11 @@ from .connection_handler import DatabaseError
 
 
 class ENVIRONMENT_VARIABLES:
-    HOST = "db_host"
-    PORT = "db_port"
-    DATABASE = "db_database"
-    USER = "db_user"
-    PASSWORD = "db_password"
+    HOST = "DATASTORE_DATABASE_HOST"
+    PORT = "DATASTORE_DATABASE_PORT"
+    NAME = "DATASTORE_DATABASE_NAME"
+    USER = "DATASTORE_DATABASE_USER"
+    PASSWORD = "DATASTORE_DATABASE_PASSWORD"
 
 
 class ConnectionContext:
@@ -57,7 +57,7 @@ class PgConnectionHandlerService:
         return {
             "host": self.environment.get(ENVIRONMENT_VARIABLES.HOST),
             "port": int(self.environment.try_get(ENVIRONMENT_VARIABLES.PORT) or 5432),
-            "database": self.environment.get(ENVIRONMENT_VARIABLES.DATABASE),
+            "database": self.environment.get(ENVIRONMENT_VARIABLES.NAME),
             "user": self.environment.get(ENVIRONMENT_VARIABLES.USER),
             "password": self.environment.get(ENVIRONMENT_VARIABLES.PASSWORD),
         }

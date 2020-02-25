@@ -48,4 +48,4 @@ build-dev:
 	docker build -t openslides-datastore-writer-dev -f Dockerfile.dev .
 
 run-dev: | build-dev
-	docker run -t -v `pwd`/writer:/app/writer -p 127.0.0.1:8000:8000/tcp  openslides-datastore-writer-dev
+	docker run -t -v `pwd`/writer:/app/writer -p 127.0.0.1:8000:8000/tcp openslides-datastore-writer-dev
