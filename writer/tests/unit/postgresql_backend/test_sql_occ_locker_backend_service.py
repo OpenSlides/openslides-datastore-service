@@ -70,21 +70,16 @@ def test_query_arguments_fqid(occ_locker, connection):
 
 def test_query_arguments_fqfield(occ_locker, connection):
     connection.query_single_value = qsv = MagicMock(return_value=None)
-    connection.to_json = json = MagicMock(side_effect=lambda x: x)
 
     occ_locker.assert_fqfield_positions({"a/1/f": 2, "b/3/e": 42})
 
     query = qsv.call_args.args[0]
-    assert query.count("""(fqid=%s and fields @> %s::jsonb and position>%s)""") == 2
+    assert query.count("(fqid=%s and position>%s)") == 2
+    assert query.count("(e.fqid=%s and cf.collectionfield=%s)") == 2
     args = qsv.call_args.args[1]
-    assert (args == ["a/1", "f", 2, "b/3", "e", 42]) or (
-        args == ["b/3", "e", 42, "a/1", "f", 2]
+    assert (args == ["a/1", 2, "b/3", 42, "a/1", "a/f", "b/3", "b/e"]) or (
+        args == ["b/3", 42, "a/1", 2, "b/3", "b/e", "a/1", "a/f"]
     )  # order of arguments is not determinated
-    assert json.call_count == 2
-    args = json.call_args_list
-    assert args[0].args[0] != args[1].args[0]
-    assert args[0].args[0] in ("f", "e")
-    assert args[1].args[0] in ("f", "e")
 
 
 def test_query_arguments_collectionfield(occ_locker, connection):

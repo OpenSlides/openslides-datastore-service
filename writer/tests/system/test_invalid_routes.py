@@ -1,5 +1,6 @@
 from tests.system.shared import GET_IDS_URL, WRITE_URL
 
+
 def test_wrong_method_write(client):
     response = client.get(WRITE_URL)
     assert response.status_code == 405

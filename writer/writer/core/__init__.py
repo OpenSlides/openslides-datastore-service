@@ -15,9 +15,10 @@ from .exceptions import (  # noqa
     ModelNotDeleted,
 )
 from .key_transforms import (  # noqa
+    collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,
+    field_from_collectionfield,
     fqfield_from_fqid_and_field,
-    fqid_and_field_from_fqfield,
 )
 from .messaging import Messaging  # noqa
 from .occ_locker import OccLocker  # noqa

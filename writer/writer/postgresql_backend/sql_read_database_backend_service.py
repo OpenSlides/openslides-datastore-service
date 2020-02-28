@@ -47,11 +47,15 @@ class SqlReadDatabaseBackendService:
         query = "delete from models where fqid in %s"
         self.connection.execute(query, arguments)
 
-    def build_deleted_model(self, fqid: str) -> Dict[str, Any]:
+    def build_model_ignore_deleted(self, fqid: str) -> Dict[str, Any]:
         # building a model (and ignoring the latest delete/restore) is easy:
         # Get all events and skip any delete, restore or noop event. Then just
-        # build the model: First the create, then a series of update events
+        # build the model: First the create, than a series of update events
         # and delete_fields events.
+        # TODO: There might be a speedup: Get the model from the readdb first.
+        # If the model exists there, read the position from it, use the model
+        # as a starting point in `build_model_from_events` and just fetch all
+        # events after the position.
         included_types = dedent(
             f"""\
             ('{EVENT_TYPES.CREATE}',

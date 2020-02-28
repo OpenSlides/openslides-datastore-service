@@ -60,7 +60,12 @@ class EventTranslatorService:
             for field, value in request_update_event.fields.items()
             if value is None
         ]
-        return [
-            DbUpdateEvent(request_update_event.fqid, updated_fields),
-            DbDeleteFieldsEvent(request_update_event.fqid, deleted_fields),
-        ]
+
+        db_events: List[BaseDbEvent] = []
+        if updated_fields:
+            db_events.append(DbUpdateEvent(request_update_event.fqid, updated_fields))
+        if deleted_fields:
+            db_events.append(
+                DbDeleteFieldsEvent(request_update_event.fqid, deleted_fields)
+            )
+        return db_events
