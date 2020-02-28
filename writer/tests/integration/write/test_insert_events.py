@@ -24,12 +24,10 @@ class FakeConnectionHandler:
         return MagicMock()
 
     def execute(self, statement, arguments):
-        if "insert into positions" in statement:
+        if statement.startswith("insert into positions ("):
             self.create_position(statement, arguments)
-        if statement.startswith("insert into models_lookup"):
+        if statement.startswith("insert into models_lookup ("):
             self.create_model_lookup(statement, arguments)
-        if statement.startswith("insert into events"):
-            self.create_event(statement, arguments)
 
     def create_position(self, statement, arguments):
         ""
@@ -37,19 +35,28 @@ class FakeConnectionHandler:
     def create_model_lookup(self, statement, arguments):
         ""
 
-    def create_event(self, statement, arguments):
-        ""
-
     def query_single_value(self, query, arguments):
         if query == "select max(position) from positions":
             return self.get_max_position()
-        elif query.startswith("select exists(select 1"):
+        if query.startswith("select exists(select 1"):
             return self.exists()
+        if query.startswith("insert into events ("):
+            return self.create_event(query, arguments)
 
     def get_max_position(self):
         ""
 
     def exists(self):
+        ""
+
+    def create_event(self, query, arguments):
+        ""
+
+    def query_list_of_single_values(self, query, arguments):
+        if query.startswith("insert into collectionfields (collectionfield, position)"):
+            return self.attach_fields()
+
+    def attach_fields(self):
         ""
 
     def to_json(self, data):
@@ -59,9 +66,9 @@ class FakeConnectionHandler:
 @pytest.fixture(autouse=True)
 def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, FakeConnectionHandler)
+    injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register(Database, SqlDatabaseBackendService)
     injector.register_as_singleton(OccLocker, lambda: MagicMock(unsafe=True))
-    injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register_as_singleton(Messaging, MagicMock)
     core_setup_di()
 
@@ -93,11 +100,13 @@ def test_insert_create_event(write_handler, connection_handler, valid_metadata):
     connection_handler.exists = MagicMock(return_value=None)
     connection_handler.create_model_lookup = cml = MagicMock()
     connection_handler.create_event = ce = MagicMock()
+    connection_handler.attach_fields = af = MagicMock(return_value=[])
 
     write_handler.write(valid_metadata)
 
     cp.assert_called_once()
     ce.assert_called_once()
+    af.assert_called_once()
     # check if position is in the arguments
     assert position in ce.call_args.args[1]
 
@@ -136,12 +145,14 @@ def test_combined_update_delete_fields_events(
     connection_handler.get_max_position = MagicMock(return_value=position)
     connection_handler.exists = exists = MagicMock(return_value=True)
     connection_handler.create_event = ce = MagicMock()
+    connection_handler.attach_fields = af = MagicMock(return_value=[])
 
     write_handler.write(valid_metadata)
 
     cp.assert_called_once()
     assert exists.call_count == 2
     assert ce.call_count == 2
+    assert af.call_count == 2
     # check if position is in the arguments
     assert position in ce.call_args_list[0].args[1]
     assert position in ce.call_args_list[1].args[1]

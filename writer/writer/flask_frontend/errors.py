@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+
 class InvalidRequest(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -7,12 +8,14 @@ class InvalidRequest(Exception):
 
 def handle_error(ex):
     return (
-        dedent(f"""\
+        dedent(
+            f"""\
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
         <title>{ex.code} {ex.name}</title>
         <h1>{ex.name}</h1>
         <p><img src="https://http.cat/{ex.code}"></img></p>
-        """),
+        """
+        ),
         ex.code,
     )
 

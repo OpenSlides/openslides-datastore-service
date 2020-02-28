@@ -101,11 +101,11 @@ class EventExecutorService:
             if status == MODEL_STATUS.RESTORE
         ]
         for fqid in restored_fqids:
-            self.models[fqid] = self.build_deleted_model(fqid)
+            self.models[fqid] = self.build_model_ignore_deleted(fqid)
             self.model_status[fqid] = MODEL_STATUS.WRITE
 
-    def build_deleted_model(self, fqid):
-        return self.read_database.build_deleted_model(fqid)
+    def build_model_ignore_deleted(self, fqid):
+        return self.read_database.build_model_ignore_deleted(fqid)
 
     def add_position(self):
         for model in self.models.values():

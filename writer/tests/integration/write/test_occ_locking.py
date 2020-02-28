@@ -20,11 +20,11 @@ from writer.postgresql_backend.connection_handler import ConnectionHandler
 
 class FakeConnectionHandler:
     def query_single_value(self, query, arguments):
-        if "jsonb" in query:
+        if query.startswith("select e.fqid from ("):
             return self.fqfield()
-        elif "fqid" in query:
+        elif query.startswith("select fqid from events"):
             return self.fqid()
-        elif "collectionfield":
+        elif query.startswith("select collectionfield from collectionfields"):
             return self.collectionfield()
 
     def fqid(self):
@@ -84,7 +84,6 @@ def test_locked_fqid(write_handler, connection_handler, valid_metadata):
 
 def test_locked_fqfield(write_handler, connection_handler, valid_metadata):
     locked_fqfield = MagicMock()
-    connection_handler.to_json = json = MagicMock(side_effect=lambda data: data)
     connection_handler.fqfield = MagicMock(return_value=locked_fqfield)
     valid_metadata["locked_fields"]["a/1/f"] = 42
 
@@ -92,7 +91,6 @@ def test_locked_fqfield(write_handler, connection_handler, valid_metadata):
         write_handler.write(valid_metadata)
 
     assert e.value.key == locked_fqfield
-    json.assert_called_with("f")
 
 
 def test_locked_collectionfield(write_handler, connection_handler, valid_metadata):

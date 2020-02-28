@@ -23,7 +23,7 @@ class ReadDatabase(Protocol):
         Delete all given models from the read-DB
         """
 
-    def build_deleted_model(self, fqid: str) -> Dict[str, Any]:
+    def build_model_ignore_deleted(self, fqid: str) -> Dict[str, Any]:
         """
         Rebuilds a deleted model, so it can be inserted into the read-db
         after a restore. It does not append META_POSITION to the model.

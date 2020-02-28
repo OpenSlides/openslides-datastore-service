@@ -221,7 +221,9 @@ def test_restore_models(event_executor):
     }
     event_executor.models = {}
     restored_model = MagicMock()
-    event_executor.build_deleted_model = bdm = MagicMock(return_value=restored_model)
+    event_executor.build_model_ignore_deleted = bdm = MagicMock(
+        return_value=restored_model
+    )
 
     event_executor.restore_models()
 
@@ -232,12 +234,12 @@ def test_restore_models(event_executor):
     assert event_executor.model_status[fqid_2] == MODEL_STATUS.WRITE
 
 
-def test_build_deleted_model(event_executor, read_database):
+def test_build_model_ignore_deleted(event_executor, read_database):
     model = MagicMock()
     fqid = MagicMock()
-    read_database.build_deleted_model = bdm = MagicMock(return_value=model)
+    read_database.build_model_ignore_deleted = bdm = MagicMock(return_value=model)
 
-    assert event_executor.build_deleted_model(fqid) == model
+    assert event_executor.build_model_ignore_deleted(fqid) == model
     bdm.assert_called_with(fqid)
 
 
