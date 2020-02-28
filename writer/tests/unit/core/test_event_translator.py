@@ -77,3 +77,12 @@ def test_translation_contents(event_translator, request_events):
 def test_translate_single_unknown_type(event_translator):
     with pytest.raises(RuntimeError):
         event_translator.translate_single(None)
+
+
+def test_update_no_delete_fields_event(event_translator):
+    update_event = RequestUpdateEvent("a/1", {"a": "some_value"})
+
+    db_events = event_translator.translate_single(update_event)
+
+    assert len(db_events) == 1
+    assert isinstance(db_events[0], DbUpdateEvent)

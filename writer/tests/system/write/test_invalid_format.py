@@ -2,12 +2,7 @@ import copy
 
 import pytest
 
-from tests.system.shared import (
-    ALL_TABLES,
-    WRITE_URL,
-    assert_error_response,
-    assert_no_db_entry,
-)
+from tests.system.shared import WRITE_URL, assert_error_response, assert_no_db_entry
 from writer.flask_frontend.routes import ERROR_CODES
 from writer.shared import META_FIELD_PREFIX
 

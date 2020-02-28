@@ -67,6 +67,12 @@ def test_create_or_update_models(read_database, connection):
     )
 
 
+def test_create_or_update_models_no_models(read_database, connection):
+    connection.execute = e = MagicMock()
+    read_database.create_or_update_models([])
+    e.assert_not_called()
+
+
 def test_delete_models(read_database, connection):
     fqids = (
         MagicMock(),
@@ -79,14 +85,20 @@ def test_delete_models(read_database, connection):
     assert e.call_args.args[1] == [fqids]
 
 
-def test_build_deleted_model(read_database, connection):
+def test_delete_models_no_models(read_database, connection):
+    connection.execute = e = MagicMock()
+    read_database.delete_models([])
+    e.assert_not_called()
+
+
+def test_build_model_ignore_deleted(read_database, connection):
     fqid = MagicMock()
     events = MagicMock()
     model = MagicMock()
     connection.query = q = MagicMock(return_value=events)
     read_database.build_model_from_events = bmfe = MagicMock(return_value=model)
 
-    result = read_database.build_deleted_model(fqid)
+    result = read_database.build_model_ignore_deleted(fqid)
 
     assert q.call_args.args[1] == [fqid]
     bmfe.assert_called_with(events)

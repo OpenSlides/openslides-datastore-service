@@ -1,6 +1,7 @@
+from textwrap import dedent
 from typing import List
 
-from writer.core import ModelLocked, fqid_and_field_from_fqfield
+from writer.core import ModelLocked, collectionfield_and_fqid_from_fqfield
 from writer.di import service_as_factory
 
 from .connection_handler import ConnectionHandler
@@ -37,16 +38,32 @@ class SqlOccLockerBackendService:
         if not fqfields:
             return
 
-        query_arguments: List[str] = []
-        filter_parts = []
+        event_query_arguments: List[str] = []
+        event_filter_parts = []
+        collectionfield_query_arguments: List[str] = []
+        collectionfield_filter_parts = []
+
         for fqfield, position in fqfields.items():
-            fqid, field = fqid_and_field_from_fqfield(fqfield)
-            field = self.connection.to_json(field)
-            query_arguments.extend((fqid, field, position,))
-            filter_parts.append("""(fqid=%s and fields @> %s::jsonb and position>%s)""")
-        query = (
-            "select fqid from events where " + " or ".join(filter_parts) + " limit 1"
+            collectionfield, fqid = collectionfield_and_fqid_from_fqfield(fqfield)
+
+            event_query_arguments.extend((fqid, position,))
+            event_filter_parts.append("(fqid=%s and position>%s)")
+
+            collectionfield_query_arguments.extend((fqid, collectionfield,))
+            collectionfield_filter_parts.append("(e.fqid=%s and cf.collectionfield=%s)")
+
+        event_filter = " or ".join(event_filter_parts)
+        collectionfield_filter = " or ".join(collectionfield_filter_parts)
+        query = dedent(
+            f"""\
+            select e.fqid from (
+                select id, fqid from events where {event_filter}
+            ) e
+            inner join events_to_collectionfields ecf on e.id=ecf.event_id
+            inner join collectionfields cf on ecf.collectionfield_id=cf.id
+            where {collectionfield_filter} limit 1"""
         )
+        query_arguments = event_query_arguments + collectionfield_query_arguments
 
         self.raise_model_locked_if_match(query, query_arguments)
 

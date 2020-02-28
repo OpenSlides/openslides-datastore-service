@@ -14,6 +14,7 @@ ALL_TABLES = (
     "models_lookup",
     "id_sequences",
     "collectionfields",
+    "events_to_collectionfields",
     "models",
 )
 
@@ -40,7 +41,7 @@ def assert_model(fqid, model, position):
         assert read_db_model == model
 
         # build model and assert that the last event is not a deleted.
-        builded_model = read_db.build_deleted_model(fqid)
+        builded_model = read_db.build_model_ignore_deleted(fqid)
         del model[META_POSITION]
         assert builded_model == model
         event_type = connection_handler.query_single_value(
