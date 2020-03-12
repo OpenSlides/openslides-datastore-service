@@ -76,7 +76,7 @@ def test_query_arguments_fqfield(occ_locker, connection):
 
     query = qsv.call_args.args[0]
     assert query.count("(fqid=%s and position>%s)") == 2
-    assert query.count("(e.fqid=%s and cf.collectionfield=%s)") == 2
+    assert query.count("(e.fqid=%s and cf.collectionfield LIKE %s)") == 2
     args = qsv.call_args.args[1]
     assert (args == ["a/1", 2, "b/3", 42, "a/1", "a/f", "b/3", "b/e"]) or (
         args == ["b/3", 42, "a/1", 2, "b/3", "b/e", "a/1", "a/f"]

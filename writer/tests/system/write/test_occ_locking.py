@@ -140,3 +140,39 @@ def test_lock_collectionfield_not_ok(json_client, data):
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
     assert_no_model("a/2")
+
+
+def test_lock_fqfield_template(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f_1_s": 1}, {"f_1_s": 2})
+    data["locked_fields"]["a/1/f_$_s"] = 1
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert_no_model("a/2")
+
+
+def test_lock_fqfield_template_dollar_sign(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f_$_s": 1}, {"f_$_s": 2})
+    data["locked_fields"]["a/1/f_$_s"] = 1
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert_no_model("a/2")
+
+
+def test_lock_fqfield_template_two_placeholders(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f_1_2_s": 1}, {"f_1_2_s": 2})
+    data["locked_fields"]["a/1/f_$_$_s"] = 1
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+    assert_no_model("a/2")
+
+
+def test_lock_fqfield_template_empty_placeholder(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f__s": 1}, {"f__s": 2})
+    data["locked_fields"]["a/1/f_$_s"] = 1
+
+    response = json_client.post(WRITE_URL, data)
+    assert response.status_code == 200
+    assert_model("a/2", {}, 3)
