@@ -4,13 +4,9 @@ RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it postgresql-client redis-tools
 
 WORKDIR /app
-COPY requirements.txt .
-COPY requirements-testing.txt .
+COPY requirements/ .
 RUN pip install -U -r requirements.txt -r requirements-testing.txt
-COPY cleanup.sh .
-COPY setup.cfg .
-COPY psql.sh .
-COPY redis-cli.sh .
+COPY scripts/ .
 ENV PYTHONPATH /app/
 
 CMD ["pytest"]

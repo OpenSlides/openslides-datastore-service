@@ -2,15 +2,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from writer.core import (
+from shared.util import META_DELETED
+from writer.core.db_events import (
+    BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
     DbDeleteFieldsEvent,
     DbRestoreEvent,
     DbUpdateEvent,
 )
-from writer.core.db_events import BaseDbEvent
-from writer.shared import META_DELETED
 
 
 def test_base_db_event_get_modified_fields():

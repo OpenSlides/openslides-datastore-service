@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
+from shared.di import injector
+from shared.flask_frontend.errors import InvalidRequest
+from shared.util import reset_di  # noqa
 from writer.core import Writer
-from writer.di import injector
-from writer.flask_frontend.errors import InvalidRequest
 from writer.flask_frontend.json_handlers import GetIdsHandler, WriteHandler
 
 

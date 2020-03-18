@@ -1,6 +1,8 @@
 import pytest
 
-from tests.reset_di import reset_di  # noqa
+from shared.di import injector
+from shared.util import reset_di  # noqa
+from shared.util import META_DELETED
 from writer.core import (
     RequestCreateEvent,
     RequestDeleteEvent,
@@ -15,8 +17,6 @@ from writer.core.db_events import (
     DbUpdateEvent,
 )
 from writer.core.event_translator import EventTranslator, EventTranslatorService
-from writer.di import injector
-from writer.shared import META_DELETED
 
 
 @pytest.fixture()

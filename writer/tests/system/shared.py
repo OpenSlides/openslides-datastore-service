@@ -1,11 +1,10 @@
 from typing import Set
 
-from writer.core import ReadDatabase
-from writer.di import injector
-from writer.postgresql_backend.connection_handler import ConnectionHandler
-from writer.postgresql_backend.sql_event_types import EVENT_TYPES
+from shared.core import ReadDatabase
+from shared.di import injector
+from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
+from shared.util import META_DELETED, META_POSITION
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
-from writer.shared import META_DELETED, META_POSITION
 
 
 ALL_TABLES = (

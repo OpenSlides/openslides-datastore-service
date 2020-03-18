@@ -2,18 +2,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
+from shared.core import ReadDatabase
+from shared.di import injector
+from shared.util import reset_di  # noqa
+from shared.util import META_POSITION
 from writer.core import (
     DbCreateEvent,
     DbDeleteEvent,
     DbDeleteFieldsEvent,
     DbRestoreEvent,
     DbUpdateEvent,
-    ReadDatabase,
 )
 from writer.core.event_executor import MODEL_STATUS, EventExecutor, EventExecutorService
-from writer.di import injector
-from writer.shared import META_POSITION
 
 
 @pytest.fixture(autouse=True)

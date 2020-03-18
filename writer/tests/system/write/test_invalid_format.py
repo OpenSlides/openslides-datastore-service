@@ -2,9 +2,9 @@ import copy
 
 import pytest
 
+from shared.util import META_FIELD_PREFIX
 from tests.system.shared import WRITE_URL, assert_error_response, assert_no_db_entry
 from writer.flask_frontend.routes import ERROR_CODES
-from writer.shared import META_FIELD_PREFIX
 
 
 @pytest.fixture()

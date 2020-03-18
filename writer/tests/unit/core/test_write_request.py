@@ -2,15 +2,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from shared.core import InvalidFormat, InvalidKeyFormat
 from writer.core import (
-    InvalidFormat,
     RequestCreateEvent,
     RequestDeleteEvent,
     RequestRestoreEvent,
     RequestUpdateEvent,
     WriteRequest,
 )
-from writer.core.key_types import InvalidKeyFormat
 from writer.core.write_request import assert_no_special_field
 
 

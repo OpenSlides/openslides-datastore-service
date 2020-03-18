@@ -1,7 +1,7 @@
 from typing import Dict, List
 
-from writer.shared import META_DELETED
-from writer.shared.typing import JSON
+from shared.util import META_DELETED
+from shared.util.typing import JSON
 
 
 class BaseDbEvent:

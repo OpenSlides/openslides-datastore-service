@@ -3,20 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
-from writer.core import (
-    Database,
-    Messaging,
-    ModelDoesNotExist,
-    ModelExists,
-    OccLocker,
-    ReadDatabase,
-    setup_di as core_setup_di,
-)
-from writer.di import injector
+from shared.core import ModelDoesNotExist, ModelExists, ReadDatabase
+from shared.di import injector
+from shared.postgresql_backend import ConnectionHandler
+from shared.util import reset_di  # noqa
+from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import WriteHandler
 from writer.postgresql_backend import SqlDatabaseBackendService
-from writer.postgresql_backend.connection_handler import ConnectionHandler
 
 
 class FakeConnectionHandler:

@@ -1,10 +1,10 @@
 import copy
 from typing import Dict, List, Protocol
 
-from writer.di import service_as_factory, service_interface
-from writer.shared import META_POSITION
-
-from .db_events import (
+from shared.core import ReadDatabase
+from shared.di import service_as_factory, service_interface
+from shared.util import META_POSITION
+from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
@@ -12,7 +12,6 @@ from .db_events import (
     DbRestoreEvent,
     DbUpdateEvent,
 )
-from .read_database import ReadDatabase
 
 
 @service_interface
