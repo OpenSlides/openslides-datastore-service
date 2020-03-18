@@ -1,0 +1,46 @@
+dist: xenial
+sudo: true
+
+cache:
+  - directories:
+      - $HOME/.cache/pip
+
+matrix:
+  include:
+    - stage: "Dependencies"
+      name: "Installing dependencies for python"
+      language: python
+      python:
+        - "3.8"
+      cache:
+        pip: true
+      install:
+        - python --version
+        - pip install --upgrade setuptools pip
+        - pip install --upgrade --requirement reader/requirements-testing.txt
+        - pip install --upgrade --requirement writer/requirements-testing.txt
+        - pip freeze
+      script: skip
+
+    - name: "Tests: Reader"
+      language: python
+      python:
+        - "3.8"
+      script:
+        - flake8 reader/reader reader/tests
+        - isort --check-only --diff --recursive reader/reader reader/tests
+        - black --check --diff --target-version py36 reader/reader reader/tests
+        - mypy reader/reader reader/tests
+        - pytest reader --cov --cov-fail-under=72
+
+    - name: "Tests: Writer"
+      language: python
+      python:
+        - "3.8"
+      script:
+        - flake8 writer/writer writer/tests
+        - isort --check-only --diff --recursive writer/writer writer/tests
+        - black --check --diff --target-version py36 writer/writer writer/tests
+        - mypy writer/writer writer/tests
+        - pytest writer --cov --cov-fail-under=72
+        
