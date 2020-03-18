@@ -1,6 +1,6 @@
 from typing import List
 
-from writer.di import service_as_factory
+from shared.di import service_as_factory
 
 from .database import Database
 from .event_executor import EventExecutor

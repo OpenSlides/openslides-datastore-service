@@ -1,9 +1,8 @@
 from typing import Dict, List, Protocol
 
-from writer.di import service_as_singleton, service_interface
-from writer.shared.typing import JSON
-
-from .db_events import (
+from shared.di import service_as_singleton, service_interface
+from shared.util.typing import JSON
+from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
@@ -11,6 +10,7 @@ from .db_events import (
     DbRestoreEvent,
     DbUpdateEvent,
 )
+
 from .write_request import (
     BaseRequestEvent,
     RequestCreateEvent,

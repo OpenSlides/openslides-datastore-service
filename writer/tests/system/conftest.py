@@ -5,24 +5,22 @@ import psycopg2
 import pytest
 import redis
 
-from tests.reset_di import reset_di  # noqa
-from writer.core import (
-    Database,
-    Messaging,
-    OccLocker,
-    ReadDatabase,
-    setup_di as core_setup_di,
+from shared.core import ReadDatabase
+from shared.di import injector
+from shared.postgresql_backend.pg_connection_handler import (
+    ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
 )
-from writer.di import injector
+from shared.postgresql_backend.sql_read_database_backend_service import (
+    SqlReadDatabaseBackendService,
+)
+from shared.util import reset_di  # noqa
+from shared.util import setup_di as shared_setup_di
+from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend import FlaskFrontend
 from writer.postgresql_backend import (
     SqlDatabaseBackendService,
     SqlOccLockerBackendService,
-    SqlReadDatabaseBackendService,
     setup_di as postgresql_setup_di,
-)
-from writer.postgresql_backend.pg_connection_handler import (
-    ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
 )
 from writer.redis_backend import (
     RedisMessagingBackendService,
@@ -32,7 +30,6 @@ from writer.redis_backend.redis_connection_handler import (
     ENVIRONMENT_VARIABLES as REDIS_ENVIRONMENT_VARIABLES,
 )
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
-from writer.shared import setup_di as shared_setup_di
 
 from .shared import ALL_TABLES
 
@@ -105,7 +102,7 @@ def drop_db_definitions(cur):
 
 
 def get_db_schema_definition():
-    with open("./writer/postgresql_backend/schema.sql") as f:
+    with open("./shared/postgresql_backend/schema.sql") as f:
         return f.read()
 
 

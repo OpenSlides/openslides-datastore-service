@@ -1,8 +1,10 @@
 from typing import List
 
-from writer.core import BaseDbEvent, Messaging, fqfield_from_fqid_and_field
-from writer.di import service_as_singleton
-from writer.shared import META_POSITION
+from shared.core import fqfield_from_fqid_and_field
+from shared.di import service_as_singleton
+from shared.util import META_POSITION
+from writer.core import Messaging
+from writer.core.db_events import BaseDbEvent
 
 from .connection_handler import ConnectionHandler
 

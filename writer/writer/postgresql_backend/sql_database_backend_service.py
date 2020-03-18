@@ -1,12 +1,7 @@
 from textwrap import dedent
 from typing import Any, List
 
-from writer.core import (
-    DbCreateEvent,
-    DbDeleteEvent,
-    DbDeleteFieldsEvent,
-    DbRestoreEvent,
-    DbUpdateEvent,
+from shared.core import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
@@ -15,10 +10,15 @@ from writer.core import (
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
 )
-from writer.di import service_as_singleton
-
-from .connection_handler import ConnectionHandler
-from .sql_event_types import EVENT_TYPES
+from shared.di import service_as_singleton
+from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
+from writer.core.db_events import (
+    DbCreateEvent,
+    DbDeleteEvent,
+    DbDeleteFieldsEvent,
+    DbRestoreEvent,
+    DbUpdateEvent,
+)
 
 
 # https://stackoverflow.com/questions/18404055/index-for-finding-an-element-in-a-json-array

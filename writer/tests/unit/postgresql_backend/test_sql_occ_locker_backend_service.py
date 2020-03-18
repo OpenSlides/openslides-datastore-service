@@ -2,11 +2,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
-from writer.core import ModelLocked, OccLocker
-from writer.di import injector
+from shared.core import ModelLocked
+from shared.di import injector
+from shared.postgresql_backend import ConnectionHandler
+from shared.util import reset_di  # noqa
+from writer.core import OccLocker
 from writer.postgresql_backend import SqlOccLockerBackendService
-from writer.postgresql_backend.connection_handler import ConnectionHandler
 
 
 @pytest.fixture(autouse=True)

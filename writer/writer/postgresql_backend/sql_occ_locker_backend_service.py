@@ -1,10 +1,9 @@
 from textwrap import dedent
 from typing import List
 
-from writer.core import ModelLocked, collectionfield_and_fqid_from_fqfield
-from writer.di import service_as_factory
-
-from .connection_handler import ConnectionHandler
+from shared.core import ModelLocked, collectionfield_and_fqid_from_fqfield
+from shared.di import service_as_factory
+from shared.postgresql_backend import ConnectionHandler
 
 
 # FQID LOCKING

@@ -2,7 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
+from shared.di import injector
+from shared.util import reset_di  # noqa
 from writer.core import (
     Database,
     Messaging,
@@ -15,7 +16,6 @@ from writer.core import (
 from writer.core.event_executor import EventExecutor
 from writer.core.event_translator import EventTranslator
 from writer.core.writer_service import WriterService
-from writer.di import injector
 
 
 @pytest.fixture(autouse=True)

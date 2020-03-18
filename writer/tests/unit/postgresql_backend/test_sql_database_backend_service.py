@@ -2,23 +2,25 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
-from writer.core import (
-    DbCreateEvent,
-    DbDeleteEvent,
-    DbDeleteFieldsEvent,
-    DbRestoreEvent,
-    DbUpdateEvent,
+from shared.core import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
     ModelNotDeleted,
     ReadDatabase,
 )
+from shared.di import injector
+from shared.postgresql_backend import ConnectionHandler
+from shared.util import reset_di  # noqa
+from writer.core import (
+    DbCreateEvent,
+    DbDeleteEvent,
+    DbDeleteFieldsEvent,
+    DbRestoreEvent,
+    DbUpdateEvent,
+)
 from writer.core.database import Database
-from writer.di import injector
 from writer.postgresql_backend import SqlDatabaseBackendService
-from writer.postgresql_backend.connection_handler import ConnectionHandler
 from writer.postgresql_backend.sql_database_backend_service import (
     COLLECTION_MAX_LEN,
     COLLECTIONFIELD_MAX_LEN,

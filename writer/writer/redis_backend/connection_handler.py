@@ -1,6 +1,6 @@
 from typing import List, Protocol
 
-from writer.di import service_interface
+from shared.di import service_interface
 
 
 @service_interface

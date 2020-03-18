@@ -8,9 +8,10 @@ ARG REPOSITORY_URL=https://github.com/OpenSlides/openslides-datastore-service.gi
 ARG GIT_CHECKOUT=master
 RUN git clone --no-checkout -- $REPOSITORY_URL .
 RUN git checkout $GIT_CHECKOUT
-WORKDIR /tmp/writer
 RUN mkdir /app
-RUN mv writer entrypoint.sh requirements.txt /app
+# Update as soon as this is on master
+# RUN mv shared/shared writer/writer writer/entrypoint.sh requirements/requirements.txt /app
+RUN mv writer/writer writer/entrypoint.sh writer/requirements.txt /app
 
 WORKDIR /app
 RUN rm -rf /tmp

@@ -2,6 +2,9 @@ from typing import Any, Dict, List, TypedDict, cast
 
 import fastjsonschema
 
+from shared.di import injector
+from shared.flask_frontend.errors import InvalidRequest
+from shared.util.typing import JSON
 from writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
@@ -11,10 +14,6 @@ from writer.core import (
     Writer,
     WriteRequest,
 )
-from writer.di import injector
-from writer.shared.typing import JSON
-
-from .errors import InvalidRequest
 
 
 write_schema = fastjsonschema.compile(

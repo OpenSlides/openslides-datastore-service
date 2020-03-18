@@ -2,20 +2,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
-from writer.core import (
-    Database,
-    InvalidFormat,
-    Messaging,
-    OccLocker,
-    ReadDatabase,
-    setup_di as core_setup_di,
-)
-from writer.di import injector
-from writer.flask_frontend.errors import InvalidRequest
+from shared.core import InvalidFormat, ReadDatabase
+from shared.di import injector
+from shared.flask_frontend.errors import InvalidRequest
+from shared.postgresql_backend import ConnectionHandler
+from shared.util import reset_di  # noqa
+from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import GetIdsHandler
 from writer.postgresql_backend import SqlDatabaseBackendService
-from writer.postgresql_backend.connection_handler import ConnectionHandler
 from writer.postgresql_backend.sql_database_backend_service import COLLECTION_MAX_LEN
 
 
