@@ -1,7 +1,7 @@
 from typing import Dict, List, Protocol
 
 from shared.di import service_as_singleton, service_interface
-from shared.util.typing import JSON
+from shared.util import JSON, BadCodingError
 from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,
@@ -45,7 +45,7 @@ class EventTranslatorService:
             return [DbDeleteEvent(request_event.fqid)]
         if isinstance(request_event, RequestRestoreEvent):
             return [DbRestoreEvent(request_event.fqid)]
-        raise RuntimeError()
+        raise BadCodingError()
 
     def create_update_events(
         self, request_update_event: RequestUpdateEvent

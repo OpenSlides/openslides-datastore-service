@@ -8,7 +8,8 @@ from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
-from shared.util import reset_di  # noqa
+from shared.tests import reset_di  # noqa
+from shared.util import BadCodingError
 
 
 @pytest.fixture(autouse=True)
@@ -107,9 +108,9 @@ def test_build_model_ignore_deleted(read_database, connection):
 
 
 def test_build_model_from_events_no_events(read_database):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(BadCodingError):
         read_database.build_model_from_events(None)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(BadCodingError):
         read_database.build_model_from_events([])
 
 
@@ -119,7 +120,7 @@ def test_build_model_from_events_no_first_create_event(read_database):
 
 
 def test_build_model_from_events_unknwon_event(read_database):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(BadCodingError):
         read_database.build_model_from_events(
             [(EVENT_TYPES.CREATE, MagicMock()), (MagicMock(), MagicMock())]
         )

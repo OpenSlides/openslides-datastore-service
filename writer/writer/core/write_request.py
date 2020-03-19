@@ -7,8 +7,7 @@ from shared.core import (
     assert_is_fqid,
     get_key_type,
 )
-from shared.util import is_reserved_field
-from shared.util.typing import JSON
+from shared.util import JSON, is_reserved_field
 
 
 def assert_no_special_field(field: Any) -> None:

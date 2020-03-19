@@ -6,7 +6,7 @@ import pytest
 from shared.core import ModelLocked, ReadDatabase
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
-from shared.util import reset_di  # noqa
+from shared.tests import reset_di  # noqa
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import WriteHandler
 from writer.postgresql_backend import SqlOccLockerBackendService

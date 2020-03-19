@@ -11,7 +11,8 @@ from shared.core import (
 )
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
-from shared.util import reset_di  # noqa
+from shared.tests import reset_di  # noqa
+from shared.util import BadCodingError
 from writer.core import (
     DbCreateEvent,
     DbDeleteEvent,
@@ -100,7 +101,7 @@ class TestExistsQuery:
 class TestInsertEvents:
     def test_insert_no_events(self, sql_backend):
         sql_backend.create_position = cp = MagicMock()
-        with pytest.raises(RuntimeError):
+        with pytest.raises(BadCodingError):
             sql_backend.insert_events([], {}, 1)
         cp.assert_not_called()
 

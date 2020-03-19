@@ -3,8 +3,8 @@ from typing import Any, Dict, List, TypedDict, cast
 import fastjsonschema
 
 from shared.di import injector
-from shared.flask_frontend.errors import InvalidRequest
-from shared.util.typing import JSON
+from shared.flask_frontend import InvalidRequest
+from shared.util import JSON, BadCodingError
 from writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
@@ -101,7 +101,7 @@ class WriteHandler:
         elif type == "restore":
             request_event = RequestRestoreEvent(fqid)
         else:
-            raise RuntimeError()
+            raise BadCodingError()
         return request_event
 
 

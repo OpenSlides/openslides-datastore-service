@@ -1,0 +1,16 @@
+FROM python:3.8.1
+
+RUN apt-get -y update && apt-get -y upgrade && \
+    apt-get install --no-install-recommends -y wait-for-it postgresql-client
+
+WORKDIR /app
+COPY requirements/requirements.txt .
+RUN pip install -U -r requirements.txt
+COPY reader/entrypoint.sh .
+ENV PYTHONPATH /app/
+
+ENV FLASK_APP=reader.app
+ENV FLASK_ENV=development
+
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["flask", "run", "--host", "0.0.0.0", "--port", "8000"]

@@ -34,6 +34,22 @@ services:
             - DATASTORE_DATABASE_NAME=openslides
         networks:
             - postgresql
+    reader:
+        image: openslides-datastore-reader-test
+        command: ["sleep", "infinity"]
+        volumes:
+            - ./shared/shared:/app/shared
+            - ./reader/reader:/app/reader
+            - ./reader/tests:/app/tests
+        depends_on:
+            - postgresql
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_PASSWORD=openslides
+            - DATASTORE_DATABASE_NAME=openslides
+        networks:
+            - postgresql
     postgresql:
         image: sameersbn/postgresql:10
         labels:
