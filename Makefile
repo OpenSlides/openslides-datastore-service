@@ -2,8 +2,9 @@
 
 export COMPOSE_FILE=dc.test.yml
 
+shared_test_coverage=89
+reader_test_coverage=74
 writer_test_coverage=98
-shared_test_coverage=99
 
 ifdef MODULE
 # targets are only available if MODULE is defined (meaning if called from a module=subdirectory)
@@ -48,12 +49,7 @@ run-coverage: | setup-docker-compose
 	docker-compose down
 
 run-travis: | setup-docker-compose
-	docker-compose exec $(MODULE) flake8 $(MODULE) tests
-	docker-compose exec $(MODULE) isort --check-only --diff --recursive $(MODULE) tests
-	docker-compose exec $(MODULE) black --check --diff --target-version py38 $(MODULE) tests
-	docker-compose exec $(MODULE) mypy $(MODULE) tests
-	docker-compose exec $(MODULE) pytest --cov --cov-fail-under=$($(MODULE)_test_coverage)
-	docker-compose down
+	scripts/travis.sh $(MODULE)
 
 # PROD
 
@@ -75,7 +71,13 @@ endif
 
 ifndef MODULE
 # execute the target for all modules
-run-cleanup run-tests run-travis build-dev:
+run-cleanup run-tests run-travis:
 	$(MAKE) $@ MODULE=shared
+	$(MAKE) $@ MODULE=reader
+	$(MAKE) $@ MODULE=writer
+
+# shared has no dev image
+build-dev:
+	$(MAKE) $@ MODULE=reader
 	$(MAKE) $@ MODULE=writer
 endif

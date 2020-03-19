@@ -12,6 +12,7 @@ from shared.core import (
 )
 from shared.di import service_as_singleton
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
+from shared.util import BadCodingError
 from writer.core.db_events import (
     DbCreateEvent,
     DbDeleteEvent,
@@ -44,7 +45,7 @@ class SqlDatabaseBackendService:
 
     def insert_events(self, events, information, user_id) -> int:
         if not events:
-            raise RuntimeError()  # TODO
+            raise BadCodingError()
 
         position = self.create_position(information, user_id)
         for event in events:

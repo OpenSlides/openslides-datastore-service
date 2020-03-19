@@ -1,8 +1,8 @@
 import pytest
 
 from shared.di import injector
-from shared.util import reset_di  # noqa
-from shared.util import META_DELETED
+from shared.tests import reset_di  # noqa
+from shared.util import META_DELETED, BadCodingError
 from writer.core import (
     RequestCreateEvent,
     RequestDeleteEvent,
@@ -75,7 +75,7 @@ def test_translation_contents(event_translator, request_events):
 
 
 def test_translate_single_unknown_type(event_translator):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(BadCodingError):
         event_translator.translate_single(None)
 
 
