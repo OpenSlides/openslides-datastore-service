@@ -21,12 +21,16 @@ from writer.postgresql_backend import (
     SqlReadDatabaseBackendService,
     setup_di as postgresql_setup_di,
 )
-from writer.postgresql_backend.pg_connection_handler import ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES
+from writer.postgresql_backend.pg_connection_handler import (
+    ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
+)
 from writer.redis_backend import (
     RedisMessagingBackendService,
     setup_di as redis_setup_di,
 )
-from writer.redis_backend.redis_connection_handler import ENVIRONMENT_VARIABLES as REDIS_ENVIRONMENT_VARIABLES
+from writer.redis_backend.redis_connection_handler import (
+    ENVIRONMENT_VARIABLES as REDIS_ENVIRONMENT_VARIABLES,
+)
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 from writer.shared import setup_di as shared_setup_di
 
@@ -118,7 +122,8 @@ def xadd_callback_noop(response, **options):
 def setup_redis_connection():
     global _redis_connection
     _redis_connection = redis.Redis(
-        host=get_env(REDIS_ENVIRONMENT_VARIABLES.HOST), port=int(get_env(REDIS_ENVIRONMENT_VARIABLES.PORT) or 6379),
+        host=get_env(REDIS_ENVIRONMENT_VARIABLES.HOST),
+        port=int(get_env(REDIS_ENVIRONMENT_VARIABLES.PORT) or 6379),
     )
     _redis_connection.set_response_callback("XREAD", xadd_callback_noop)
     yield _redis_connection
