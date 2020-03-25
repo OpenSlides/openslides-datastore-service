@@ -48,8 +48,15 @@ class SqlOccLockerBackendService:
             event_query_arguments.extend((fqid, position,))
             event_filter_parts.append("(fqid=%s and position>%s)")
 
+            print(collectionfield)
+            collectionfield = collectionfield.replace("_", r"\_")
+            collectionfield = collectionfield.replace("$", "_%")
+            print(collectionfield)
+
             collectionfield_query_arguments.extend((fqid, collectionfield,))
-            collectionfield_filter_parts.append("(e.fqid=%s and cf.collectionfield=%s)")
+            collectionfield_filter_parts.append(
+                "(e.fqid=%s and cf.collectionfield LIKE %s)"
+            )
 
         event_filter = " or ".join(event_filter_parts)
         collectionfield_filter = " or ".join(collectionfield_filter_parts)

@@ -57,19 +57,26 @@ no_fqids = (
     "collection_/482",
     "collection/0",
     "collection/96e2",
+    "collection/1$2",
     "collection_/593",
     "some string without a slash",
+    "collection$string/1",
+    "collection1/1",
 )
 no_fqfields = (
     "collection/493/_field",
     "_collection/493/field",
     "collection/493/_field",
     "collection/29/1field",
+    "collection/1/$field",
+    "collection/1/field_$_$_suffix",
 )
 no_collectionfields = (
     "_collection/field",
     "collection/4_field",
     "collection/my_\u0394_unicode_field",
+    "collection/$field",
+    "collection/field_$_$_suffix",
 )
 
 all_keys = no_fqids + no_fqfields + no_collectionfields
@@ -123,3 +130,7 @@ def test_id():
 
 def test_field():
     assert_is_field("my_field_2_")
+
+
+def test_field_template():
+    assert_is_field("f_$_s")
