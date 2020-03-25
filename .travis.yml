@@ -1,21 +1,9 @@
-language: python
 services:
   - docker
 
 jobs:
   include:
     - name: "Tests: Writer"
-      python: "3.8"
-      env:
-        - COMPOSE_FILE=writer/dc.test.yml
-      script:
-        - docker build -t openslides-datastore-writer-test -f writer/Dockerfile.test writer
-        - docker-compose up -d
-        - docker-compose exec writer wait-for-it --timeout=10 postgresql:5432
-        - docker-compose exec writer wait-for-it --timeout=10 redis:6379
-        - docker-compose exec writer flake8 writer tests
-        - docker-compose exec writer isort --check-only --diff --recursive writer tests
-        - docker-compose exec writer black --check --diff --target-version py38 writer tests
-        - docker-compose exec writer mypy writer tests
-        - docker-compose exec writer pytest --cov --cov-fail-under=99
-        - docker-compose down
+      script: make run-travis MODULE=writer USE_REDIS=1
+    - name: "Tests: Shared"
+      script: make run-travis MODULE=shared

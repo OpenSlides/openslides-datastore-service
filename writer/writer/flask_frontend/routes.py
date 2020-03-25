@@ -1,14 +1,14 @@
 from flask import request
 
-from writer.core import (
+from shared.core import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
     ModelLocked,
     ModelNotDeleted,
 )
+from shared.flask_frontend.errors import InvalidRequest
 
-from .errors import InvalidRequest
 from .json_handlers import GetIdsHandler, WriteHandler
 
 

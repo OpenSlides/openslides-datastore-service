@@ -1,0 +1,53 @@
+version: '3'
+services:
+    writer:
+        image: openslides-datastore-writer-test
+        command: ["sleep", "infinity"]
+        volumes:
+            - ./shared/shared:/app/shared
+            - ./writer/writer:/app/writer
+            - ./writer/tests:/app/tests
+        depends_on:
+            - postgresql
+            - redis
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_PASSWORD=openslides
+            - DATASTORE_DATABASE_NAME=openslides
+            - MESSAGE_BUS_HOST=redis
+        networks:
+            - postgresql
+            - redis
+    shared:
+        image: openslides-datastore-shared-test
+        command: ["sleep", "infinity"]
+        volumes:
+            - ./shared/shared:/app/shared
+            - ./shared/tests:/app/tests
+        depends_on:
+            - postgresql
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_PASSWORD=openslides
+            - DATASTORE_DATABASE_NAME=openslides
+        networks:
+            - postgresql
+    postgresql:
+        image: sameersbn/postgresql:10
+        labels:
+            org.openslides.role: "postgres"
+        environment:
+            - DB_USER=openslides
+            - DB_PASS=openslides
+            - DB_NAME=openslides
+        networks:
+            - postgresql
+    redis:
+        image: redis:alpine
+        networks:
+            - redis
+networks:
+    postgresql:
+    redis:

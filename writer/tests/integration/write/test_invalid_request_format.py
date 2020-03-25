@@ -3,19 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.reset_di import reset_di  # noqa
-from writer.core import (
-    Database,
-    InvalidFormat,
-    Messaging,
-    OccLocker,
-    ReadDatabase,
-    setup_di as core_setup_di,
-)
-from writer.di import injector
-from writer.flask_frontend.errors import InvalidRequest
+from shared.core import InvalidFormat, ReadDatabase
+from shared.di import injector
+from shared.flask_frontend.errors import InvalidRequest
+from shared.util import reset_di  # noqa
+from shared.util import META_FIELD_PREFIX
+from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import WriteHandler
-from writer.shared import META_FIELD_PREFIX
 
 
 @pytest.fixture(autouse=True)

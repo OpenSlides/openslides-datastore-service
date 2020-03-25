@@ -1,9 +1,8 @@
 from typing import ContextManager, List, Protocol
 
-from writer.di import service_interface
-from writer.shared.typing import JSON
-
-from .db_events import BaseDbEvent
+from shared.di import service_interface
+from shared.util.typing import JSON
+from writer.core.db_events import BaseDbEvent
 
 
 @service_interface
