@@ -2,10 +2,6 @@
 
 export COMPOSE_FILE=dc.test.yml
 
-shared_test_coverage=89
-reader_test_coverage=74
-writer_test_coverage=98
-
 ifdef MODULE
 # targets are only available if MODULE is defined (meaning if called from a module=subdirectory)
 
@@ -32,8 +28,10 @@ ifdef USE_REDIS
 	docker-compose exec $(MODULE) wait-for-it --timeout=10 redis:6379
 endif
 
-run-tests: | setup-docker-compose
+run-tests-no-down: | setup-docker-compose
 	docker-compose exec $(MODULE) pytest
+
+run-tests: | run-tests-no-down
 	docker-compose down
 
 run-tests-interactive: | setup-docker-compose
@@ -48,8 +46,11 @@ run-coverage: | setup-docker-compose
 	docker-compose exec $(MODULE) pytest --cov --cov-report html
 	docker-compose down
 
-run-travis: | setup-docker-compose
+run-travis-no-down: | setup-docker-compose
 	scripts/travis.sh $(MODULE)
+
+run-travis: | run-travis-no-down
+	docker-compose down
 
 # PROD
 
@@ -71,13 +72,21 @@ endif
 
 ifndef MODULE
 # execute the target for all modules
-run-cleanup run-tests run-travis:
-	$(MAKE) $@ MODULE=shared
-	$(MAKE) $@ MODULE=reader
-	$(MAKE) $@ MODULE=writer
+run-cleanup:
+	@$(MAKE) -C shared $@
+	@$(MAKE) -C reader $@
+	@$(MAKE) -C writer $@
+
+# no-down mode speeds up the proces by up to 50%
+run-tests run-travis:
+	@$(MAKE) -C shared $@-no-down
+	@$(MAKE) -C reader $@-no-down
+	@$(MAKE) -C writer $@-no-down
+	docker-compose down
 
 # shared has no dev image
 build-dev:
-	$(MAKE) $@ MODULE=reader
-	$(MAKE) $@ MODULE=writer
+	@$(MAKE) -C reader $@
+	@$(MAKE) -C writer $@
+
 endif
