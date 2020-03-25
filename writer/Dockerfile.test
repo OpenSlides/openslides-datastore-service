@@ -7,6 +7,7 @@ WORKDIR /app
 COPY requirements/ .
 RUN pip install -U -r requirements.txt -r requirements-testing.txt
 COPY scripts/ .
+COPY writer/.coveragerc .
 ENV PYTHONPATH /app/
 
 CMD ["pytest"]

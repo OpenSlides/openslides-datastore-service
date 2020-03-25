@@ -1,0 +1,5 @@
+[report]
+fail_under=89
+
+[html]
+directory = shared/htmlcov
