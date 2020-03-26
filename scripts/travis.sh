@@ -12,4 +12,3 @@ docker-compose exec $1 flake8 $1 tests
 docker-compose exec $1 mypy $1  # separate mypy commands to avoid duplicate module error
 docker-compose exec $1 mypy tests
 docker-compose exec $1 pytest --cov
-docker-compose down

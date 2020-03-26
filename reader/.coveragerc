@@ -1,0 +1,6 @@
+[report]
+fail_under=93
+omit=shared/*
+
+[html]
+directory = reader/htmlcov
