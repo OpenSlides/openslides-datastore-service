@@ -1,8 +1,8 @@
 from typing import Any
 
 from .environment_service import EnvironmentService, EnvironmentVariableMissing  # noqa
-from .reset_di import reset_di  # noqa
 from .shutdown_service import ShutdownService
+from .typing import JSON  # noqa
 
 
 META_FIELD_PREFIX = "meta"
@@ -20,3 +20,12 @@ def setup_di():
 
     injector.register(EnvironmentService, EnvironmentService)
     injector.register(ShutdownService, ShutdownService)
+
+
+class BadCodingError(RuntimeError):
+    """
+    Should be thrown for errors that theoretically should never happen, except when the
+    programmer fucked up.
+    """
+
+    pass

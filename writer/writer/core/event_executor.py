@@ -3,7 +3,7 @@ from typing import Dict, List, Protocol
 
 from shared.core import ReadDatabase
 from shared.di import service_as_factory, service_interface
-from shared.util import META_POSITION
+from shared.util import META_POSITION, BadCodingError
 from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,
@@ -91,7 +91,7 @@ class EventExecutorService:
             self.model_status[event.fqid] = MODEL_STATUS.DELETE
 
         else:
-            raise RuntimeError()
+            raise BadCodingError()
 
     def restore_models(self):
         restored_fqids = [

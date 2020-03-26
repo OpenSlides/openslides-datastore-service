@@ -1,4 +1,4 @@
-from tests.system.shared import GET_IDS_URL, WRITE_URL
+from tests.system.util import GET_IDS_URL, WRITE_URL
 
 
 def test_wrong_method_write(client):

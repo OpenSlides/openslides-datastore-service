@@ -2,16 +2,16 @@ import copy
 
 import pytest
 
-from tests.system.shared import (
+from shared.flask_frontend import ERROR_CODES
+from shared.tests.util import assert_error_response
+from tests.system.util import (
     WRITE_URL,
-    assert_error_response,
     assert_model,
     assert_modified_fields,
     assert_no_db_entry,
     assert_no_model,
     assert_no_modified_fields,
 )
-from writer.flask_frontend.routes import ERROR_CODES
 
 
 @pytest.fixture()

@@ -2,6 +2,7 @@ from textwrap import dedent
 from typing import Any, Dict, List, Tuple
 
 from shared.di import service_as_singleton
+from shared.util import BadCodingError
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES
@@ -74,7 +75,7 @@ class SqlReadDatabaseBackendService:
         self, events: List[Tuple[int, Dict[str, Any]]]
     ) -> Dict[str, Any]:
         if not events:
-            raise RuntimeError()
+            raise BadCodingError()
 
         create_event = events[0]
         assert create_event[0] == EVENT_TYPES.CREATE
@@ -89,7 +90,7 @@ class SqlReadDatabaseBackendService:
                     if field in model:
                         del model[field]
             else:
-                raise RuntimeError()
+                raise BadCodingError()
 
         return model
 

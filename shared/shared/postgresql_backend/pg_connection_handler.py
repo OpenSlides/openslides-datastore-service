@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import Json
 
 from shared.di import service_as_singleton
-from shared.util import EnvironmentService, ShutdownService
+from shared.util import BadCodingError, EnvironmentService, ShutdownService
 
 from .connection_handler import DatabaseError
 
@@ -75,7 +75,7 @@ class PgConnectionHandlerService:
 
     def get_connection_context(self):
         if self.is_transaction_running:
-            raise RuntimeError("You cannot start multiple transactions at once!")
+            raise BadCodingError("You cannot start multiple transactions at once!")
 
         self.ensure_connection()
         self.context = ConnectionContext(self)
@@ -112,11 +112,11 @@ class PgConnectionHandlerService:
 
     def get_connection_with_open_transaction(self) -> Any:
         if not self.connection:
-            raise RuntimeError(
+            raise BadCodingError(
                 "You should open a db connection first with `get_connection_context()`!"
             )
         if not self.is_transaction_running:
-            raise RuntimeError(
+            raise BadCodingError(
                 "You should start a transaction with `get_connection_context()`!"
             )
         return self.connection

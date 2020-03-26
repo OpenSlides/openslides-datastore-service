@@ -3,8 +3,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from shared.di import injector
-from shared.flask_frontend.errors import InvalidRequest
-from shared.util import reset_di  # noqa
+from shared.flask_frontend import InvalidRequest
+from shared.tests import reset_di  # noqa
+from shared.util import BadCodingError
 from writer.core import Writer
 from writer.flask_frontend.json_handlers import GetIdsHandler, WriteHandler
 
@@ -116,7 +117,7 @@ class TestWriteHandler:
 
     def test_create_unknown_event(self, write_handler):
         event = {"type": "unknwon", "fqid": "a/1"}
-        with pytest.raises(RuntimeError):
+        with pytest.raises(BadCodingError):
             write_handler.create_event(event)
 
 

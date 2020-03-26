@@ -5,7 +5,7 @@ import pytest
 from shared.core import ModelLocked
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
-from shared.util import reset_di  # noqa
+from shared.tests import reset_di  # noqa
 from writer.core import OccLocker
 from writer.postgresql_backend import SqlOccLockerBackendService
 

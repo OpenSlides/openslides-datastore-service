@@ -11,7 +11,7 @@ from shared.di import (
 )
 from shared.di.dependency_provider import DependencyProvider
 from shared.di.exceptions import DependencyInjectionError, DependencyNotFound
-from shared.util import reset_di  # noqa
+from shared.tests import reset_di  # noqa
 
 
 @pytest.fixture()

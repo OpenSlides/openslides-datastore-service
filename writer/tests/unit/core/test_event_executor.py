@@ -4,8 +4,8 @@ import pytest
 
 from shared.core import ReadDatabase
 from shared.di import injector
-from shared.util import reset_di  # noqa
-from shared.util import META_POSITION
+from shared.tests import reset_di  # noqa
+from shared.util import META_POSITION, BadCodingError
 from writer.core import (
     DbCreateEvent,
     DbDeleteEvent,
@@ -149,7 +149,7 @@ def test_execute_delete_event(event_executor):
 
 def test_execute_event_unknwon_event(event_executor):
     event = MagicMock()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(BadCodingError):
         event_executor.execute_event(event)
 
 

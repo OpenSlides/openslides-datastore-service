@@ -2,29 +2,15 @@ from typing import Set
 
 from shared.core import ReadDatabase
 from shared.di import injector
-from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
+from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend.sql_event_types import EVENT_TYPES
+from shared.tests.util import ALL_TABLES
 from shared.util import META_DELETED, META_POSITION
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 
 
-ALL_TABLES = (
-    "positions",
-    "events",
-    "models_lookup",
-    "id_sequences",
-    "collectionfields",
-    "events_to_collectionfields",
-    "models",
-)
-
 WRITE_URL = "/internal/datastore/writer/write"
 GET_IDS_URL = "/internal/datastore/writer/get_ids"
-
-
-def assert_error_response(response, type):
-    assert response.status_code == 400
-    assert isinstance(response.json.get("error"), dict)
-    assert response.json["error"].get("type") == type
 
 
 def assert_model(fqid, model, position):

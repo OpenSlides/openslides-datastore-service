@@ -1,6 +1,6 @@
 from flask import Flask
 
-from shared.flask_frontend.errors import register_error_handlers
+from shared.flask_frontend import register_error_handlers
 
 from .routes import register_routes
 

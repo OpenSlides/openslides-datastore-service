@@ -2,16 +2,16 @@ import atexit
 
 from shared.core import ReadDatabase
 from shared.di import injector
+from shared.postgresql_backend import setup_di as postgresql_setup_di
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
-from shared.util import ShutdownService, setup_di as shared_setup_di
+from shared.util import ShutdownService, setup_di as util_setup_di
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend import FlaskFrontend
 from writer.postgresql_backend import (
     SqlDatabaseBackendService,
     SqlOccLockerBackendService,
-    setup_di as postgresql_setup_di,
 )
 from writer.redis_backend import (
     RedisMessagingBackendService,
@@ -20,7 +20,7 @@ from writer.redis_backend import (
 
 
 def register_services():
-    shared_setup_di()
+    util_setup_di()
     postgresql_setup_di()
     redis_setup_di()
     injector.register(ReadDatabase, SqlReadDatabaseBackendService)
