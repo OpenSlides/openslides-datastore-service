@@ -4,8 +4,8 @@ services:
 jobs:
   include:
     - name: "Tests: Shared"
-      script: make run-travis MODULE=shared
+      script: make -C shared run-travis
     - name: "Tests: Reader"
-      script: make run-travis MODULE=reader
+      script: make -C reader run-travis
     - name: "Tests: Writer"
-      script: make run-travis MODULE=writer USE_REDIS=1
+      script: make -C writer run-travis

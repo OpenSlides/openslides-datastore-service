@@ -47,7 +47,7 @@ run-coverage: | setup-docker-compose
 	docker-compose down
 
 run-travis-no-down: | setup-docker-compose
-	scripts/travis.sh $(MODULE)
+	docker-compose exec $(MODULE) ./execute-travis.sh $(MODULE)
 
 run-travis: | run-travis-no-down
 	docker-compose down
