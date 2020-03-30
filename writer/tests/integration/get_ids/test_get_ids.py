@@ -2,11 +2,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import InvalidFormat, ReadDatabase
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
 from shared.postgresql_backend import ConnectionHandler
+from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
+from shared.util import InvalidFormat
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import GetIdsHandler
 from writer.postgresql_backend import SqlDatabaseBackendService
@@ -38,7 +39,6 @@ def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register(Database, SqlDatabaseBackendService)
     injector.register_as_singleton(OccLocker, MagicMock)
-    injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register_as_singleton(Messaging, MagicMock)
     core_setup_di()
 
@@ -62,7 +62,7 @@ def test_simple(get_ids_handler, connection_handler):
 
 def test_wrong_format(get_ids_handler):
     with pytest.raises(InvalidRequest):
-        get_ids_handler.get_ids({"unknwon_field": "some value"})
+        get_ids_handler.get_ids({"unknown_field": "some value"})
 
 
 def test_negative_amount(get_ids_handler, connection_handler):

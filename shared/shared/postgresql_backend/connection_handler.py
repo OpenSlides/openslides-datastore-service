@@ -19,17 +19,17 @@ class ConnectionHandler(Protocol):
         specific json representation
         """
 
-    def execute(self, statement, arguments):
-        """ Executes the statement. """
+    def execute(self, query, arguments, sql_parameters=[]):
+        """ Executes the query. """
 
-    def query(self, query, arguments):
+    def query(self, query, arguments, sql_parameters=[]):
         """
         Executes the query. returns all results in a matrix-fashion:
         Each row is a result, and each column one value of one result.
         The columns are given as defined in the query.
         """
 
-    def query_single_value(self, query, arguments):
+    def query_single_value(self, query, arguments, sql_parameters=[]):
         """
         This will return None, if no row was returned.
         Otherwise it will expect the row to have exactly
@@ -38,7 +38,7 @@ class ConnectionHandler(Protocol):
         row, that contains null.
         """
 
-    def query_list_of_single_values(self, query, arguments):
+    def query_list_of_single_values(self, query, arguments, sql_parameters=[]):
         """ Returns a list fo values of earch row. It is expected, that each
         row returns exactly one value. An empty list will be returned, if
         no rows were returned from the db.

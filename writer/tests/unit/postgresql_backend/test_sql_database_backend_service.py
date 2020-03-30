@@ -2,17 +2,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from shared.core import (
+from shared.di import injector
+from shared.postgresql_backend import ConnectionHandler
+from shared.services import ReadDatabase
+from shared.tests import reset_di  # noqa
+from shared.util import (
+    BadCodingError,
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
     ModelNotDeleted,
-    ReadDatabase,
 )
-from shared.di import injector
-from shared.postgresql_backend import ConnectionHandler
-from shared.tests import reset_di  # noqa
-from shared.util import BadCodingError
 from writer.core import (
     DbCreateEvent,
     DbDeleteEvent,

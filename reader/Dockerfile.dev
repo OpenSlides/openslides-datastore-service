@@ -4,8 +4,9 @@ RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it postgresql-client
 
 WORKDIR /app
-COPY requirements/requirements.txt .
-RUN pip install -U -r requirements.txt
+COPY requirements/requirements-general.txt .
+COPY reader/requirements.txt .
+RUN pip install -U -r requirements-general.txt
 COPY reader/entrypoint.sh .
 ENV PYTHONPATH /app/
 

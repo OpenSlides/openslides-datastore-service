@@ -4,7 +4,7 @@ from reader.core import setup_di as core_setup_di
 from reader.flask_frontend import FlaskFrontend
 from shared.di import injector
 from shared.postgresql_backend import setup_di as postgresql_setup_di
-from shared.util import ShutdownService, setup_di as util_setup_di
+from shared.services import ShutdownService, setup_di as util_setup_di
 
 
 def register_services():

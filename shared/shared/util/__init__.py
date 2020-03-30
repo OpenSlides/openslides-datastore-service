@@ -1,31 +1,49 @@
-from typing import Any
+from ..typing import JSON, Collection, Field, Fqid, Id, Model, Position  # noqa
+from .deleted_models_behaviour import DeletedModelsBehaviour  # noqa
+from .exceptions import (  # noqa
+    BadCodingError,
+    DatastoreException,
+    InvalidFormat,
+    ModelDoesNotExist,
+    ModelExists,
+    ModelLocked,
+    ModelNotDeleted,
+)
+from .filter import And, Filter, FilterOperator, Not, Or  # noqa
+from .key_strings import (  # noqa
+    KEYSEPARATOR,
+    META_DELETED,
+    META_FIELD_PREFIX,
+    META_POSITION,
+    is_reserved_field,
+)
+from .key_transforms import (  # noqa
+    build_fqid,
+    collection_from_fqid,
+    collectionfield_and_fqid_from_fqfield,
+    collectionfield_from_fqid_and_field,
+    field_from_collectionfield,
+    fqfield_from_fqid_and_field,
+)
+from .key_types import (  # noqa
+    KEY_TYPE,
+    InvalidKeyFormat,
+    assert_is_collection,
+    assert_is_collectionfield,
+    assert_is_field,
+    assert_is_fqfield,
+    assert_is_fqid,
+    assert_is_id,
+    assert_string,
+    get_key_type,
+)
+from .self_validating_dataclass import SelfValidatingDataclass  # noqa
 
-from .environment_service import EnvironmentService, EnvironmentVariableMissing  # noqa
-from .shutdown_service import ShutdownService
-from .typing import JSON  # noqa
 
-
-META_FIELD_PREFIX = "meta"
-KEYSEPARATOR = "/"
-META_DELETED = f"{META_FIELD_PREFIX}_deleted"
-META_POSITION = f"{META_FIELD_PREFIX}_position"
-
-
-def is_reserved_field(field: Any) -> bool:
-    return isinstance(field, str) and field.startswith(META_FIELD_PREFIX)
-
-
-def setup_di():
-    from shared.di import injector
-
-    injector.register(EnvironmentService, EnvironmentService)
-    injector.register(ShutdownService, ShutdownService)
-
-
-class BadCodingError(RuntimeError):
-    """
-    Should be thrown for errors that theoretically should never happen, except when the
-    programmer fucked up.
-    """
-
-    pass
+def get_exception_for_deleted_models_behaviour(
+    fqid: str, get_deleted_models: DeletedModelsBehaviour
+) -> DatastoreException:
+    if get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED:
+        return ModelNotDeleted(fqid)
+    else:
+        return ModelDoesNotExist(fqid)

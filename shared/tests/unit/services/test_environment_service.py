@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from shared.di import injector
+from shared.services import EnvironmentService, EnvironmentVariableMissing
 from shared.tests import reset_di  # noqa
-from shared.util import EnvironmentService, EnvironmentVariableMissing
 
 
 @pytest.fixture()
@@ -20,7 +20,7 @@ def test_environment_service_creation(environment_service):
 def test_ensure_cache_not_in_cache(environment_service):
     key = MagicMock()
     environment_service.cache = {}
-    with patch("shared.util.environment_service.os.environ.get") as get:
+    with patch("shared.services.environment_service.os.environ.get") as get:
         get.return_value = v = MagicMock()
 
         environment_service.ensure_cache(key)
@@ -32,7 +32,7 @@ def test_ensure_cache_not_in_cache(environment_service):
 def test_ensure_cache_found(environment_service):
     key = MagicMock()
     environment_service.cache = {key: "value"}
-    with patch("shared.util.environment_service.os.environ.get") as get:
+    with patch("shared.services.environment_service.os.environ.get") as get:
         environment_service.ensure_cache(key)
 
         assert get.call_count == 0

@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from shared.di import injector
+from shared.services import ShutdownService
 from shared.tests import reset_di  # noqa
-from shared.util import ShutdownService
 
 
 @pytest.fixture()

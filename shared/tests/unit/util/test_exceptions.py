@@ -1,4 +1,4 @@
-from shared.core import (
+from shared.util import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,

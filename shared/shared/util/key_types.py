@@ -1,8 +1,7 @@
 import re
 
-from shared.util import KEYSEPARATOR
-
 from .exceptions import InvalidFormat
+from .key_strings import KEYSEPARATOR
 
 
 class InvalidKeyFormat(InvalidFormat):
@@ -16,7 +15,7 @@ class KEY_TYPE:
     COLLECTIONFIELD = 3
 
 
-_collection_regex = r"[a-z]+|[a-z][a-z_]+[a-z]"
+_collection_regex = r"[a-z]([a-z_]+[a-z]+)?"
 _id_regex = r"[1-9][0-9]*"
 _field_regex = r"[a-z][a-z0-9_]*\$?[a-z0-9_]*"
 
@@ -35,7 +34,9 @@ field_regex = re.compile(f"^{_field_regex}$")
 
 def assert_string(key):
     if not isinstance(key, str):
-        raise InvalidFormat(f"The key has type {type(key)}, but string is expected")
+        raise InvalidFormat(
+            f"The key `{key}` has type {type(key)}, but string is expected"
+        )
 
 
 def get_key_type(key):

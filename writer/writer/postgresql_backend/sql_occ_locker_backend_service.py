@@ -1,9 +1,9 @@
 from textwrap import dedent
-from typing import List
+from typing import Any, Dict, List
 
-from shared.core import ModelLocked, collectionfield_and_fqid_from_fqfield
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
+from shared.util import ModelLocked, collectionfield_and_fqid_from_fqfield
 
 
 # FQID LOCKING
@@ -18,11 +18,11 @@ from shared.postgresql_backend import ConnectionHandler
 class SqlOccLockerBackendService:
     connection: ConnectionHandler
 
-    def assert_fqid_positions(self, fqids):
+    def assert_fqid_positions(self, fqids: Dict[str, int]) -> None:
         if not fqids:
             return
 
-        query_arguments: List[str] = []
+        query_arguments: List[Any] = []
         filter_parts = []
         for fqid, position in fqids.items():
             query_arguments.extend((fqid, position,))
@@ -33,11 +33,11 @@ class SqlOccLockerBackendService:
 
         self.raise_model_locked_if_match(query, query_arguments)
 
-    def assert_fqfield_positions(self, fqfields):
+    def assert_fqfield_positions(self, fqfields: Dict[str, int]) -> None:
         if not fqfields:
             return
 
-        event_query_arguments: List[str] = []
+        event_query_arguments: List[Any] = []
         event_filter_parts = []
         collectionfield_query_arguments: List[str] = []
         collectionfield_filter_parts = []
@@ -48,10 +48,8 @@ class SqlOccLockerBackendService:
             event_query_arguments.extend((fqid, position,))
             event_filter_parts.append("(fqid=%s and position>%s)")
 
-            print(collectionfield)
             collectionfield = collectionfield.replace("_", r"\_")
             collectionfield = collectionfield.replace("$", "_%")
-            print(collectionfield)
 
             collectionfield_query_arguments.extend((fqid, collectionfield,))
             collectionfield_filter_parts.append(
@@ -73,11 +71,13 @@ class SqlOccLockerBackendService:
 
         self.raise_model_locked_if_match(query, query_arguments)
 
-    def assert_collectionfield_positions(self, collectionfields):
+    def assert_collectionfield_positions(
+        self, collectionfields: Dict[str, int]
+    ) -> None:
         if not collectionfields:
             return
 
-        query_arguments: List[str] = []
+        query_arguments: List[Any] = []
         filter_parts = []
         for collectionfield, position in collectionfields.items():
             query_arguments.extend((collectionfield, position,))

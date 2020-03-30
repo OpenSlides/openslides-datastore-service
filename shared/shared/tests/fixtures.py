@@ -30,7 +30,6 @@ def get_db_schema_definition():
 @pytest.fixture(autouse=True)
 def reset_di():
     injector.provider_map = {}
-    yield
 
 
 # Postgresql

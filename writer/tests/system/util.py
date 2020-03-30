@@ -1,11 +1,13 @@
 from typing import Set
 
-from shared.core import ReadDatabase
+import pytest
+
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_event_types import EVENT_TYPES
+from shared.services import ReadDatabase
 from shared.tests.util import ALL_TABLES
-from shared.util import META_DELETED, META_POSITION
+from shared.util import META_DELETED, META_POSITION, ModelDoesNotExist
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 
 
@@ -18,17 +20,19 @@ def assert_model(fqid, model, position):
     with connection_handler.get_connection_context():
         # read from read db
         read_db = injector.get(ReadDatabase)
-        read_db_models = read_db.get_models([fqid])
-        # if meta_deleted:
+        read_db_model = read_db.get(fqid)
+
         model[META_DELETED] = False
         model[META_POSITION] = position
-        read_db_model = read_db_models.get(fqid)
+        if read_db_model != model:
+            print(read_db_model)
         assert read_db_model == model
 
         # build model and assert that the last event is not a deleted.
-        builded_model = read_db.build_model_ignore_deleted(fqid)
+        built_model = read_db.build_model_ignore_deleted(fqid)
         del model[META_POSITION]
-        assert builded_model == model
+        del built_model[META_POSITION]
+        assert built_model == model
         event_type = connection_handler.query_single_value(
             "select type from events where fqid=%s order by id desc limit 1", [fqid]
         )
@@ -44,8 +48,9 @@ def assert_no_model(fqid):
     with connection_handler.get_connection_context():
         # read from read db
         read_db = injector.get(ReadDatabase)
-        read_db_models = read_db.get_models([fqid])
-        assert fqid not in read_db_models
+
+        with pytest.raises(ModelDoesNotExist):
+            read_db.get(fqid)
 
         # assert last event is a deleted one
         event_type = connection_handler.query_single_value(

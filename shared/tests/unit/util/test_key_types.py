@@ -1,6 +1,6 @@
 import pytest
 
-from shared.core import (
+from shared.util import (
     KEY_TYPE,
     InvalidFormat,
     InvalidKeyFormat,
@@ -122,6 +122,11 @@ def test_no_id():
 
 def test_collection():
     assert_is_collection("my_collection")
+
+
+def test_collection_fail():
+    with pytest.raises(InvalidKeyFormat):
+        assert_is_collection("not valid")
 
 
 def test_id():

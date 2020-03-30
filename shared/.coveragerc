@@ -1,6 +1,6 @@
 [report]
 fail_under=100
-omit=shared/tests/*
+omit=shared/tests/*,tests/*
 
 [html]
 directory = shared/htmlcov

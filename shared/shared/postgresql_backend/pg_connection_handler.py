@@ -1,10 +1,12 @@
 from typing import Any, Optional
 
 import psycopg2
-from psycopg2.extras import Json
+from psycopg2 import sql
+from psycopg2.extras import DictCursor, Json
 
 from shared.di import service_as_singleton
-from shared.util import BadCodingError, EnvironmentService, ShutdownService
+from shared.services import EnvironmentService, ShutdownService
+from shared.util import BadCodingError
 
 from .connection_handler import DatabaseError
 
@@ -60,6 +62,7 @@ class PgConnectionHandlerService:
             "database": self.environment.get(ENVIRONMENT_VARIABLES.NAME),
             "user": self.environment.get(ENVIRONMENT_VARIABLES.USER),
             "password": self.environment.get(ENVIRONMENT_VARIABLES.PASSWORD),
+            "cursor_factory": DictCursor,
         }
 
     def ensure_connection(self):
@@ -84,30 +87,34 @@ class PgConnectionHandlerService:
     def to_json(self, data):
         return Json(data)
 
-    def execute(self, statement, arguments):
+    def execute(self, query, arguments, sql_parameters=[]):
         connection = self.get_connection_with_open_transaction()
+        prepared_query = self.prepare_query(query, sql_parameters)
         with connection.cursor() as cursor:
-            cursor.execute(statement, arguments)
+            cursor.execute(prepared_query, arguments)
 
-    def query(self, query, arguments):
+    def query(self, query, arguments, sql_parameters=[]):
         connection = self.get_connection_with_open_transaction()
+        prepared_query = self.prepare_query(query, sql_parameters)
         with connection.cursor() as cursor:
-            cursor.execute(query, arguments)
+            # print(cursor.mogrify(prepared_query, arguments))
+            cursor.execute(prepared_query, arguments)
             result = cursor.fetchall()
             return result
 
-    def query_single_value(self, query, arguments):
+    def query_single_value(self, query, arguments, sql_parameters=[]):
         connection = self.get_connection_with_open_transaction()
+        prepared_query = self.prepare_query(query, sql_parameters)
         with connection.cursor() as cursor:
-            cursor.execute(query, arguments)
+            cursor.execute(prepared_query, arguments)
             result = cursor.fetchone()
 
             if result is None:
                 return None
             return result[0]
 
-    def query_list_of_single_values(self, query, arguments):
-        result = self.query(query, arguments)
+    def query_list_of_single_values(self, query, arguments, sql_parameters=[]):
+        result = self.query(query, arguments, sql_parameters)
         return list(map(lambda row: row[0], result))
 
     def get_connection_with_open_transaction(self) -> Any:
@@ -120,6 +127,12 @@ class PgConnectionHandlerService:
                 "You should start a transaction with `get_connection_context()`!"
             )
         return self.connection
+
+    def prepare_query(self, query, sql_parameters):
+        prepared_query = sql.SQL(query).format(
+            *[sql.Identifier(param) for param in sql_parameters]
+        )
+        return prepared_query
 
     def raise_error(self, msg):
         # TODO: log the error!

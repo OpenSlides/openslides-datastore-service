@@ -23,9 +23,9 @@ run-cleanup: | build-tests
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose up -d $(MODULE)
-	docker-compose exec $(MODULE) wait-for-it --timeout=10 postgresql:5432
+	docker-compose exec $(MODULE) wait-for-it --timeout=15 postgresql:5432
 ifdef USE_REDIS
-	docker-compose exec $(MODULE) wait-for-it --timeout=10 redis:6379
+	docker-compose exec $(MODULE) wait-for-it --timeout=15 redis:6379
 endif
 
 run-tests-no-down: | setup-docker-compose
@@ -34,7 +34,7 @@ run-tests-no-down: | setup-docker-compose
 run-tests: | run-tests-no-down
 	docker-compose down
 
-run-tests-interactive: | setup-docker-compose
+run-tests-interactive run-bash: | setup-docker-compose
 	docker-compose exec $(MODULE) bash
 	docker-compose down
 
@@ -77,7 +77,7 @@ run-cleanup:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
 
-# no-down mode speeds up the proces by up to 50%
+# no-down mode speeds up the process by up to 50%
 run-tests run-travis:
 	@$(MAKE) -C shared $@-no-down
 	@$(MAKE) -C reader $@-no-down

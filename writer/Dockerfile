@@ -8,14 +8,13 @@ ARG REPOSITORY_URL=https://github.com/OpenSlides/openslides-datastore-service.gi
 ARG GIT_CHECKOUT=master
 RUN git clone --no-checkout -- $REPOSITORY_URL .
 RUN git checkout $GIT_CHECKOUT
+RUN git pull
 RUN mkdir /app
-# Update as soon as this is on master
-# RUN mv shared/shared writer/writer writer/entrypoint.sh requirements/requirements.txt /app
-RUN mv writer/writer writer/entrypoint.sh writer/requirements.txt /app
+RUN mv shared/shared writer/writer writer/entrypoint.sh writer/requirements.txt requirements/requirements-general.txt /app
 
 WORKDIR /app
 RUN rm -rf /tmp
-RUN pip install -U -r requirements.txt
+RUN pip install -U requirements-general.txt
 
 EXPOSE 8000
 ENV PYTHONPATH /app/

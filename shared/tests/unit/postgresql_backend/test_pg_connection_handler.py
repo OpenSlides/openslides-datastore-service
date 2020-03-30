@@ -8,8 +8,9 @@ from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler, setup_di as postgres_setup_di
 from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.pg_connection_handler import ConnectionContext
+from shared.services import setup_di as util_setup_di
 from shared.tests import reset_di  # noqa
-from shared.util import BadCodingError, setup_di as util_setup_di
+from shared.util import BadCodingError
 
 
 @pytest.fixture(autouse=True)
@@ -116,9 +117,9 @@ def setup_mocked_connection(connection):
 def test_execute(connection):
     cursor = setup_mocked_connection(connection)
 
-    connection.execute(1, 2)
+    connection.execute("", "")
     connection.get_connection_with_open_transaction.assert_called()
-    cursor.execute.assert_called_with(1, 2)
+    cursor.execute.assert_called()
 
 
 def test_query(connection):
@@ -126,9 +127,9 @@ def test_query(connection):
     result = MagicMock()
     cursor.fetchall = MagicMock(return_value=result)
 
-    assert connection.query(1, 2) == result
+    assert connection.query("", "") == result
     connection.get_connection_with_open_transaction.assert_called()
-    cursor.execute.assert_called_with(1, 2)
+    cursor.execute.assert_called()
     cursor.fetchall.assert_called()
 
 
@@ -138,9 +139,9 @@ def test_query_single_value(connection):
     result[0] = MagicMock()
     cursor.fetchone = MagicMock(return_value=result)
 
-    assert connection.query_single_value(1, 2) == result[0]
+    assert connection.query_single_value("", "") == result[0]
     connection.get_connection_with_open_transaction.assert_called()
-    cursor.execute.assert_called_with(1, 2)
+    cursor.execute.assert_called()
     cursor.fetchone.assert_called()
 
 
@@ -148,13 +149,13 @@ def test_query_single_value_none(connection):
     cursor = setup_mocked_connection(connection)
     cursor.fetchone = MagicMock(return_value=None)
 
-    assert connection.query_single_value(1, 2) is None
+    assert connection.query_single_value("", "") is None
 
 
 def test_query_list_of_single_values(connection):
     connection.query = MagicMock()
-    connection.query_list_of_single_values(1, 2)
-    connection.query.assert_called_with(1, 2)
+    connection.query_list_of_single_values("", "")
+    connection.query.assert_called_with("", "", [])
 
 
 def test_shutdown(connection):

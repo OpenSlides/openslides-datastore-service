@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from shared.core import InvalidFormat, InvalidKeyFormat
+from shared.util import InvalidFormat, InvalidKeyFormat
 from writer.core import (
     RequestCreateEvent,
     RequestDeleteEvent,

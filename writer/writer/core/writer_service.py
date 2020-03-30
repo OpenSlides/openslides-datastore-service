@@ -19,7 +19,7 @@ class WriterService:
     event_executor: EventExecutor
     messaging: Messaging
 
-    def write(self, write_request: WriteRequest):
+    def write(self, write_request: WriteRequest) -> None:
         self.write_request = write_request
         # Convert request events to db events
         self.db_events = self.event_translator.translate(write_request.events)
@@ -51,6 +51,6 @@ class WriterService:
         self.event_executor.update(self.db_events, self.position)
         self.messaging.handle_events(self.db_events, self.position)
 
-    def get_ids(self, collection, amount) -> List[int]:
+    def get_ids(self, collection: str, amount: int) -> List[int]:
         with self.database.get_context():
             return self.database.reserve_next_ids(collection, amount)

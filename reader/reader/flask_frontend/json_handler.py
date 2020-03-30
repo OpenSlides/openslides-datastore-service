@@ -1,21 +1,25 @@
-from typing import Callable, Dict, TypedDict
+from typing import Callable, Dict, Type, TypedDict
 
 import fastjsonschema
+from dacite import Config, from_dict
+from dacite.exceptions import MissingValueError
 
 from reader.core import Reader
 from reader.core.requests import (
     AggregateRequest,
-    DeletedModelsBehaviour,
     FilterRequest,
     GetAllRequest,
     GetManyRequest,
     GetRequest,
     MinMaxRequest,
 )
-from reader.flask_frontend.routes import Route
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
-from shared.util import JSON, BadCodingError
+from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
+from shared.typing import JSON
+from shared.util import BadCodingError, DeletedModelsBehaviour
+
+from .routes import Route
 
 
 deleted_models_behaviour_list = list(
@@ -46,8 +50,26 @@ get_many_schema = fastjsonschema.compile(
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": {
-            "collection": {"type": "string"},
-            "ids": {"type": "array", "items": {"type": "integer"}},
+            "requests": {
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "collection": {"type": "string"},
+                                "ids": {"type": "array", "items": {"type": "integer"}},
+                                "mapped_fields": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                            "required": ["collection", "ids"],
+                        },
+                    },
+                    {"type": "array", "items": {"type": "string"}},
+                ],
+            },
             "position": {"type": "integer"},
             "mapped_fields": {"type": "array", "items": {"type": "string"}},
             "get_deleted_models": {
@@ -55,7 +77,7 @@ get_many_schema = fastjsonschema.compile(
                 "enum": deleted_models_behaviour_list,
             },
         },
-        "required": ["collection", "ids"],
+        "required": ["requests"],
     }
 )
 
@@ -78,7 +100,7 @@ get_all_schema = fastjsonschema.compile(
 # for reuse in filter_schema and aggregate_schema
 filter_definitions = {
     "filter": {
-        "oneOf": [
+        "anyOf": [
             {"$ref": "#/definitions/filter_operator"},
             {"$ref": "#/definitions/not_filter"},
             {"$ref": "#/definitions/and_filter"},
@@ -89,8 +111,8 @@ filter_definitions = {
         "type": "object",
         "properties": {
             "field": {"type": "string"},
-            "value": {},  # no restrictions for values
-            "operator": {"type": "string", "enum": ["==", "!=", "<", ">", ">=", "<="]},
+            "value": {},
+            "operator": {"type": "string", "enum": ["=", "!=", "<", ">", ">=", "<="]},
         },
         "required": ["field", "value", "operator"],
     },
@@ -102,14 +124,22 @@ filter_definitions = {
     "and_filter": {
         "type": "object",
         "properties": {
-            "and_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}},
+            "and_filter": {
+                "type": "array",
+                "items": {"$ref": "#/definitions/filter"},
+                "minItems": 2,
+            },
         },
         "required": ["and_filter"],
     },
     "or_filter": {
         "type": "object",
         "properties": {
-            "or_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}},
+            "or_filter": {
+                "type": "array",
+                "items": {"$ref": "#/definitions/filter"},
+                "minItems": 2,
+            },
         },
         "required": ["or_filter"],
     },
@@ -151,6 +181,7 @@ minmax_schema = fastjsonschema.compile(
             "collection": {"type": "string"},
             "filter": {"$ref": "#/definitions/filter"},
             "field": {"type": "string"},
+            "type": {"type": "string", "enum": VALID_AGGREGATE_CAST_TARGETS},
         },
         "required": ["collection", "filter", "field"],
     }
@@ -159,19 +190,19 @@ minmax_schema = fastjsonschema.compile(
 
 class RequestMapEntry(TypedDict):
     schema: Callable
-    request_class: type
+    request_class: Type
 
 
 # maps all available routes to the respective schema
 request_map: Dict[Route, RequestMapEntry] = {
-    Route.GET.value: {"schema": get_schema, "request_class": GetRequest},
-    Route.GET_MANY.value: {"schema": get_many_schema, "request_class": GetManyRequest},
-    Route.GET_ALL.value: {"schema": get_all_schema, "request_class": GetAllRequest},
-    Route.FILTER.value: {"schema": filter_schema, "request_class": FilterRequest},
-    Route.EXISTS.value: {"schema": aggregate_schema, "request_class": AggregateRequest},
-    Route.COUNT.value: {"schema": aggregate_schema, "request_class": AggregateRequest},
-    Route.MIN.value: {"schema": minmax_schema, "request_class": MinMaxRequest},
-    Route.MAX.value: {"schema": minmax_schema, "request_class": MinMaxRequest},
+    Route.GET: {"schema": get_schema, "request_class": GetRequest},
+    Route.GET_MANY: {"schema": get_many_schema, "request_class": GetManyRequest},
+    Route.GET_ALL: {"schema": get_all_schema, "request_class": GetAllRequest},
+    Route.FILTER: {"schema": filter_schema, "request_class": FilterRequest},
+    Route.EXISTS: {"schema": aggregate_schema, "request_class": AggregateRequest},
+    Route.COUNT: {"schema": aggregate_schema, "request_class": AggregateRequest},
+    Route.MIN: {"schema": minmax_schema, "request_class": MinMaxRequest},
+    Route.MAX: {"schema": minmax_schema, "request_class": MinMaxRequest},
 }
 
 
@@ -195,8 +226,10 @@ class JSONHandler:
             raise InvalidRequest(e.message)
 
         try:
-            request_object = request_class(**request_data)
-        except TypeError as e:
+            request_object = from_dict(
+                request_class, request_data, Config(check_types=False)
+            )
+        except (TypeError, MissingValueError) as e:
             raise BadCodingError("Invalid data to initialize class\n" + str(e))
 
         reader = injector.get(Reader)

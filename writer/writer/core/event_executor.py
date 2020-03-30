@@ -1,8 +1,8 @@
 import copy
 from typing import Dict, List, Protocol
 
-from shared.core import ReadDatabase
 from shared.di import service_as_factory, service_interface
+from shared.services import ReadDatabase
 from shared.util import META_POSITION, BadCodingError
 from writer.core.db_events import (
     BaseDbEvent,
@@ -44,7 +44,7 @@ class EventExecutorService:
 
     def get_models(self):
         modified_fqids = list(set(event.fqid for event in self.events))
-        return self.read_database.get_models(modified_fqids)
+        return self.read_database.get_many(modified_fqids)
 
     def execute_events(self) -> None:
         for event in self.events:

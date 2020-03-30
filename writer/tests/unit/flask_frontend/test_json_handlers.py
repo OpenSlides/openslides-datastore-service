@@ -31,7 +31,7 @@ class TestWriteHandler:
         with pytest.raises(InvalidRequest):
             write_handler.write(None)
 
-    def test_corrct_schema(self, write_handler, writer):
+    def test_correct_schema(self, write_handler, writer):
         writer.write = w = MagicMock()
         event = MagicMock()
         write_handler.create_event = MagicMock(return_value=event)

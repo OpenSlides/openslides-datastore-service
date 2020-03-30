@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 import redis
 
 from shared.di import service_as_singleton
-from shared.util import EnvironmentService, ShutdownService
+from shared.services import EnvironmentService, ShutdownService
 
 
 # TODO: Test this. Add something like a @ensure_connection decorator, that wraps a

@@ -1,67 +1,57 @@
-from dataclasses import dataclass
-from enum import Enum
-from typing import List, Optional
+from dataclasses import dataclass, field
+from typing import List, Optional, Union
 
-from .filters import Filter
-
-
-class DeletedModelsBehaviour(Enum):
-    NO_DELETED = 1
-    ONLY_DELETED = 2
-    ALL_MODELS = 3
+from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
+from shared.typing import Collection, Field, Fqfield, Fqid, Id, Position
+from shared.util import DeletedModelsBehaviour, Filter, SelfValidatingDataclass
 
 
 @dataclass
-class GetRequest:
-    fqid: str
-    position: Optional[int] = None
-    mapped_fields: Optional[List[str]] = None
-    get_deleted_models: Optional[
-        DeletedModelsBehaviour
-    ] = DeletedModelsBehaviour.NO_DELETED
+class GetRequest(SelfValidatingDataclass):
+    fqid: Fqid
+    mapped_fields: List[Field] = field(default_factory=list)
+    position: Optional[Position] = None
+    get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED
 
 
 @dataclass
-class GetManyRequestPart:
-    collection: str
-    ids: List[int]
-    mapped_fields: Optional[List[str]] = None
+class GetManyRequestPart(SelfValidatingDataclass):
+    collection: Collection
+    ids: List[Id]
+    mapped_fields: List[Field] = field(default_factory=list)
 
 
 @dataclass
-class GetManyRequest:
-    requests: List[GetManyRequestPart]
-    position: Optional[int] = None
-    mapped_fields: Optional[List[str]] = None
-    get_deleted_models: Optional[
-        DeletedModelsBehaviour
-    ] = DeletedModelsBehaviour.NO_DELETED
+class GetManyRequest(SelfValidatingDataclass):
+    requests: Union[List[GetManyRequestPart], List[Fqfield]]
+    mapped_fields: List[Field] = field(default_factory=list)
+    position: Optional[Position] = None
+    get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED
 
 
 @dataclass
-class GetAllRequest:
-    collection: str
-    mapped_fields: Optional[List[str]] = None
-    get_deleted_models: Optional[
-        DeletedModelsBehaviour
-    ] = DeletedModelsBehaviour.NO_DELETED
+class GetAllRequest(SelfValidatingDataclass):
+    collection: Collection
+    mapped_fields: List[Field] = field(default_factory=list)
+    get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED
 
 
 @dataclass
-class FilterRequest:
-    collection: str
+class FilterRequest(SelfValidatingDataclass):
+    collection: Collection
     filter: Filter
-    mapped_fields: Optional[List[str]] = None
+    mapped_fields: List[Field] = field(default_factory=list)
 
 
 @dataclass
-class AggregateRequest:
-    collection: str
+class AggregateRequest(SelfValidatingDataclass):
+    collection: Collection
     filter: Filter
 
 
 @dataclass
-class MinMaxRequest:
-    collection: str
+class MinMaxRequest(SelfValidatingDataclass):
+    collection: Collection
     filter: Filter
-    field: str
+    field: Field
+    type: str = VALID_AGGREGATE_CAST_TARGETS[0]
