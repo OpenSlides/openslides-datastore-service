@@ -70,7 +70,7 @@ class PgConnectionHandlerService:
             except psycopg2.Error as e:
                 self.raise_error(f"Database connection error {e.pgcode}: {e.pgerror}")
         else:
-            # todo check if alive
+            # TODO: check if alive
             pass
 
     def get_connection_context(self):

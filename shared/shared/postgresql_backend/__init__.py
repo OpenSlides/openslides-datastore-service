@@ -1,4 +1,4 @@
-from .connection_handler import ConnectionHandler  # noqa
+from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES  # noqa
 
 

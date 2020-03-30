@@ -5,3 +5,4 @@ __pycache__/
 htmlcov/
 .vscode/
 *.code-workspace
+vandelay-py.js

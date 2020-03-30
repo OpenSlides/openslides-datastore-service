@@ -5,6 +5,7 @@ import pytest
 from shared.core import ReadDatabase
 from shared.di import injector
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
+from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
@@ -27,6 +28,10 @@ def read_database(provide_di):
 @pytest.fixture()
 def connection(provide_di):
     yield injector.get(ConnectionHandler)
+
+
+def test_database_error():
+    assert DatabaseError("msg")
 
 
 def test_get_models(read_database, connection):
