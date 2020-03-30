@@ -1,6 +1,7 @@
-from typing import Callable, Dict, TypedDict
+from typing import Any, Callable, Dict, TypedDict
 
 import fastjsonschema
+from dacite import Config, from_dict
 
 from reader.core import Reader
 from reader.core.requests import (
@@ -46,8 +47,18 @@ get_many_schema = fastjsonschema.compile(
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": {
-            "collection": {"type": "string"},
-            "ids": {"type": "array", "items": {"type": "integer"}},
+            "requests": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "collection": {"type": "string"},
+                        "ids": {"type": "array", "items": {"type": "integer"}},
+                        "mapped_fields": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["collection", "ids"],
+                },
+            },
             "position": {"type": "integer"},
             "mapped_fields": {"type": "array", "items": {"type": "string"}},
             "get_deleted_models": {
@@ -55,7 +66,7 @@ get_many_schema = fastjsonschema.compile(
                 "enum": deleted_models_behaviour_list,
             },
         },
-        "required": ["collection", "ids"],
+        "required": ["requests"],
     }
 )
 
@@ -164,14 +175,14 @@ class RequestMapEntry(TypedDict):
 
 # maps all available routes to the respective schema
 request_map: Dict[Route, RequestMapEntry] = {
-    Route.GET.value: {"schema": get_schema, "request_class": GetRequest},
-    Route.GET_MANY.value: {"schema": get_many_schema, "request_class": GetManyRequest},
-    Route.GET_ALL.value: {"schema": get_all_schema, "request_class": GetAllRequest},
-    Route.FILTER.value: {"schema": filter_schema, "request_class": FilterRequest},
-    Route.EXISTS.value: {"schema": aggregate_schema, "request_class": AggregateRequest},
-    Route.COUNT.value: {"schema": aggregate_schema, "request_class": AggregateRequest},
-    Route.MIN.value: {"schema": minmax_schema, "request_class": MinMaxRequest},
-    Route.MAX.value: {"schema": minmax_schema, "request_class": MinMaxRequest},
+    Route.GET: {"schema": get_schema, "request_class": GetRequest},
+    Route.GET_MANY: {"schema": get_many_schema, "request_class": GetManyRequest},
+    Route.GET_ALL: {"schema": get_all_schema, "request_class": GetAllRequest},
+    Route.FILTER: {"schema": filter_schema, "request_class": FilterRequest},
+    Route.EXISTS: {"schema": aggregate_schema, "request_class": AggregateRequest},
+    Route.COUNT: {"schema": aggregate_schema, "request_class": AggregateRequest},
+    Route.MIN: {"schema": minmax_schema, "request_class": MinMaxRequest},
+    Route.MAX: {"schema": minmax_schema, "request_class": MinMaxRequest},
 }
 
 
@@ -195,7 +206,11 @@ class JSONHandler:
             raise InvalidRequest(e.message)
 
         try:
-            request_object = request_class(**request_data)
+            # TODO: replace Any. mypy wants a type annotation here and `request_class`
+            # is not a valid type
+            request_object: Any = from_dict(
+                request_class, request_data, Config(check_types=False)
+            )
         except TypeError as e:
             raise BadCodingError("Invalid data to initialize class\n" + str(e))
 

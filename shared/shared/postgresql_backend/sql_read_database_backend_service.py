@@ -1,6 +1,7 @@
 from textwrap import dedent
 from typing import Any, Dict, List, Tuple
 
+from shared.core.read_database import DeletedModelsBehaviour
 from shared.di import service_as_singleton
 from shared.util import BadCodingError
 
@@ -13,12 +14,39 @@ class SqlReadDatabaseBackendService:
 
     connection: ConnectionHandler
 
+    def get_context(self):
+        return self.connection.get_connection_context()
+
     def get_models(self, fqids: List[str]) -> Dict[str, Dict[str, Any]]:
         if not fqids:
             return {}
 
         arguments = [tuple(fqids)]
         query = "select fqid, data from models where fqid in %s"
+        result = self.connection.query(query, arguments)
+
+        models = {model[0]: model[1] for model in result}
+        return models
+
+    def get_models_filtered(
+        self,
+        fqids: List[str],
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+    ) -> Dict[str, Dict[str, Any]]:
+        if not fqids:
+            return {}
+
+        arguments = [tuple(fqids)]
+        del_cond = (
+            ""
+            if get_deleted_models == DeletedModelsBehaviour.ALL_MODELS
+            else "and l.deleted = "
+            + str(get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED)
+        )
+        query = f"""
+            select m.fqid, m.data, l.deleted from models m
+            natural join models_lookup l
+            where fqid in %s {del_cond}"""
         result = self.connection.query(query, arguments)
 
         models = {model[0]: model[1] for model in result}

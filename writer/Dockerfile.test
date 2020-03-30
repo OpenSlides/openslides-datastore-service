@@ -5,7 +5,8 @@ RUN apt-get -y update && apt-get -y upgrade && \
 
 WORKDIR /app
 COPY requirements/ .
-RUN pip install -U -r requirements.txt -r requirements-testing.txt
+COPY writer/requirements.txt .
+RUN pip install -U -r requirements-testing.txt
 COPY scripts/ .
 COPY writer/.coveragerc .
 ENV PYTHONPATH /app/

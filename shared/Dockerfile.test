@@ -5,7 +5,8 @@ RUN apt-get -y update && apt-get -y upgrade && \
 
 WORKDIR /app
 COPY requirements/ .
-RUN pip install -U -r requirements-testing.txt -r requirements.txt
+RUN touch requirements.txt
+RUN pip install -U -r requirements-testing.txt
 COPY scripts/ .
 COPY shared/.coveragerc .
 ENV PYTHONPATH /app/

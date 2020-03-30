@@ -1,5 +1,6 @@
+-r requirements.txt
+
 flask
 psycopg2
 fastjsonschema
 gunicorn
-redis

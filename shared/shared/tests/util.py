@@ -9,7 +9,17 @@ ALL_TABLES = (
 )
 
 
+def assert_response_code(response, code):
+    if response.status_code != code:
+        print(response.json)
+    assert response.status_code == code
+
+
 def assert_error_response(response, type):
-    assert response.status_code == 400
+    assert_response_code(response, 400)
     assert isinstance(response.json.get("error"), dict)
     assert response.json["error"].get("type") == type
+
+
+def assert_success_response(response):
+    assert_response_code(response, 200)

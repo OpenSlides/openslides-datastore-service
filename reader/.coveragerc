@@ -1,5 +1,5 @@
 [report]
-fail_under=93
+fail_under=0
 omit=shared/*
 
 [html]

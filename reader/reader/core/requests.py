@@ -1,21 +1,16 @@
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import dataclass, field
 from typing import List, Optional
 
+from shared.core.read_database import DeletedModelsBehaviour
+
 from .filters import Filter
-
-
-class DeletedModelsBehaviour(Enum):
-    NO_DELETED = 1
-    ONLY_DELETED = 2
-    ALL_MODELS = 3
 
 
 @dataclass
 class GetRequest:
     fqid: str
+    mapped_fields: List[str] = field(default_factory=list)
     position: Optional[int] = None
-    mapped_fields: Optional[List[str]] = None
     get_deleted_models: Optional[
         DeletedModelsBehaviour
     ] = DeletedModelsBehaviour.NO_DELETED
@@ -25,14 +20,14 @@ class GetRequest:
 class GetManyRequestPart:
     collection: str
     ids: List[int]
-    mapped_fields: Optional[List[str]] = None
+    mapped_fields: List[str] = field(default_factory=list)
 
 
 @dataclass
 class GetManyRequest:
     requests: List[GetManyRequestPart]
+    mapped_fields: List[str] = field(default_factory=list)
     position: Optional[int] = None
-    mapped_fields: Optional[List[str]] = None
     get_deleted_models: Optional[
         DeletedModelsBehaviour
     ] = DeletedModelsBehaviour.NO_DELETED
@@ -41,7 +36,7 @@ class GetManyRequest:
 @dataclass
 class GetAllRequest:
     collection: str
-    mapped_fields: Optional[List[str]] = None
+    mapped_fields: List[str] = field(default_factory=list)
     get_deleted_models: Optional[
         DeletedModelsBehaviour
     ] = DeletedModelsBehaviour.NO_DELETED
@@ -51,7 +46,7 @@ class GetAllRequest:
 class FilterRequest:
     collection: str
     filter: Filter
-    mapped_fields: Optional[List[str]] = None
+    mapped_fields: List[str] = field(default_factory=list)
 
 
 @dataclass
