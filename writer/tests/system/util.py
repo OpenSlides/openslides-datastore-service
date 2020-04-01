@@ -1,6 +1,9 @@
 from typing import Set
 
+import pytest
+
 from shared.core import ReadDatabase
+from shared.core.exceptions import ModelDoesNotExist
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_event_types import EVENT_TYPES
@@ -18,11 +21,10 @@ def assert_model(fqid, model, position):
     with connection_handler.get_connection_context():
         # read from read db
         read_db = injector.get(ReadDatabase)
-        read_db_models = read_db.get_models([fqid])
+        read_db_model = read_db.get(fqid)
         # if meta_deleted:
         model[META_DELETED] = False
         model[META_POSITION] = position
-        read_db_model = read_db_models.get(fqid)
         assert read_db_model == model
 
         # build model and assert that the last event is not a deleted.
@@ -44,8 +46,9 @@ def assert_no_model(fqid):
     with connection_handler.get_connection_context():
         # read from read db
         read_db = injector.get(ReadDatabase)
-        read_db_models = read_db.get_models([fqid])
-        assert fqid not in read_db_models
+
+        with pytest.raises(ModelDoesNotExist):
+            read_db.get(fqid)
 
         # assert last event is a deleted one
         event_type = connection_handler.query_single_value(

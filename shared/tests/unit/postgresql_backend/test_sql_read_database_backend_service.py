@@ -31,10 +31,20 @@ def connection(provide_di):
 
 
 def test_database_error():
-    assert DatabaseError("msg")
+    e = DatabaseError("msg")
+    assert e.msg == "msg"
 
 
-def test_get_models(read_database, connection):
+def test_get_connection(read_database):
+    connection = MagicMock()
+    connection.get_connection_context = MagicMock(return_value="test")
+    read_database.connection = connection
+
+    assert read_database.get_context() == "test"
+    connection.get_connection_context.assert_called()
+
+
+def test_get_many(read_database, connection):
     fqid1 = MagicMock()
     model1 = MagicMock()
     fqid2 = MagicMock()
@@ -43,16 +53,16 @@ def test_get_models(read_database, connection):
 
     q_fqid1 = MagicMock()
     q_fqid2 = MagicMock()
-    models = read_database.get_models([q_fqid1, q_fqid2])
+    models = read_database.get_many([q_fqid1, q_fqid2])
 
     assert q.call_args.args[1] == [(q_fqid1, q_fqid2,)]
     assert models == {fqid1: model1, fqid2: model2}
 
 
-def test_get_models_no_fqids(read_database):
+def test_get_many_no_fqids(read_database):
     connection.query = q = MagicMock()
 
-    assert read_database.get_models([]) == {}
+    assert read_database.get_many([]) == {}
 
     assert q.call_count == 0
 

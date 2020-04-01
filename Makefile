@@ -34,7 +34,7 @@ run-tests-no-down: | setup-docker-compose
 run-tests: | run-tests-no-down
 	docker-compose down
 
-run-tests-interactive: | setup-docker-compose
+run-tests-interactive run-bash: | setup-docker-compose
 	docker-compose exec $(MODULE) bash
 	docker-compose down
 

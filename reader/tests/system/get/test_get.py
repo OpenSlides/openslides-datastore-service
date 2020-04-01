@@ -1,7 +1,7 @@
 import copy
 import json
 
-from reader.core.requests import DeletedModelsBehaviour
+from shared.core import DeletedModelsBehaviour
 from shared.flask_frontend.errors import ERROR_CODES
 from shared.tests.util import assert_error_response, assert_success_response
 from tests.system.util import GET_URL

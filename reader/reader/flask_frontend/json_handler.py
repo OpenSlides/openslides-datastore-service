@@ -6,7 +6,6 @@ from dacite import Config, from_dict
 from reader.core import Reader
 from reader.core.requests import (
     AggregateRequest,
-    DeletedModelsBehaviour,
     FilterRequest,
     GetAllRequest,
     GetManyRequest,
@@ -14,6 +13,7 @@ from reader.core.requests import (
     MinMaxRequest,
 )
 from reader.flask_frontend.routes import Route
+from shared.core import DeletedModelsBehaviour
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
 from shared.util import JSON, BadCodingError
@@ -89,7 +89,7 @@ get_all_schema = fastjsonschema.compile(
 # for reuse in filter_schema and aggregate_schema
 filter_definitions = {
     "filter": {
-        "oneOf": [
+        "anyOf": [
             {"$ref": "#/definitions/filter_operator"},
             {"$ref": "#/definitions/not_filter"},
             {"$ref": "#/definitions/and_filter"},
@@ -101,7 +101,7 @@ filter_definitions = {
         "properties": {
             "field": {"type": "string"},
             "value": {},  # no restrictions for values
-            "operator": {"type": "string", "enum": ["==", "!=", "<", ">", ">=", "<="]},
+            "operator": {"type": "string", "enum": ["=", "!=", "<", ">", ">=", "<="]},
         },
         "required": ["field", "value", "operator"],
     },

@@ -1,4 +1,5 @@
 from shared.core import (
+    build_fqid,
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
@@ -30,3 +31,10 @@ def test_collectionfield_and_fqid_from_fqfield():
     fqfield = "a/1/f"
 
     assert collectionfield_and_fqid_from_fqfield(fqfield) == ("a/f", "a/1")
+
+
+def test_build_fqid():
+    collection = "collection"
+    id = 1
+
+    assert build_fqid(collection, id) == "collection/1"

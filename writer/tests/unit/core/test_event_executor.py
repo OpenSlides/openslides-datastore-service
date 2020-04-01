@@ -60,7 +60,7 @@ def test_update(event_executor):
     wb.assert_called_once()
 
 
-def test_get_models(event_executor, read_database):
+def test_get_many(event_executor, read_database):
     event1 = MagicMock()
     fqid1 = MagicMock()
     event1.fqid = fqid1
@@ -71,7 +71,7 @@ def test_get_models(event_executor, read_database):
     event3.fqid = fqid2
     event_executor.events = [event1, event2, event3]
     models = MagicMock()
-    read_database.get_models = gm = MagicMock(return_value=models)
+    read_database.get_many = gm = MagicMock(return_value=models)
 
     assert event_executor.get_models() == models
 

@@ -1,3 +1,3 @@
-MAKE_TARGETS_SHARED=build-tests run-integration-unit-tests run-coverage-integration-unit run-integration-unit-tests-interactive run-cleanup setup-docker-compose run-tests-no-down run-tests run-tests-interactive run-system-tests run-coverage run-travis-no-down run-travis
+MAKE_TARGETS_SHARED=build-tests run-integration-unit-tests run-coverage-integration-unit run-integration-unit-tests-interactive run-cleanup setup-docker-compose run-tests-no-down run-tests run-bash run-tests-interactive run-system-tests run-coverage run-travis-no-down run-travis
 MAKE_TARGETS_MODULES=$(MAKE_TARGETS_SHARED) build-prod
 export

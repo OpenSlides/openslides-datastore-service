@@ -1,24 +1,29 @@
-from typing import Any, List, Literal, TypedDict, Union
+from dataclasses import dataclass
+from typing import Any, List, Literal, Union
 
 
-class FilterOperator(TypedDict):
+@dataclass
+class FilterOperator:
     field: str
     value: Any
-    operator: Literal["==", "!=", "<", ">", ">=", "<="]
+    operator: Literal["=", "!=", "<", ">", ">=", "<="]
 
 
 # TODO: mypy doesn't seem to support this kind of recursive typing.
 
 
-class Not(TypedDict):
+@dataclass
+class Not:
     not_filter: "Filter"  # type: ignore
 
 
-class And(TypedDict):
+@dataclass
+class And:
     and_filter: List["Filter"]  # type: ignore
 
 
-class Or(TypedDict):
+@dataclass
+class Or:
     or_filter: List["Filter"]  # type: ignore
 
 

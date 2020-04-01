@@ -1,4 +1,4 @@
-from flask import request
+from flask import jsonify, request
 
 from shared.flask_frontend import InvalidRequest, handle_internal_errors, unify_urls
 
@@ -14,7 +14,7 @@ def get_route(route: str):
 
         json_handler = JSONHandler()
         result = json_handler.handle_request(route, request.get_json())
-        return result, 200
+        return jsonify(result), 200
 
     return route_func
 

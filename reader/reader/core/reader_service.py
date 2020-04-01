@@ -1,11 +1,8 @@
 from typing import Any, Dict, List, Optional
 
-from flask import jsonify
-
-from shared.core.exceptions import ModelDoesNotExist
-from shared.core.key_transforms import build_fqid
-from shared.core.read_database import ReadDatabase
+from shared.core import ReadDatabase, build_fqid
 from shared.di import service_as_factory
+from shared.postgresql_backend.connection_handler import ConnectionHandler
 
 from .requests import (
     AggregateRequest,
@@ -20,39 +17,42 @@ from .requests import (
 @service_as_factory
 class ReaderService:
 
+    connection: ConnectionHandler
     database: ReadDatabase
 
     def get(self, request: GetRequest) -> Dict[str, Any]:
         with self.database.get_context():
-            models = self.database.get_models_filtered(
-                [request.fqid], request.get_deleted_models
-            )
-            if request.fqid not in models:
-                raise ModelDoesNotExist(request.fqid)
-            return self.apply_mapped_fields(models[request.fqid], request.mapped_fields)
+            model = self.database.get(request.fqid, request.get_deleted_models)
+        return self.apply_mapped_fields(model, request.mapped_fields)
 
     def get_many(self, request: GetManyRequest):
-        result_set = []
+        result_list = []
         with self.database.get_context():
             for part in request.requests:
                 fqids = [build_fqid(part.collection, id) for id in part.ids]
-                models = self.database.get_models_filtered(
-                    fqids, request.get_deleted_models
-                )
+                models = self.database.get_many(fqids, request.get_deleted_models)
 
-                result_set += self.apply_mapped_fields_multi(
+                result_list += self.apply_mapped_fields_multi(
                     models.values(), part.mapped_fields + request.mapped_fields
                 )
-        return jsonify(result_set)
+        return result_list
 
     def get_all(self, request: GetAllRequest):
-        pass
+        with self.database.get_context():
+            result = self.database.get_all(
+                request.collection, request.get_deleted_models
+            )
+        return self.apply_mapped_fields_multi(result, request.mapped_fields)
 
     def filter(self, request: FilterRequest):
-        pass
+        with self.database.get_context():
+            result = self.database.filter(request.collection, request.filter)
+        return self.apply_mapped_fields_multi(result, request.mapped_fields)
 
     def exists(self, request: AggregateRequest):
-        pass
+        with self.database.get_context():
+            result = self.database.exists(request.collection, request.filter)
+        return result
 
     def count(self, request: AggregateRequest):
         pass

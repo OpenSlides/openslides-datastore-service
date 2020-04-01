@@ -17,18 +17,21 @@ class ReadDatabase(Protocol):
         Creates a new context to execute all actions inside
         """
 
-    def get_models(self, fqids: List[str]) -> Dict[str, Dict[str, Any]]:
+    def get(
+        self, fqids: List[str], get_deleted_models: DeletedModelsBehaviour
+    ) -> Dict[str, Any]:
+        """
+        Internally calls `get_many` to retrieve a single model. Raises a
+        ModelDoesNotExist if the model does not exist.
+        """
+
+    def get_many(
+        self, fqids: List[str], get_deleted_models: DeletedModelsBehaviour
+    ) -> Dict[str, Dict[str, Any]]:
         """
         Returns all requested models in a lookup-able fashion mapped the
         fqid <-> model from the read-DB. If a fqid could not be found, the
         model is not included in the result.
-        """
-
-    def get_models_filtered(
-        self, fqids: List[str], get_deleted_models: DeletedModelsBehaviour
-    ) -> Dict[str, Dict[str, Any]]:
-        """
-        Same as get_models, but optionally filters by status.
         """
 
     def create_or_update_models(self, models: Dict[str, Dict[str, Any]]) -> None:

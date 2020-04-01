@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from shared.core.read_database import DeletedModelsBehaviour
-
-from .filters import Filter
+from shared.core import DeletedModelsBehaviour, Filter
 
 
 @dataclass
