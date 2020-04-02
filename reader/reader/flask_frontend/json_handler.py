@@ -100,7 +100,7 @@ filter_definitions = {
         "type": "object",
         "properties": {
             "field": {"type": "string"},
-            "value": {},  # no restrictions for values
+            "value": {"type": "string"},
             "operator": {"type": "string", "enum": ["=", "!=", "<", ">", ">=", "<="]},
         },
         "required": ["field", "value", "operator"],
@@ -113,14 +113,14 @@ filter_definitions = {
     "and_filter": {
         "type": "object",
         "properties": {
-            "and_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}},
+            "and_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}, "minItems": 2},
         },
         "required": ["and_filter"],
     },
     "or_filter": {
         "type": "object",
         "properties": {
-            "or_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}},
+            "or_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}, "minItems": 2},
         },
         "required": ["or_filter"],
     },

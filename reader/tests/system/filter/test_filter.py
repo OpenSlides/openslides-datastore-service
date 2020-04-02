@@ -82,3 +82,16 @@ def test_or(json_client, db_connection, db_cur):
     )
     assert_success_response(response)
     assert response.json == list(data.values())
+
+
+def test_invalid_field(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    response = json_client.post(
+        FILTER_URL,
+        {
+            "collection": "c1",
+            "filter": {"field": "invalid", "operator": "=", "value": "data"},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == []

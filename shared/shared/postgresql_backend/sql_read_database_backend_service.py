@@ -13,6 +13,8 @@ from .sql_event_types import EVENT_TYPES
 @service_as_singleton
 class SqlReadDatabaseBackendService:
 
+    VALID_AGGREGATE_FUNCTIONS = ["MIN", "MAX", "COUNT"]
+
     connection: ConnectionHandler
 
     def get_context(self):
@@ -63,47 +65,55 @@ class SqlReadDatabaseBackendService:
         )
         return models
 
-    def filter(self, collection: str, filter: Filter):
-        query, arguments, fields = self.build_filter_query(collection, filter)
-        models = self.connection.query_list_of_single_values(query, arguments, fields)
+    def filter(self, collection: str, filter: Filter, fields_params: Tuple[str, str] = None):
+        query, arguments = self.build_filter_query(collection, filter, fields_params)
+        models = self.connection.query_list_of_single_values(query, arguments)
         return models
 
-    def exists(self, collection: str, filter: Filter):
-        models = self.filter(collection, filter)
-        return len(models) > 0
-
     def build_filter_query(
-        self, collection: str, filter: Filter, selected_field: str = "data"
+        self, collection: str, filter: Filter, fields_params: Tuple[str, str] = None
     ):
-        fields: List[str] = []
         arguments: List[str] = []
-        filter_str = self.build_filter_str(filter, fields, arguments)
-        query = f"select {{}} from models where fqid like %s and ({filter_str})"
+        filter_str = self.build_filter_str(filter, arguments)
+
+        arguments = [collection + KEYSEPARATOR + "%"] + arguments
+
+        if fields_params:
+            if not fields_params[0] or not fields_params[1]:
+                raise BadCodingError("You have to specify a function and a field")
+            if fields_params[0] not in self.VALID_AGGREGATE_FUNCTIONS:
+                raise BadCodingError(f"Invalid aggregate function: {fields_params[0]}")
+            fields = f"{fields_params[0]}(data->>%s)"
+            arguments = [fields_params[1]] + arguments
+        else:
+            fields = "data"
+
+
+        query = f"select {fields} from models where fqid like %s and ({filter_str})"
         return (
             query,
-            [collection + KEYSEPARATOR + "%"] + arguments,
-            [selected_field] + fields,
+            arguments
         )
 
-    def build_filter_str(self, filter: Filter, fields: List[str], arguments: List[str]):
+    def build_filter_str(self, filter: Filter, arguments: List[str]):
         if isinstance(filter, Not):
             return (
-                f"NOT ({self.build_filter_str(filter.not_filter, fields, arguments)})"
+                f"NOT ({self.build_filter_str(filter.not_filter, arguments)})"
             )
         elif isinstance(filter, Or):
             return " OR ".join(
-                f"({self.build_filter_str(part, fields, arguments)})"
+                f"({self.build_filter_str(part, arguments)})"
                 for part in filter.or_filter
             )
         elif isinstance(filter, And):
             return " AND ".join(
-                f"({self.build_filter_str(part, fields, arguments)})"
+                f"({self.build_filter_str(part, arguments)})"
                 for part in filter.and_filter
             )
         elif isinstance(filter, FilterOperator):
-            fields += [f"data->>'{filter.field}'"]
-            arguments += [filter.value]
-            return f"{{}} {filter.operator} %s"
+            condition = f"data->>%s {filter.operator} %s"
+            arguments += [filter.field, filter.value]
+            return condition
 
     def get_deleted_condition(self, flag: DeletedModelsBehaviour) -> str:
         return (

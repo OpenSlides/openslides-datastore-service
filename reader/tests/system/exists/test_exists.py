@@ -45,7 +45,7 @@ def test_true(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json is True
+    assert response.json["exists"] is True
 
 
 def test_false(json_client, db_connection, db_cur):
@@ -58,4 +58,4 @@ def test_false(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json is False
+    assert response.json["exists"] is False

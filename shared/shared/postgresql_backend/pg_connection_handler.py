@@ -135,13 +135,13 @@ class PgConnectionHandlerService:
                 return self.string
 
         # the correct way - fails if a json field is accessed
-        # prepared_query = sql.SQL(query).format(
-        #     *[sql.Identifier(param) for param in sql_parameters]
-        # )
-        # see above!
         prepared_query = sql.SQL(query).format(
-            *[UnsafeSqlLiteral(param) for param in sql_parameters]
+            *[sql.Identifier(param) for param in sql_parameters]
         )
+        # see above!
+        # prepared_query = sql.SQL(query).format(
+        #     *[UnsafeSqlLiteral(param) for param in sql_parameters]
+        # )
         return prepared_query
 
     def raise_error(self, msg):

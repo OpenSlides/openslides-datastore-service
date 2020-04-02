@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from shared.core import ReadDatabase, build_fqid
+from shared.core import ReadDatabase, build_fqid, Filter
 from shared.di import service_as_factory
 from shared.postgresql_backend.connection_handler import ConnectionHandler
 
@@ -45,20 +45,27 @@ class ReaderService:
         return self.apply_mapped_fields_multi(result, request.mapped_fields)
 
     def filter(self, request: FilterRequest):
-        with self.database.get_context():
-            result = self.database.filter(request.collection, request.filter)
-        return self.apply_mapped_fields_multi(result, request.mapped_fields)
+        models = self.get_filtered_models(request.collection, request.filter)
+        return self.apply_mapped_fields_multi(models, request.mapped_fields)
 
-    def exists(self, request: AggregateRequest):
+    def get_filtered_models(self, collection: str, filter: Filter):
         with self.database.get_context():
-            result = self.database.exists(request.collection, request.filter)
+            result = self.database.filter(collection, filter)
         return result
 
+    def exists(self, request: AggregateRequest):
+        models = self.get_filtered_models(request.collection, request.filter)
+        return {"exists": len(models) > 0, "position": 0}
+
     def count(self, request: AggregateRequest):
-        pass
+        # TODO: maybe better to count via  sql?
+        models = self.get_filtered_models(request.collection, request.filter)
+        return {"count": len(models), "position": 0}
 
     def min(self, request: MinMaxRequest):
-        pass
+        with self.database.get_context():
+            result = self.database.filter(request.collection, request.filter, ("MIN", request.field))
+        return {"min": result[0], "position": 0}
 
     def max(self, request: MinMaxRequest):
         pass
