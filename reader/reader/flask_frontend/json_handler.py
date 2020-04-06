@@ -113,14 +113,22 @@ filter_definitions = {
     "and_filter": {
         "type": "object",
         "properties": {
-            "and_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}, "minItems": 2},
+            "and_filter": {
+                "type": "array",
+                "items": {"$ref": "#/definitions/filter"},
+                "minItems": 2,
+            },
         },
         "required": ["and_filter"],
     },
     "or_filter": {
         "type": "object",
         "properties": {
-            "or_filter": {"type": "array", "items": {"$ref": "#/definitions/filter"}, "minItems": 2},
+            "or_filter": {
+                "type": "array",
+                "items": {"$ref": "#/definitions/filter"},
+                "minItems": 2,
+            },
         },
         "required": ["or_filter"],
     },

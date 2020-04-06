@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 import psycopg2
 from psycopg2 import sql
-from psycopg2.extras import Json
+from psycopg2.extras import DictCursor, Json
 
 from shared.di import service_as_singleton
 from shared.util import BadCodingError, EnvironmentService, ShutdownService
@@ -61,6 +61,7 @@ class PgConnectionHandlerService:
             "database": self.environment.get(ENVIRONMENT_VARIABLES.NAME),
             "user": self.environment.get(ENVIRONMENT_VARIABLES.USER),
             "password": self.environment.get(ENVIRONMENT_VARIABLES.PASSWORD),
+            "cursor_factory": DictCursor,
         }
 
     def ensure_connection(self):

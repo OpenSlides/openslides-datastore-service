@@ -43,7 +43,7 @@ def test_simple(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(GET_MANY_URL, default_request)
     assert_success_response(response)
-    assert response.json == list(data.values())
+    assert response.json == data
 
 
 def test_invalid_fqids(json_client, db_connection, db_cur):
@@ -57,7 +57,7 @@ def test_invalid_fqids(json_client, db_connection, db_cur):
     }
     response = json_client.post(GET_MANY_URL, request)
     assert_success_response(response)
-    assert response.json == list(data.values())
+    assert response.json == data
 
 
 def test_only_invalid_fqids(json_client, db_connection, db_cur):
@@ -70,14 +70,14 @@ def test_only_invalid_fqids(json_client, db_connection, db_cur):
     }
     response = json_client.post(GET_MANY_URL, request)
     assert_success_response(response)
-    assert response.json == []
+    assert response.json == {}
 
 
 def test_no_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, True)
     response = json_client.post(GET_MANY_URL, default_request)
     assert_success_response(response)
-    assert response.json == []
+    assert response.json == {}
 
 
 def test_deleted(json_client, db_connection, db_cur):
@@ -88,7 +88,7 @@ def test_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(GET_MANY_URL, request)
     assert_success_response(response)
-    assert response.json == list(data.values())
+    assert response.json == data
 
 
 def test_deleted_not_deleted(json_client, db_connection, db_cur):
@@ -99,7 +99,7 @@ def test_deleted_not_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(GET_MANY_URL, request)
     assert_success_response(response)
-    assert response.json == []
+    assert response.json == {}
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):
@@ -117,8 +117,8 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     }
     response = json_client.post(GET_MANY_URL, request)
     assert_success_response(response)
-    assert response.json == [
-        {"field_1": "data", "meta_position": 1},
-        {"field_4": "data", "field_5": 42, "meta_position": 2},
-        {"field_4": "data", "field_5": 42, "meta_position": 3},
-    ]
+    assert response.json == {
+        "c1/1": {"field_1": "data", "meta_position": 1},
+        "c2/1": {"field_4": "data", "field_5": 42, "meta_position": 2},
+        "c2/2": {"field_4": "data", "field_5": 42, "meta_position": 3},
+    }

@@ -6,12 +6,14 @@ from tests.system.util import EXISTS_URL
 
 data = {
     "c1/1": {
+        "fqid": "c1/1",
         "field_1": "data",
         "field_2": 42,
         "field_3": [1, 2, 3],
         "meta_position": 1,
     },
     "c1/2": {
+        "fqid": "c1/2",
         "field_1": "test",
         "field_2": 42,
         "field_3": [1, 2, 3],
@@ -20,6 +22,7 @@ data = {
 }
 other_models = {
     "c2/1": {
+        "fqid": "c2/1",
         "field_4": "data",
         "field_5": 42,
         "field_6": [1, 2, 3],
