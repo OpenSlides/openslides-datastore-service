@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from shared.core import ReadDatabase, build_fqid
 from shared.di import service_as_factory

@@ -91,7 +91,10 @@ class SqlReadDatabaseBackendService:
         return models
 
     def aggregate(
-        self, collection: str, filter: Filter, fields_params: Tuple[str, str]
+        self,
+        collection: str,
+        filter: Filter,
+        fields_params: Union[Tuple[str, str], str],
     ) -> Any:
         query, arguments, sql_params = self.build_filter_query(
             collection, filter, fields_params
@@ -167,7 +170,7 @@ class SqlReadDatabaseBackendService:
         self,
         collection: str,
         filter: Filter,
-        fields_params: Union[List[str], Tuple[str, str]] = None,
+        fields_params: Union[List[str], Tuple[str, str], str] = None,
     ) -> Tuple[str, List[str], List[str]]:
         arguments: List[str] = []
         sql_parameters: List[str] = []
@@ -180,13 +183,14 @@ class SqlReadDatabaseBackendService:
                 fields = self.build_select_mapped_fields(fields_params)
                 arguments = fields_params + arguments
                 sql_parameters = fields_params
-            elif not fields_params[0] or not fields_params[1]:
-                raise BadCodingError("You have to specify a function and a field")
             elif fields_params[0] not in self.VALID_AGGREGATE_FUNCTIONS:
                 raise BadCodingError(f"Invalid aggregate function: {fields_params[0]}")
             else:
-                fields = f"{fields_params[0]}(data->>%s)"
-                arguments = [fields_params[1]] + arguments
+                if fields_params[1]:
+                    fields = f"{fields_params[0]}((data->>%s)::int)"  # TODO: is this the best idea?
+                    arguments = [fields_params[1]] + arguments
+                else:
+                    fields = f"{fields_params[0]}(*)"
         else:
             fields = "data"
 

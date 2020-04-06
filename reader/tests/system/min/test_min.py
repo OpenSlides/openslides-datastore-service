@@ -30,4 +30,4 @@ def test_simple(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json["min"] == "2"
+    assert response.json["min"] == 2
