@@ -9,6 +9,7 @@ from .exceptions import (  # noqa
 from .filter import And, Filter, FilterOperator, Not, Or  # noqa
 from .key_transforms import (  # noqa
     build_fqid,
+    collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,

@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from shared.core import ReadDatabase, build_fqid
 from shared.di import service_as_factory
-from shared.postgresql_backend.connection_handler import ConnectionHandler
+from shared.postgresql_backend import ConnectionHandler
 
 from .requests import (
     AggregateRequest,
@@ -62,15 +62,20 @@ class ReaderService:
         return {"exists": count["count"] > 0, "position": 0}
 
     def count(self, request: AggregateRequest):
-        return self.aggregate(request.collection, request.filter, "count", "fqid")
+        return self.aggregate(request.collection, request.filter, "count")
+
+    def minmax(self, request: MinMaxRequest, mode: str):
+        return self.aggregate(
+            request.collection, request.filter, mode, request.field, request.type
+        )
 
     def min(self, request: MinMaxRequest):
-        return self.aggregate(request.collection, request.filter, "min", request.field)
+        return self.minmax(request, "min")
 
     def max(self, request: MinMaxRequest):
-        return self.aggregate(request.collection, request.filter, "max", request.field)
+        return self.minmax(request, "max")
 
-    def aggregate(self, collection, filter, function, field):
+    def aggregate(self, collection, filter, function, field=None, type=None):
         with self.database.get_context():
-            value = self.database.aggregate(collection, filter, (function, field))
+            value = self.database.aggregate(collection, filter, (function, field, type))
         return {function: value, "position": 0}

@@ -2,6 +2,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from shared.core import DeletedModelsBehaviour, Filter
+from shared.postgresql_backend.sql_read_database_backend_service import (
+    VALID_AGGREGATE_CAST_TARGETS,
+)
 
 
 @dataclass
@@ -58,3 +61,4 @@ class MinMaxRequest:
     collection: str
     filter: Filter
     field: str
+    type: str = VALID_AGGREGATE_CAST_TARGETS[0]

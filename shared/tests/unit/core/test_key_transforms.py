@@ -1,12 +1,11 @@
 from shared.core import (
     build_fqid,
+    collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
     fqfield_from_fqid_and_field,
-    collection_from_fqid,
 )
-from shared.core.key_transforms import collection_from_fqid
 
 
 def test_collectionfield_from_fqid_and_field():

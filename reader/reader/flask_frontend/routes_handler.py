@@ -6,7 +6,7 @@ from .json_handler import JSONHandler
 from .routes import Route
 
 
-def get_route(route: str):
+def get_route(route: Route):
     @handle_internal_errors
     def route_func():
         if not request.is_json:

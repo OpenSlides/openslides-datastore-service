@@ -5,8 +5,8 @@ from typing import Any, List, Literal, Union
 @dataclass
 class FilterOperator:
     field: str
-    value: Any
     operator: Literal["=", "!=", "<", ">", ">=", "<="]
+    value: Any
 
 
 # TODO: mypy doesn't seem to support this kind of recursive typing.

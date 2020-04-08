@@ -22,9 +22,11 @@ def assert_model(fqid, model, position):
         # read from read db
         read_db = injector.get(ReadDatabase)
         read_db_model = read_db.get(fqid)
-        # if meta_deleted:
+
         model[META_DELETED] = False
         model[META_POSITION] = position
+        if read_db_model != model:
+            print(read_db_model)
         assert read_db_model == model
 
         # build model and assert that the last event is not a deleted.

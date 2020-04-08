@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, TypedDict
 
 import fastjsonschema
 from dacite import Config, from_dict
+from dacite.exceptions import MissingValueError
 
 from reader.core import Reader
 from reader.core.requests import (
@@ -12,11 +13,15 @@ from reader.core.requests import (
     GetRequest,
     MinMaxRequest,
 )
-from reader.flask_frontend.routes import Route
 from shared.core import DeletedModelsBehaviour
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
+from shared.postgresql_backend.sql_read_database_backend_service import (
+    VALID_AGGREGATE_CAST_TARGETS,
+)
 from shared.util import JSON, BadCodingError
+
+from .routes import Route
 
 
 deleted_models_behaviour_list = list(
@@ -100,7 +105,7 @@ filter_definitions = {
         "type": "object",
         "properties": {
             "field": {"type": "string"},
-            "value": {"type": "string"},
+            "value": {},
             "operator": {"type": "string", "enum": ["=", "!=", "<", ">", ">=", "<="]},
         },
         "required": ["field", "value", "operator"],
@@ -170,6 +175,7 @@ minmax_schema = fastjsonschema.compile(
             "collection": {"type": "string"},
             "filter": {"$ref": "#/definitions/filter"},
             "field": {"type": "string"},
+            "type": {"type": "string", "enum": VALID_AGGREGATE_CAST_TARGETS},
         },
         "required": ["collection", "filter", "field"],
     }
@@ -219,7 +225,7 @@ class JSONHandler:
             request_object: Any = from_dict(
                 request_class, request_data, Config(check_types=False)
             )
-        except TypeError as e:
+        except (TypeError, MissingValueError) as e:
             raise BadCodingError("Invalid data to initialize class\n" + str(e))
 
         reader = injector.get(Reader)

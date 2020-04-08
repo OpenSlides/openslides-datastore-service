@@ -62,7 +62,7 @@ def test_simple(get_ids_handler, connection_handler):
 
 def test_wrong_format(get_ids_handler):
     with pytest.raises(InvalidRequest):
-        get_ids_handler.get_ids({"unknwon_field": "some value"})
+        get_ids_handler.get_ids({"unknown_field": "some value"})
 
 
 def test_negative_amount(get_ids_handler, connection_handler):

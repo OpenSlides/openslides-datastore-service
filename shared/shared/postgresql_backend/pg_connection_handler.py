@@ -127,22 +127,9 @@ class PgConnectionHandlerService:
         return self.connection
 
     def prepare_query(self, query, sql_parameters):
-        # TODO: just for demo purposes! Extremely unsafe! remove ASAP!
-        class UnsafeSqlLiteral(sql.Composable):
-            def __init__(self, string):
-                self.string = string
-
-            def as_string(self, *args, **kwargs):
-                return self.string
-
-        # the correct way - fails if a json field is accessed
         prepared_query = sql.SQL(query).format(
             *[sql.Identifier(param) for param in sql_parameters]
         )
-        # see above!
-        # prepared_query = sql.SQL(query).format(
-        #     *[UnsafeSqlLiteral(param) for param in sql_parameters]
-        # )
         return prepared_query
 
     def raise_error(self, msg):

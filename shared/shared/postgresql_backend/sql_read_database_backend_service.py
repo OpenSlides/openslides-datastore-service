@@ -1,14 +1,27 @@
 from textwrap import dedent
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from shared.core import And, DeletedModelsBehaviour, Filter, FilterOperator, Not, Or
-from shared.core.exceptions import ModelDoesNotExist
-from shared.core.key_transforms import collection_from_fqid
+from shared.core import (
+    And,
+    DeletedModelsBehaviour,
+    Filter,
+    FilterOperator,
+    ModelDoesNotExist,
+    Not,
+    Or,
+    collection_from_fqid,
+)
 from shared.di import service_as_singleton
 from shared.util import KEYSEPARATOR, BadCodingError, Model
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES
+
+
+# extend if neccessary. first is always the default (should be int)
+# min/max functions support the following:
+# "any numeric, string, date/time, network, or enum type, or arrays of these types"
+VALID_AGGREGATE_CAST_TARGETS = ["int"]
 
 
 @service_as_singleton
@@ -24,7 +37,7 @@ class SqlReadDatabaseBackendService:
     def get(
         self,
         fqid: str,
-        mapped_fields: List[str],
+        mapped_fields: List[str] = [],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
     ) -> Model:
         collection = collection_from_fqid(fqid)
@@ -37,7 +50,7 @@ class SqlReadDatabaseBackendService:
     def get_many(
         self,
         fqids: List[str],
-        mapped_fields_per_collection: Dict[str, List[str]],
+        mapped_fields_per_collection: Dict[str, List[str]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
     ) -> Dict[str, Model]:
         if not fqids:
@@ -94,7 +107,7 @@ class SqlReadDatabaseBackendService:
         self,
         collection: str,
         filter: Filter,
-        fields_params: Union[Tuple[str, str], str],
+        fields_params: Tuple[str, Optional[str], Optional[str]],
     ) -> Any:
         query, arguments, sql_params = self.build_filter_query(
             collection, filter, fields_params
@@ -119,10 +132,13 @@ class SqlReadDatabaseBackendService:
     def get_unique_mapped_fields(
         self, mapped_fields_per_collection: Dict[str, List[str]]
     ) -> List[str]:
-        unique_mapped_fields: Set[str] = set.union(
-            *[set(fields) for fields in mapped_fields_per_collection.values()]
-        )
-        return list(unique_mapped_fields)
+        if len(mapped_fields_per_collection):
+            unique_mapped_fields: Set[str] = set.union(
+                *[set(fields) for fields in mapped_fields_per_collection.values()]
+            )
+            return list(unique_mapped_fields)
+        else:
+            return []
 
     def build_select_mapped_fields(
         self,
@@ -142,7 +158,9 @@ class SqlReadDatabaseBackendService:
     def mapped_fields_map_has_empty_entry(
         self, mapped_fields_per_collection: Dict[str, List[str]]
     ) -> bool:
-        return any(len(fields) == 0 for fields in mapped_fields_per_collection.values())
+        return not len(mapped_fields_per_collection) or any(
+            len(fields) == 0 for fields in mapped_fields_per_collection.values()
+        )
 
     def build_models_from_result(
         self, result, mapped_fields_per_collection: Dict[str, List[str]]
@@ -158,7 +176,10 @@ class SqlReadDatabaseBackendService:
             else:
                 model = row.copy()
 
-            if len(mapped_fields_per_collection[collection]) > 0:
+            if (
+                collection in mapped_fields_per_collection
+                and len(mapped_fields_per_collection[collection]) > 0
+            ):
                 for key in list(model.keys()):
                     if key not in mapped_fields_per_collection[collection]:
                         del model[key]
@@ -170,7 +191,9 @@ class SqlReadDatabaseBackendService:
         self,
         collection: str,
         filter: Filter,
-        fields_params: Union[List[str], Tuple[str, str], str] = None,
+        fields_params: Union[
+            List[str], Tuple[str, Optional[str], Optional[str]]
+        ] = None,
     ) -> Tuple[str, List[str], List[str]]:
         arguments: List[str] = []
         sql_parameters: List[str] = []
@@ -186,11 +209,18 @@ class SqlReadDatabaseBackendService:
             elif fields_params[0] not in self.VALID_AGGREGATE_FUNCTIONS:
                 raise BadCodingError(f"Invalid aggregate function: {fields_params[0]}")
             else:
-                if fields_params[1]:
-                    fields = f"{fields_params[0]}((data->>%s)::int)"  # TODO: is this the best idea?
-                    arguments = [fields_params[1]] + arguments
+                if len(fields_params) == 3 and fields_params[1] and fields_params[2]:
+                    if fields_params[2] not in VALID_AGGREGATE_CAST_TARGETS:
+                        raise BadCodingError("Invalid cast type: %s" % fields_params[2])
+                    fields = f"{fields_params[0]}((data->>%s)::{fields_params[2]})"
+                    arguments = [fields_params[1]] + arguments  # type: ignore
+                elif fields_params[0] == "count":
+                    fields = "count(*)"
                 else:
-                    fields = f"{fields_params[0]}(*)"
+                    raise BadCodingError(
+                        "Invalid fields_params for build_filter_query: %s"
+                        % list(fields_params)
+                    )
         else:
             fields = "data"
 
@@ -215,7 +245,7 @@ class SqlReadDatabaseBackendService:
                 for part in filter.and_filter
             )
         elif isinstance(filter, FilterOperator):
-            condition = f"data->>%s {filter.operator} %s"
+            condition = f"data->>%s {filter.operator} %s::text"
             arguments += [filter.field, filter.value]
             return condition
         else:
