@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS events (
     position INTEGER REFERENCES positions(position) ON DELETE CASCADE,
     fqid VARCHAR(48) NOT NULL,
     type event_type NOT NULL,
-    data JSON
+    data JSONB
 );
 CREATE INDEX IF NOT EXISTS events_fqid_idx ON events (fqid);
 

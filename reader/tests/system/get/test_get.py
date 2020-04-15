@@ -3,6 +3,7 @@ import json
 
 from shared.core import DeletedModelsBehaviour
 from shared.flask_frontend.errors import ERROR_CODES
+from shared.postgresql_backend import EVENT_TYPES
 from shared.tests.util import assert_error_response, assert_success_response
 from tests.system.util import GET_URL
 
@@ -63,13 +64,12 @@ def test_get_only_deleted_success(json_client, db_connection, db_cur):
 
 
 def test_get_only_deleted_fail(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, True)
+    setup_data(db_connection, db_cur)
     response = json_client.post(
         GET_URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
     )
-    assert_success_response(response)
-    assert response.json == data
+    assert_error_response(response, ERROR_CODES.MODEL_NOT_DELETED)
 
 
 def test_get_all_models_not_deleted(json_client, db_connection, db_cur):
@@ -107,3 +107,46 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     del mapped_data["field_1"]
     del mapped_data["field_2"]
     assert response.json == mapped_data
+
+
+def setup_events_data(connection, cursor):
+    cursor.execute("insert into positions (user_id) values (0), (0), (0), (0), (0)")
+    cursor.execute("insert into events (position, fqid, type, data) values (1, %s, %s, %s)", [FQID, EVENT_TYPES.CREATE, data_json])
+    cursor.execute("insert into events (position, fqid, type, data) values (2, %s, %s, %s)", [FQID, EVENT_TYPES.UPDATE, json.dumps({"field_1": "other"})])
+    connection.commit()
+
+
+def test_position(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    response = json_client.post(
+        GET_URL, {"fqid": FQID, "position": 1}
+    )
+    assert_success_response(response)
+    assert response.json == data
+
+
+def test_position_deleted(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    db_cur.execute("insert into events (position, fqid, type) values (3, %s, %s)", [FQID, EVENT_TYPES.DELETE])
+    db_connection.commit()
+    response = json_client.post(
+        GET_URL, {"fqid": FQID, "position": 3}
+    )
+    assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
+
+
+def test_position_not_deleted(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    response = json_client.post(
+        GET_URL, {"fqid": FQID, "position": 1, "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED}
+    )
+    assert_error_response(response, ERROR_CODES.MODEL_NOT_DELETED)
+
+
+def test_position_mapped_fields(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    response = json_client.post(
+        GET_URL, {"fqid": FQID, "position": 1, "mapped_fields": ["field_1"]}
+    )
+    assert_success_response(response)
+    assert response.json == {"field_1": "data"}

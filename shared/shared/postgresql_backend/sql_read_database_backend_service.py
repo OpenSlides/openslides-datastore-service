@@ -38,10 +38,9 @@ class SqlReadDatabaseBackendService:
         self,
         fqid: str,
         mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
     ) -> Model:
         collection = collection_from_fqid(fqid)
-        models = self.get_many([fqid], {collection: mapped_fields}, get_deleted_models)
+        models = self.get_many([fqid], {collection: mapped_fields})
         try:
             return models[fqid]
         except KeyError:
@@ -258,7 +257,7 @@ class SqlReadDatabaseBackendService:
             else "and deleted = " + str(flag == DeletedModelsBehaviour.ONLY_DELETED)
         )
 
-    def create_or_update_models(self, models: Dict[str, Dict[str, Any]]) -> None:
+    def create_or_update_models(self, models: Dict[str, Model]) -> None:
         if not models:
             return
 
@@ -282,51 +281,116 @@ class SqlReadDatabaseBackendService:
         query = "delete from models where fqid in %s"
         self.connection.execute(query, arguments)
 
-    def build_model_ignore_deleted(self, fqid: str) -> Dict[str, Any]:
+    def build_model_ignore_deleted(self, fqid: str, position: Optional[int] = None) -> Model:
+        """ Calls `build_models_ignore_deleted` to build a single model. """
+        models = self.build_models_ignore_deleted([fqid], position)
+        try:
+            return models[fqid]
+        except KeyError:
+            raise ModelDoesNotExist(fqid)
+
+    def build_models_ignore_deleted(self, fqids: List[str], position: Optional[int] = None) -> Dict[str, Model]:
         # building a model (and ignoring the latest delete/restore) is easy:
         # Get all events and skip any delete, restore or noop event. Then just
         # build the model: First the create, than a series of update events
         # and delete_fields events.
+        # Optionally only builds the models up to the specified position.
         # TODO: There might be a speedup: Get the model from the readdb first.
         # If the model exists there, read the position from it, use the model
         # as a starting point in `build_model_from_events` and just fetch all
         # events after the position.
+        if position:
+            pos_cond = "and position <= %s"
+            pos_args = [position]
+        else:
+            pos_cond = ""
+            pos_args = []
+
         included_types = dedent(
             f"""\
             ('{EVENT_TYPES.CREATE}',
             '{EVENT_TYPES.UPDATE}',
             '{EVENT_TYPES.DELETE_FIELDS}')"""
         )
-        query = (
-            "select type, data from events where fqid=%s "
-            + f"and type in {included_types} order by id asc"
+        query = dedent(
+            f"""\
+            select fqid, type, data from events e
+            where fqid in %s and type in {included_types} {pos_cond}
+            order by id asc"""
         )
 
-        events = self.connection.query(query, [fqid])
-        return self.build_model_from_events(events)
+        args: List[Any] = [tuple(fqids)]
+        db_events = self.connection.query(query, args + pos_args)
+
+        partitions = {}
+        for event in db_events:
+            if event["fqid"] not in partitions:
+                partitions[event["fqid"]] = [event]
+            else:
+                partitions[event["fqid"]] += [event]
+        
+        models = {}
+        for fqid, events in partitions.items():
+            models[fqid] = self.build_model_from_events(events)
+
+        return models
 
     def build_model_from_events(
-        self, events: List[Tuple[int, Dict[str, Any]]]
+        self, events: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         if not events:
             raise BadCodingError()
 
         create_event = events[0]
-        assert create_event[0] == EVENT_TYPES.CREATE
-        model = create_event[1]
+        assert create_event["type"] == EVENT_TYPES.CREATE
+        model = create_event["data"]
 
         # apply all other update/delete_fields
         for event in events[1:]:
-            if event[0] == EVENT_TYPES.UPDATE:
-                model.update(event[1])
-            elif event[0] == EVENT_TYPES.DELETE_FIELDS:
-                for field in event[1]:
+            if event["type"] == EVENT_TYPES.UPDATE:
+                model.update(event["data"])
+            elif event["type"] == EVENT_TYPES.DELETE_FIELDS:
+                for field in event["data"]:
                     if field in model:
                         del model[field]
             else:
                 raise BadCodingError()
-
+        
         return model
+
+    def is_deleted(self, fqid: str, position: Optional[int]) -> bool:
+        result = self.get_deleted_status([fqid], position)
+        try:
+            return result[fqid]
+        except KeyError:
+            raise ModelDoesNotExist(fqid)
+
+    def get_deleted_status(self, fqids: List[str], position: Optional[int]) -> Dict[str, bool]:
+        if not position:
+            return self.get_deleted_status_from_read_db(fqids)
+        else:
+            return self.get_deleted_status_from_events(fqids, position)
+
+    def get_deleted_status_from_events(self, fqids: List[str], position: int) -> Dict[str, bool]:
+        included_types = dedent(
+            f"""\
+            ('{EVENT_TYPES.CREATE}',
+            '{EVENT_TYPES.DELETE}',
+            '{EVENT_TYPES.RESTORE}')"""
+        )
+        query = f"""
+                select fqid, type from (
+                    select fqid, max(position) as position from events
+                    where type in {included_types} and position <= {position} and fqid in %s group by fqid
+                ) t natural join events
+                """
+        result = self.connection.query(query, [tuple(fqids)])
+        return {row["fqid"]: row["type"] == EVENT_TYPES.DELETE for row in result}
+
+    def get_deleted_status_from_read_db(self, fqids: List[str]) -> Dict[str, bool]:
+        query = "select fqid, deleted from models_lookup where fqid in %s"
+        result = self.connection.query(query, [tuple(fqids)])
+        return {row["fqid"]: row["deleted"] for row in result}
 
     def json(self, data):
         return self.connection.to_json(data)

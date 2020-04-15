@@ -1,7 +1,3 @@
-language: python
-
-cache: pip
-
 services:
   - docker
 
