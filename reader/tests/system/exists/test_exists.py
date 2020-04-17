@@ -1,7 +1,7 @@
 import json
 
+from reader.flask_frontend.routes import Route
 from shared.tests.util import assert_success_response
-from tests.system.util import EXISTS_URL
 
 
 data = {
@@ -41,7 +41,7 @@ def setup_data(connection, cursor, deleted=False):
 def test_true(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        EXISTS_URL,
+        Route.EXISTS.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "=", "value": "data"},
@@ -54,7 +54,7 @@ def test_true(json_client, db_connection, db_cur):
 def test_false(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        EXISTS_URL,
+        Route.EXISTS.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "=", "value": "doesnt_exist"},

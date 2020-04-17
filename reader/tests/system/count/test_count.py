@@ -1,7 +1,7 @@
 import json
 
+from reader.flask_frontend.routes import Route
 from shared.tests.util import assert_success_response
-from tests.system.util import COUNT_URL
 
 
 data = {
@@ -41,7 +41,7 @@ def setup_data(connection, cursor, deleted=False):
 def test_0(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        COUNT_URL,
+        Route.COUNT.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "=", "value": "invalid"},
@@ -54,7 +54,7 @@ def test_0(json_client, db_connection, db_cur):
 def test_1(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        COUNT_URL,
+        Route.COUNT.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "=", "value": "data"},
@@ -67,7 +67,7 @@ def test_1(json_client, db_connection, db_cur):
 def test_2(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        COUNT_URL,
+        Route.COUNT.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_2", "operator": "=", "value": 42},

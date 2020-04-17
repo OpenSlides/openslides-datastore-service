@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, ContextManager, Dict, List, Optional, Set, Tuple, Union
 
 from shared.core import (
     And,
@@ -12,7 +12,7 @@ from shared.core import (
     collection_from_fqid,
 )
 from shared.di import service_as_singleton
-from shared.util import KEYSEPARATOR, BadCodingError, Model
+from shared.util import KEYSEPARATOR, META_POSITION, BadCodingError, Model
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES
@@ -31,14 +31,10 @@ class SqlReadDatabaseBackendService:
 
     connection: ConnectionHandler
 
-    def get_context(self) -> Any:
+    def get_context(self) -> ContextManager[None]:
         return self.connection.get_connection_context()
 
-    def get(
-        self,
-        fqid: str,
-        mapped_fields: List[str] = [],
-    ) -> Model:
+    def get(self, fqid: str, mapped_fields: List[str] = [],) -> Model:
         collection = collection_from_fqid(fqid)
         models = self.get_many([fqid], {collection: mapped_fields})
         try:
@@ -111,8 +107,8 @@ class SqlReadDatabaseBackendService:
         query, arguments, sql_params = self.build_filter_query(
             collection, filter, fields_params
         )
-        value = self.connection.query_single_value(query, arguments, sql_params)
-        return value
+        value = self.connection.query(query, arguments, sql_params)
+        return value[0].copy()
 
     def fetch_list_of_models(
         self,
@@ -220,6 +216,8 @@ class SqlReadDatabaseBackendService:
                         "Invalid fields_params for build_filter_query: %s"
                         % list(fields_params)
                     )
+                fields += f" AS {fields_params[0]},\
+                            (SELECT MAX(position) FROM positions) AS position"
         else:
             fields = "data"
 
@@ -281,15 +279,18 @@ class SqlReadDatabaseBackendService:
         query = "delete from models where fqid in %s"
         self.connection.execute(query, arguments)
 
-    def build_model_ignore_deleted(self, fqid: str, position: Optional[int] = None) -> Model:
-        """ Calls `build_models_ignore_deleted` to build a single model. """
+    def build_model_ignore_deleted(
+        self, fqid: str, position: Optional[int] = None
+    ) -> Model:
         models = self.build_models_ignore_deleted([fqid], position)
         try:
             return models[fqid]
         except KeyError:
             raise ModelDoesNotExist(fqid)
 
-    def build_models_ignore_deleted(self, fqids: List[str], position: Optional[int] = None) -> Dict[str, Model]:
+    def build_models_ignore_deleted(
+        self, fqids: List[str], position: Optional[int] = None
+    ) -> Dict[str, Model]:
         # building a model (and ignoring the latest delete/restore) is easy:
         # Get all events and skip any delete, restore or noop event. Then just
         # build the model: First the create, than a series of update events
@@ -314,7 +315,7 @@ class SqlReadDatabaseBackendService:
         )
         query = dedent(
             f"""\
-            select fqid, type, data from events e
+            select fqid, type, data, position from events e
             where fqid in %s and type in {included_types} {pos_cond}
             order by id asc"""
         )
@@ -328,16 +329,14 @@ class SqlReadDatabaseBackendService:
                 partitions[event["fqid"]] = [event]
             else:
                 partitions[event["fqid"]] += [event]
-        
+
         models = {}
         for fqid, events in partitions.items():
             models[fqid] = self.build_model_from_events(events)
 
         return models
 
-    def build_model_from_events(
-        self, events: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def build_model_from_events(self, events: List[Dict[str, Any]]) -> Model:
         if not events:
             raise BadCodingError()
 
@@ -355,23 +354,28 @@ class SqlReadDatabaseBackendService:
                         del model[field]
             else:
                 raise BadCodingError()
-        
+
+        model[META_POSITION] = events[-1]["position"]
         return model
 
-    def is_deleted(self, fqid: str, position: Optional[int]) -> bool:
+    def is_deleted(self, fqid: str, position: Optional[int] = None) -> bool:
         result = self.get_deleted_status([fqid], position)
         try:
             return result[fqid]
         except KeyError:
             raise ModelDoesNotExist(fqid)
 
-    def get_deleted_status(self, fqids: List[str], position: Optional[int]) -> Dict[str, bool]:
+    def get_deleted_status(
+        self, fqids: List[str], position: Optional[int] = None
+    ) -> Dict[str, bool]:
         if not position:
             return self.get_deleted_status_from_read_db(fqids)
         else:
             return self.get_deleted_status_from_events(fqids, position)
 
-    def get_deleted_status_from_events(self, fqids: List[str], position: int) -> Dict[str, bool]:
+    def get_deleted_status_from_events(
+        self, fqids: List[str], position: int
+    ) -> Dict[str, bool]:
         included_types = dedent(
             f"""\
             ('{EVENT_TYPES.CREATE}',
@@ -381,7 +385,8 @@ class SqlReadDatabaseBackendService:
         query = f"""
                 select fqid, type from (
                     select fqid, max(position) as position from events
-                    where type in {included_types} and position <= {position} and fqid in %s group by fqid
+                    where type in {included_types} and position <= {position}
+                    and fqid in %s group by fqid
                 ) t natural join events
                 """
         result = self.connection.query(query, [tuple(fqids)])

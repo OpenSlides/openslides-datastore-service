@@ -1,7 +1,7 @@
 import json
 
+from reader.flask_frontend.routes import Route
 from shared.tests.util import assert_success_response
-from tests.system.util import MIN_URL
 
 
 data = {
@@ -22,7 +22,7 @@ def setup_data(connection, cursor, deleted=False):
 def test_simple(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        MIN_URL,
+        Route.MIN.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "!=", "value": "invalid"},
@@ -36,7 +36,7 @@ def test_simple(json_client, db_connection, db_cur):
 def test_with_type(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        MIN_URL,
+        Route.MIN.URL,
         {
             "collection": "c1",
             "filter": {"field": "meta_position", "operator": ">", "value": 2},

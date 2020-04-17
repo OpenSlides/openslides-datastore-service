@@ -1,8 +1,8 @@
 import json
 
+from reader.flask_frontend.routes import Route
 from shared.core import DeletedModelsBehaviour
 from shared.tests.util import assert_success_response
-from tests.system.util import GET_ALL_URL
 
 
 data = {
@@ -40,14 +40,14 @@ def setup_data(connection, cursor, deleted=999):
 
 def test_simple(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
-    response = json_client.post(GET_ALL_URL, {"collection": "c2"})
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "c2"})
     assert_success_response(response)
     assert response.json == list(data.values())
 
 
 def test_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
-    response = json_client.post(GET_ALL_URL, {"collection": "c2"})
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "c2"})
     assert_success_response(response)
     assert response.json == [data["c2/1"]]
 
@@ -55,7 +55,7 @@ def test_deleted(json_client, db_connection, db_cur):
 def test_only_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
     response = json_client.post(
-        GET_ALL_URL,
+        Route.GET_ALL.URL,
         {"collection": "c2", "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
     )
     assert_success_response(response)
@@ -65,7 +65,7 @@ def test_only_deleted(json_client, db_connection, db_cur):
 def test_deleted_all_models(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
     response = json_client.post(
-        GET_ALL_URL,
+        Route.GET_ALL.URL,
         {"collection": "c2", "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
     )
     assert_success_response(response)
@@ -75,7 +75,8 @@ def test_deleted_all_models(json_client, db_connection, db_cur):
 def test_mapped_fields(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        GET_ALL_URL, {"collection": "c2", "mapped_fields": ["field_4", "meta_position"]}
+        Route.GET_ALL.URL,
+        {"collection": "c2", "mapped_fields": ["field_4", "meta_position"]},
     )
     assert_success_response(response)
     assert response.json == [

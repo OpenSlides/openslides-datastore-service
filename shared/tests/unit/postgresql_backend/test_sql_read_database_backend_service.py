@@ -10,7 +10,7 @@ from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
 from shared.tests import reset_di  # noqa
-from shared.util import BadCodingError
+from shared.util import META_POSITION, BadCodingError
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +35,7 @@ def test_database_error():
     assert e.msg == "msg"
 
 
-def test_get_connection(read_database):
+def test_get_connection(read_database: ReadDatabase):
     connection = MagicMock()
     connection.get_connection_context = MagicMock(return_value="test")
     read_database.connection = connection
@@ -44,7 +44,7 @@ def test_get_connection(read_database):
     connection.get_connection_context.assert_called()
 
 
-def test_get(read_database):
+def test_get(read_database: ReadDatabase):
     fqid = "c/1"
     model = MagicMock()
     read_database.get_many = q = MagicMock(return_value={fqid: model})
@@ -55,7 +55,7 @@ def test_get(read_database):
     assert model == model
 
 
-def test_get_invalid(read_database):
+def test_get_invalid(read_database: ReadDatabase):
     fqid = "c/1"
     read_database.get_many = q = MagicMock(return_value={})
 
@@ -65,7 +65,7 @@ def test_get_invalid(read_database):
     assert q.call_args.args[0] == [fqid]
 
 
-def test_get_many(read_database, connection):
+def test_get_many(read_database: ReadDatabase, connection: ConnectionHandler):
     fqid1 = "c/1"
     model1 = MagicMock()
     fqid2 = "c/2"
@@ -82,7 +82,7 @@ def test_get_many(read_database, connection):
     assert models == {fqid1: model1, fqid2: model2}
 
 
-def test_get_many_no_fqids(read_database):
+def test_get_many_no_fqids(read_database: ReadDatabase):
     connection.query = q = MagicMock()
 
     assert read_database.get_many([], {}) == {}
@@ -90,7 +90,7 @@ def test_get_many_no_fqids(read_database):
     assert q.call_count == 0
 
 
-def test_get_all(read_database):
+def test_get_all(read_database: ReadDatabase):
     res = MagicMock()
     read_database.fetch_list_of_models = f = MagicMock(return_value=res)
 
@@ -100,7 +100,7 @@ def test_get_all(read_database):
     assert models == res
 
 
-def test_filter(read_database):
+def test_filter(read_database: ReadDatabase):
     res = MagicMock()
     read_database.fetch_list_of_models = f = MagicMock(return_value=res)
     filter = FilterOperator("a", "=", "a")
@@ -111,9 +111,10 @@ def test_filter(read_database):
     assert models == res
 
 
-def test_aggregate(read_database, connection):
+def test_aggregate(read_database: ReadDatabase, connection: ConnectionHandler):
     res = MagicMock()
-    connection.query_single_value = q = MagicMock(return_value=res)
+    res.copy = lambda: res
+    connection.query = q = MagicMock(return_value=[res])
     filter = FilterOperator("a", "=", "a")
 
     models = read_database.aggregate("c", filter, ("count",))
@@ -122,7 +123,9 @@ def test_aggregate(read_database, connection):
     assert models == res
 
 
-def test_fetch_list_of_models(read_database, connection):
+def test_fetch_list_of_models(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
     args = [MagicMock(), MagicMock(), MagicMock()]
     row = MagicMock()
     row["data"] = MagicMock()
@@ -134,7 +137,9 @@ def test_fetch_list_of_models(read_database, connection):
     assert models == [row["data"]]
 
 
-def test_fetch_list_of_models_mapped_fields(read_database, connection):
+def test_fetch_list_of_models_mapped_fields(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
     args = [MagicMock(), MagicMock(), MagicMock()]
     row = MagicMock()
     row.copy = lambda: row
@@ -146,11 +151,11 @@ def test_fetch_list_of_models_mapped_fields(read_database, connection):
     assert models == [row]
 
 
-def test_get_unique_mapped_fields(read_database):
+def test_get_unique_mapped_fields(read_database: ReadDatabase):
     assert read_database.get_unique_mapped_fields({"c": ["field"]}) == ["field"]
 
 
-def test_build_models_from_result(read_database):
+def test_build_models_from_result(read_database: ReadDatabase):
     row = MagicMock()
     row["fqid"] = MagicMock()
     row.copy = lambda: row
@@ -166,7 +171,7 @@ def test_build_models_from_result(read_database):
     assert result == {row["fqid"]: row}
 
 
-def test_build_filter_query_list(read_database):
+def test_build_filter_query_list(read_database: ReadDatabase):
     read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
     field = MagicMock()
@@ -178,7 +183,7 @@ def test_build_filter_query_list(read_database):
     assert s == [field]
 
 
-def test_build_filter_query_invalid_function(read_database):
+def test_build_filter_query_invalid_function(read_database: ReadDatabase):
     read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
 
@@ -188,7 +193,7 @@ def test_build_filter_query_invalid_function(read_database):
     assert bfs.call_args[0] == (filter, [])
 
 
-def test_build_filter_query_invalid_length(read_database):
+def test_build_filter_query_invalid_length(read_database: ReadDatabase):
     read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
 
@@ -198,7 +203,7 @@ def test_build_filter_query_invalid_length(read_database):
     assert bfs.call_args[0] == (filter, [])
 
 
-def test_build_filter_query_invalid_cast_target(read_database):
+def test_build_filter_query_invalid_cast_target(read_database: ReadDatabase):
     read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
 
@@ -210,7 +215,7 @@ def test_build_filter_query_invalid_cast_target(read_database):
     assert bfs.call_args[0] == (filter, [])
 
 
-def test_build_filter_query_tuple(read_database):
+def test_build_filter_query_tuple(read_database: ReadDatabase):
     read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
     field = MagicMock()
@@ -224,7 +229,7 @@ def test_build_filter_query_tuple(read_database):
     assert s == []
 
 
-def test_build_filter_str_not(read_database):
+def test_build_filter_str_not(read_database: ReadDatabase):
     f = read_database.build_filter_str
     read_database.build_filter_str = MagicMock(return_value="")
     filter = Not(MagicMock())
@@ -232,7 +237,7 @@ def test_build_filter_str_not(read_database):
     assert f(filter, []) == "NOT ()"
 
 
-def test_build_filter_str_or(read_database):
+def test_build_filter_str_or(read_database: ReadDatabase):
     f = read_database.build_filter_str
     read_database.build_filter_str = MagicMock(return_value="")
     filter = Or([MagicMock(), MagicMock()])
@@ -240,7 +245,7 @@ def test_build_filter_str_or(read_database):
     assert f(filter, []) == "() OR ()"
 
 
-def test_build_filter_str_and(read_database):
+def test_build_filter_str_and(read_database: ReadDatabase):
     f = read_database.build_filter_str
     read_database.build_filter_str = MagicMock(return_value="")
     filter = And([MagicMock(), MagicMock()])
@@ -248,12 +253,14 @@ def test_build_filter_str_and(read_database):
     assert f(filter, []) == "() AND ()"
 
 
-def test_build_filter_str_invalid(read_database):
+def test_build_filter_str_invalid(read_database: ReadDatabase):
     with pytest.raises(BadCodingError):
         read_database.build_filter_str("invalid", [])
 
 
-def test_create_or_update_models(read_database, connection):
+def test_create_or_update_models(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
     fqid1 = MagicMock()
     model1 = MagicMock()
     fqid2 = MagicMock()
@@ -270,13 +277,15 @@ def test_create_or_update_models(read_database, connection):
     )
 
 
-def test_create_or_update_models_no_models(read_database, connection):
+def test_create_or_update_models_no_models(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
     connection.execute = e = MagicMock()
     read_database.create_or_update_models([])
     e.assert_not_called()
 
 
-def test_delete_models(read_database, connection):
+def test_delete_models(read_database: ReadDatabase, connection: ConnectionHandler):
     fqids = (
         MagicMock(),
         MagicMock(),
@@ -288,74 +297,163 @@ def test_delete_models(read_database, connection):
     assert e.call_args.args[1] == [fqids]
 
 
-def test_delete_models_no_models(read_database, connection):
+def test_delete_models_no_models(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
     connection.execute = e = MagicMock()
     read_database.delete_models([])
     e.assert_not_called()
 
 
-def test_build_model_ignore_deleted(read_database, connection):
+def test_build_model_ignore_deleted(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
     fqid = MagicMock()
-    events = MagicMock()
+    events = [{"fqid": fqid, "data": MagicMock()}, {"fqid": fqid, "data": MagicMock()}]
     model = MagicMock()
     connection.query = q = MagicMock(return_value=events)
     read_database.build_model_from_events = bmfe = MagicMock(return_value=model)
 
     result = read_database.build_model_ignore_deleted(fqid)
 
-    assert q.call_args.args[1] == [fqid]
+    assert q.call_args.args[1] == [(fqid,)]
     bmfe.assert_called_with(events)
     assert result == model
 
 
-def test_build_model_from_events_no_events(read_database):
+def test_build_model_ignore_deleted_invalid_fqid(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
+    fqid = MagicMock()
+    events = [{"fqid": MagicMock()}]
+    model = MagicMock()
+    connection.query = q = MagicMock(return_value=events)
+    read_database.build_model_from_events = bmfe = MagicMock(return_value=model)
+
+    with pytest.raises(ModelDoesNotExist):
+        read_database.build_model_ignore_deleted(fqid)
+
+    assert q.call_args.args[1] == [(fqid,)]
+    bmfe.assert_called_with(events)
+
+
+def test_build_model_ignore_deleted_position(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
+    fqid = MagicMock()
+    pos = 42
+    events = [{"fqid": fqid, "data": MagicMock()}, {"fqid": fqid, "data": MagicMock()}]
+    model = MagicMock()
+    connection.query = q = MagicMock(return_value=events)
+    read_database.build_model_from_events = bmfe = MagicMock(return_value=model)
+
+    result = read_database.build_model_ignore_deleted(fqid, pos)
+
+    assert f"position <= %s" in q.call_args.args[0]
+    assert q.call_args.args[1] == [(fqid,), pos]
+    bmfe.assert_called_with(events)
+    assert result == model
+
+
+def test_build_model_from_events_no_events(read_database: ReadDatabase):
     with pytest.raises(BadCodingError):
         read_database.build_model_from_events(None)
     with pytest.raises(BadCodingError):
         read_database.build_model_from_events([])
 
 
-def test_build_model_from_events_no_first_create_event(read_database):
+def test_build_model_from_events_no_first_create_event(read_database: ReadDatabase):
     with pytest.raises(AssertionError):
-        read_database.build_model_from_events([(MagicMock(), MagicMock())])
-
-
-def test_build_model_from_events_unknwon_event(read_database):
-    with pytest.raises(BadCodingError):
         read_database.build_model_from_events(
-            [(EVENT_TYPES.CREATE, MagicMock()), (MagicMock(), MagicMock())]
+            [{"type": MagicMock(), "data": MagicMock()}]
         )
 
 
-def test_build_model_from_events_update_event(read_database):
+def test_build_model_from_events_unknown_event(read_database: ReadDatabase):
+    with pytest.raises(BadCodingError):
+        read_database.build_model_from_events(
+            [
+                {"type": EVENT_TYPES.CREATE, "data": MagicMock()},
+                {"type": MagicMock(), "data": MagicMock()},
+            ]
+        )
+
+
+def test_build_model_from_events_update_event(read_database: ReadDatabase):
     base_model = MagicMock()
     base_model.update = u = MagicMock()
     update_event = MagicMock()
 
     result = read_database.build_model_from_events(
-        [(EVENT_TYPES.CREATE, base_model), (EVENT_TYPES.UPDATE, update_event)]
+        [
+            {"type": EVENT_TYPES.CREATE, "data": base_model},
+            {"type": EVENT_TYPES.UPDATE, "data": update_event, "position": 0},
+        ]
     )
 
     u.assert_called_with(update_event)
     assert result == base_model
 
 
-def test_build_model_from_events_delete_fields_event(read_database):
+def test_build_model_from_events_delete_fields_event(read_database: ReadDatabase):
     field = MagicMock()
     base_model = {field: MagicMock}
     delete_fields_event = [field]
 
     result = read_database.build_model_from_events(
         [
-            (EVENT_TYPES.CREATE, base_model),
-            (EVENT_TYPES.DELETE_FIELDS, delete_fields_event),
+            {"type": EVENT_TYPES.CREATE, "data": base_model},
+            {
+                "type": EVENT_TYPES.DELETE_FIELDS,
+                "data": delete_fields_event,
+                "position": 0,
+            },
         ]
     )
 
-    assert result == {}
+    assert result == {META_POSITION: 0}
 
 
-def test_json(read_database, connection):
+def test_is_deleted(read_database: ReadDatabase):
+    fqid = MagicMock()
+    result = MagicMock()
+    read_database.get_deleted_status = gds = MagicMock(return_value={fqid: result})
+
+    assert read_database.is_deleted(fqid) == result
+    assert gds.call_args.args[0] == [fqid]
+
+
+def test_is_deleted_invalid_fqid(read_database: ReadDatabase):
+    read_database.get_deleted_status = MagicMock(return_value={})
+
+    with pytest.raises(ModelDoesNotExist):
+        read_database.is_deleted(MagicMock())
+
+
+def test_get_deleted_status(read_database: ReadDatabase, connection: ConnectionHandler):
+    fqid = MagicMock()
+    deleted = MagicMock()
+    result = [{"fqid": fqid, "deleted": deleted}]
+    connection.query = q = MagicMock(return_value=result)
+
+    assert read_database.get_deleted_status([fqid]) == {fqid: deleted}
+    assert "from models_lookup" in q.call_args.args[0]
+    assert q.call_args.args[1] == [(fqid,)]
+
+
+def test_get_deleted_status_position(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
+    fqid = MagicMock()
+    result = [{"fqid": fqid, "type": EVENT_TYPES.DELETE}]
+    connection.query = q = MagicMock(return_value=result)
+
+    assert read_database.get_deleted_status([fqid], 42) == {fqid: True}
+    assert "from events" in q.call_args.args[0]
+    assert q.call_args.args[1] == [(fqid,)]
+
+
+def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
     value = MagicMock()
     connection.to_json = tj = MagicMock(return_value=value)
     data = MagicMock()

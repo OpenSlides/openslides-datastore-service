@@ -8,6 +8,7 @@ from shared.di import (
     service_as_singleton,
     service_interface,
 )
+from shared.di.dependency_provider import check_implements_protocol
 from shared.di.exceptions import DependencyInjectionError
 
 
@@ -183,3 +184,15 @@ def test_unknown_init_args():
                 ""
                 # Hack to get to 100% coverage: with `pass`
                 # or `...` this line will not be covered... *facepalm*
+
+
+def test_check_implements_protocol_fail():
+    class P(Protocol):
+        def function(self) -> None:
+            ""
+
+    class C:
+        pass
+
+    with pytest.raises(DependencyInjectionError):
+        check_implements_protocol(P, C)

@@ -1,5 +1,10 @@
 from enum import Enum
 
+from shared.flask_frontend import unify_urls
+
+
+URL_PREFIX = "/internal/datastore/reader/"
+
 
 class Route(str, Enum):
     GET = "get"
@@ -10,3 +15,7 @@ class Route(str, Enum):
     COUNT = "count"
     MIN = "min"
     MAX = "max"
+
+
+for route in Route:
+    setattr(route, "URL", unify_urls(URL_PREFIX, route))

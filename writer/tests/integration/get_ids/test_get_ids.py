@@ -38,7 +38,6 @@ def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register(Database, SqlDatabaseBackendService)
     injector.register_as_singleton(OccLocker, MagicMock)
-    injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register_as_singleton(Messaging, MagicMock)
     core_setup_di()
 

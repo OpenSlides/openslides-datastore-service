@@ -1,12 +1,30 @@
+from unittest.mock import MagicMock
+
 import pytest
 
-from reader.core.reader_service import ReaderService
-from reader.core.requests import GetRequest
-from shared.di import injector
-from shared.core import DeletedModelsBehaviour, ReadDatabase
-from unittest.mock import MagicMock
 from reader.core import Reader
+from reader.core.reader_service import ReaderService
+from reader.core.requests import (
+    AggregateRequest,
+    FilterRequest,
+    GetAllRequest,
+    GetManyRequest,
+    GetManyRequestPart,
+    GetRequest,
+    MinMaxRequest,
+)
+from shared.core import (
+    DeletedModelsBehaviour,
+    FilterOperator,
+    ModelDoesNotExist,
+    ModelNotDeleted,
+    ReadDatabase,
+)
+from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend.sql_read_database_backend_service import (
+    SqlReadDatabaseBackendService,
+)
 from shared.tests import reset_di  # noqa
 
 
@@ -28,13 +46,244 @@ def read_db(provide_di):
     yield injector.get(ReadDatabase)
 
 
-def test_get(reader, read_db):
+def test_get(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     model = MagicMock()
-    read_db.get = MagicMock(return_value=model)
-    read_db.is_deleted = MagicMock(return_value=False)
+    read_db.get = get = MagicMock(return_value=model)
+    read_db.is_deleted = id = MagicMock(return_value=False)
 
     request = GetRequest("fqid", ["field"])
-    reader.get(request)
+
+    assert reader.get(request) == model
 
     read_db.get_context.assert_called()
-    read_db.get.assert_called_with("fqid", ["field"])
+    id.assert_called_with("fqid", None)
+    get.assert_called_with("fqid", ["field"])
+
+
+def test_get_with_position(
+    reader: ReaderService, read_db: SqlReadDatabaseBackendService
+):
+    model = MagicMock()
+    read_db.is_deleted = MagicMock(return_value=False)
+    read_db.build_model_ignore_deleted = bmid = MagicMock(return_value=model)
+    reader.apply_mapped_fields = amf = MagicMock(return_value=model)
+
+    request = GetRequest("fqid", ["field"], 42)
+
+    assert reader.get(request) == model
+
+    bmid.assert_called_with("fqid", 42)
+    amf.assert_called_with(model, ["field"])
+
+
+def test_get_deleted_no_deleted(reader, read_db):
+    read_db.is_deleted = MagicMock(return_value=True)
+
+    request = GetRequest("fqid", ["field"], None, DeletedModelsBehaviour.NO_DELETED)
+    with pytest.raises(ModelDoesNotExist):
+        reader.get(request)
+
+
+def test_get_not_deleted_only_deleted(reader, read_db):
+    read_db.is_deleted = MagicMock(return_value=False)
+
+    request = GetRequest("fqid", ["field"], None, DeletedModelsBehaviour.ONLY_DELETED)
+    with pytest.raises(ModelNotDeleted):
+        reader.get(request)
+
+
+def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.get_many = get_many = MagicMock(return_value=result)
+
+    parts = [
+        GetManyRequestPart("c1", "1", ["field1"]),
+        GetManyRequestPart("c2", "1", ["field2"]),
+    ]
+    request = GetManyRequest(parts, ["field"])
+
+    assert reader.get_many(request) == result
+
+    read_db.get_context.assert_called()
+    get_many.assert_called_with(
+        ["c1/1", "c2/1"],
+        {"c1": ["field1", "field"], "c2": ["field2", "field"]},
+        DeletedModelsBehaviour.NO_DELETED,
+    )
+
+
+def test_get_many_with_position(
+    reader: ReaderService, read_db: SqlReadDatabaseBackendService
+):
+    result = MagicMock()
+    deleted_map = {"c1/1": False, "c2/1": False}
+    read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
+    read_db.build_models_ignore_deleted = bmid = MagicMock(return_value=result)
+    reader.apply_mapped_fields_multi = amfm = MagicMock(return_value=result)
+
+    parts = [
+        GetManyRequestPart("c1", "1", ["field1"]),
+        GetManyRequestPart("c2", "1", ["field2"]),
+    ]
+    request = GetManyRequest(parts, ["field"], 42)
+
+    assert reader.get_many(request) == result
+
+    gds.assert_called_with(["c1/1", "c2/1"], 42)
+    bmid.assert_called_with(["c1/1", "c2/1"], 42)
+    amfm.assert_called_with(
+        result, {"c1": ["field1", "field"], "c2": ["field2", "field"]}
+    )
+
+
+def test_get_many_with_position_deleted_no_deleted(
+    reader: ReaderService, read_db: SqlReadDatabaseBackendService
+):
+    deleted_map = {"c1/1": True, "c2/1": False}
+    read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
+    read_db.build_models_ignore_deleted = bmid = MagicMock()
+    reader.apply_mapped_fields_multi = MagicMock()
+
+    parts = [
+        GetManyRequestPart("c1", "1", ["field1"]),
+        GetManyRequestPart("c2", "1", ["field2"]),
+    ]
+    request = GetManyRequest(parts, ["field"], 42)
+
+    reader.get_many(request)
+
+    gds.assert_called_with(["c1/1", "c2/1"], 42)
+    bmid.assert_called_with(["c2/1"], 42)
+
+
+def test_get_many_with_position_not_deleted_only_deleted(
+    reader: ReaderService, read_db: SqlReadDatabaseBackendService
+):
+    deleted_map = {"c1/1": True, "c2/1": False}
+    read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
+    read_db.build_models_ignore_deleted = bmid = MagicMock()
+    reader.apply_mapped_fields_multi = MagicMock()
+
+    parts = [
+        GetManyRequestPart("c1", "1", ["field1"]),
+        GetManyRequestPart("c2", "1", ["field2"]),
+    ]
+    request = GetManyRequest(parts, ["field"], 42, DeletedModelsBehaviour.ONLY_DELETED)
+
+    reader.get_many(request)
+
+    gds.assert_called_with(["c1/1", "c2/1"], 42)
+    bmid.assert_called_with(["c1/1"], 42)
+
+
+def test_get_all(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.get_all = get_all = MagicMock(return_value=result)
+
+    request = GetAllRequest("collection", ["field"])
+
+    assert reader.get_all(request) == result
+
+    read_db.get_context.assert_called()
+    get_all.assert_called_with(
+        "collection", ["field"], DeletedModelsBehaviour.NO_DELETED
+    )
+
+
+def test_filter(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.filter = filter = MagicMock(return_value=result)
+
+    filter_operator = FilterOperator("field", "=", "data")
+    request = FilterRequest("collection", filter_operator, ["field"])
+
+    assert reader.filter(request) == result
+
+    read_db.get_context.assert_called()
+    filter.assert_called_with("collection", filter_operator, ["field"])
+
+
+def test_exists_true(reader: ReaderService):
+    reader.count = count = MagicMock(return_value={"count": 1, "position": 0})
+
+    filter_operator = FilterOperator("field", "=", "data")
+    request = AggregateRequest("collection", filter_operator)
+
+    assert reader.exists(request) == {"exists": True, "position": 0}
+
+    count.assert_called_with(request)
+
+
+def test_exists_false(reader: ReaderService):
+    reader.count = count = MagicMock(return_value={"count": 0, "position": 0})
+
+    filter_operator = FilterOperator("field", "=", "data")
+    request = AggregateRequest("collection", filter_operator)
+
+    assert reader.exists(request) == {"exists": False, "position": 0}
+
+    count.assert_called_with(request)
+
+
+def test_count(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.aggregate = aggregate = MagicMock(return_value=result)
+
+    filter_operator = FilterOperator("field", "=", "data")
+    request = AggregateRequest("collection", filter_operator)
+
+    assert reader.count(request) == result
+
+    read_db.get_context.assert_called()
+    aggregate.assert_called_with("collection", filter_operator, ("count", None, None))
+
+
+def test_min(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.aggregate = aggregate = MagicMock(return_value=result)
+
+    filter_operator = FilterOperator("field", "=", "data")
+    request = MinMaxRequest("collection", filter_operator, "field")
+
+    assert reader.min(request) == result
+
+    read_db.get_context.assert_called()
+    aggregate.assert_called_with("collection", filter_operator, ("min", "field", "int"))
+
+
+def test_max(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.aggregate = aggregate = MagicMock(return_value=result)
+
+    filter_operator = FilterOperator("field", "=", "data")
+    request = MinMaxRequest("collection", filter_operator, "field")
+
+    assert reader.max(request) == result
+
+    read_db.get_context.assert_called()
+    aggregate.assert_called_with("collection", filter_operator, ("max", "field", "int"))
+
+
+def test_apply_mapped_fields(reader: ReaderService):
+    model = {"f1": "a", "f2": "b"}
+    assert reader.apply_mapped_fields(model, ["f1"]) == {"f1": "a"}
+
+
+def test_apply_mapped_fields_no_fields(reader: ReaderService):
+    model = MagicMock()
+    assert reader.apply_mapped_fields(model, []) == model
+
+
+def test_apply_mapped_fields_multi(reader: ReaderService):
+    result = {
+        "c1/1": {"f1": "a", "f2": "b", "f": "c"},
+        "c2/1": {"f3": "a", "f4": "b", "f": "c"},
+    }
+    assert reader.apply_mapped_fields_multi(
+        result, {"c1": ["f1", "f"], "c2": ["f3", "f"]}
+    ) == {"c1/1": {"f1": "a", "f": "c"}, "c2/1": {"f3": "a", "f": "c"}}
+
+
+def test_apply_mapped_fields_multi_no_fields(reader: ReaderService):
+    result = MagicMock()
+    assert reader.apply_mapped_fields_multi(result, {}) == result

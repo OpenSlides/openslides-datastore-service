@@ -30,9 +30,10 @@ def assert_model(fqid, model, position):
         assert read_db_model == model
 
         # build model and assert that the last event is not a deleted.
-        builded_model = read_db.build_model_ignore_deleted(fqid)
+        built_model = read_db.build_model_ignore_deleted(fqid)
         del model[META_POSITION]
-        assert builded_model == model
+        del built_model[META_POSITION]
+        assert built_model == model
         event_type = connection_handler.query_single_value(
             "select type from events where fqid=%s order by id desc limit 1", [fqid]
         )

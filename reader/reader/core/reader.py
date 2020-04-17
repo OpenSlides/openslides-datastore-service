@@ -1,5 +1,7 @@
 from typing import List, Protocol, TypedDict
 
+from shared.util import Model
+
 from .requests import (
     AggregateRequest,
     FilterRequest,
@@ -8,7 +10,6 @@ from .requests import (
     GetRequest,
     MinMaxRequest,
 )
-from shared.util import Model
 
 
 class ExistsResult(TypedDict):

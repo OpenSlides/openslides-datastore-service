@@ -1,7 +1,7 @@
 import json
 
+from reader.flask_frontend.routes import Route
 from shared.tests.util import assert_success_response
-from tests.system.util import FILTER_URL
 
 
 data = {
@@ -23,7 +23,7 @@ def setup_data(connection, cursor, deleted=False):
 def test_eq(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "=", "value": "data"},
@@ -36,7 +36,7 @@ def test_eq(json_client, db_connection, db_cur):
 def test_gt(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_2", "operator": ">", "value": 21},
@@ -49,7 +49,7 @@ def test_gt(json_client, db_connection, db_cur):
 def test_geq(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_2", "operator": ">=", "value": 21},
@@ -62,7 +62,7 @@ def test_geq(json_client, db_connection, db_cur):
 def test_neq(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_2", "operator": "!=", "value": 21},
@@ -75,7 +75,7 @@ def test_neq(json_client, db_connection, db_cur):
 def test_lt(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_2", "operator": "<", "value": 42},
@@ -88,7 +88,7 @@ def test_lt(json_client, db_connection, db_cur):
 def test_leq(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_2", "operator": "<=", "value": 42},
@@ -101,7 +101,7 @@ def test_leq(json_client, db_connection, db_cur):
 def test_and(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {
@@ -119,7 +119,7 @@ def test_and(json_client, db_connection, db_cur):
 def test_or(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {
@@ -138,7 +138,7 @@ def test_complex(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     # (field_1 == 'data' and field_2 > 21) or (field_3 == False and not field_2 < 21)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {
@@ -172,7 +172,7 @@ def test_complex(json_client, db_connection, db_cur):
 def test_invalid_field(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "invalid", "operator": "=", "value": "data"},
@@ -185,7 +185,7 @@ def test_invalid_field(json_client, db_connection, db_cur):
 def test_mapped_fields(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
-        FILTER_URL,
+        Route.FILTER.URL,
         {
             "collection": "c1",
             "filter": {"field": "field_1", "operator": "=", "value": "data"},

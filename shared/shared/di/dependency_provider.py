@@ -1,4 +1,5 @@
 import inspect
+from textwrap import dedent
 from typing import Any, Dict, Optional, TypedDict
 
 from .exceptions import DependencyInjectionError, DependencyNotFound
@@ -35,6 +36,7 @@ class DependencyProvider:
         self.provider_map[protocol] = cls
 
     def register(self, protocol, cls):
+        check_implements_protocol(protocol, cls)
         if get_di_type(cls) == _TYPE_SINGLETON:
             self.register_as_singleton(protocol, cls)
         elif get_di_type(cls) == _TYPE_FACTORY:
@@ -44,6 +46,32 @@ class DependencyProvider:
 
 
 injector = DependencyProvider()
+
+
+def check_implements_protocol(protocol, cls):
+    protocol_funcs = get_functions_with_signatures(protocol)
+    cls_funcs = get_functions_with_signatures(cls)
+    for name, sig in protocol_funcs.items():
+        if name not in cls_funcs or cls_funcs[name] != sig:
+            raise DependencyInjectionError(
+                dedent(
+                    f"""
+                    Class {cls} does not implement function '{name}' of protocol\
+                    {protocol} correctly.
+                    Protocol implementation: {sig}
+                    Class implementation: {cls_funcs.get(name)}
+                    """
+                )
+            )
+
+
+def get_functions_with_signatures(cls):
+    # ignore all functions which start with an underscore
+    return {
+        t[0]: inspect.signature(t[1])
+        for t in inspect.getmembers(cls)
+        if t[0][0] != "_" and inspect.isfunction(t[1])
+    }
 
 
 def service_as_singleton(cls):
