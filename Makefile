@@ -23,9 +23,9 @@ run-cleanup: | build-tests
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose up -d $(MODULE)
-	docker-compose exec $(MODULE) wait-for-it --timeout=10 postgresql:5432
+	docker-compose exec $(MODULE) wait-for-it --timeout=15 postgresql:5432
 ifdef USE_REDIS
-	docker-compose exec $(MODULE) wait-for-it --timeout=10 redis:6379
+	docker-compose exec $(MODULE) wait-for-it --timeout=15 redis:6379
 endif
 
 run-tests-no-down: | setup-docker-compose

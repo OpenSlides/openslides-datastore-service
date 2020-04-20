@@ -31,6 +31,13 @@ def test_simple(json_client, db_connection, db_cur):
     assert response.json == data
 
 
+def test_wrong_format(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    response = json_client.post(Route.GET.URL, {"fqid": "not valid"})
+    print(response.status_code, response.json)  # type 3 -> MODEL DOES NOT EXISTS...
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
 def test_no_model(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET.URL, {"fqid": FQID})
     assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
