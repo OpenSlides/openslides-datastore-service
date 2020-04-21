@@ -4,7 +4,6 @@ from .exceptions import (  # noqa
     ModelExists,
     ModelLocked,
     ModelNotDeleted,
-    WriterException,
 )
 from .filter import And, Filter, FilterOperator, Not, Or  # noqa
 from .key_transforms import (  # noqa
@@ -27,4 +26,11 @@ from .key_types import (  # noqa
     assert_string,
     get_key_type,
 )
-from .read_database import DeletedModelsBehaviour, ReadDatabase  # noqa
+from .read_database import ReadDatabase, DeletedModelsBehaviour  # noqa
+
+
+def raise_exception_for_deleted_models_behaviour(fqid: str, get_deleted_models: DeletedModelsBehaviour) -> None:
+    if get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED:
+        raise ModelNotDeleted(fqid)
+    else:
+        raise ModelDoesNotExist(fqid)

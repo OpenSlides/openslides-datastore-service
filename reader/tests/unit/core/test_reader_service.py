@@ -49,26 +49,25 @@ def read_db(provide_di):
 def test_get(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     model = MagicMock()
     read_db.get = get = MagicMock(return_value=model)
-    read_db.is_deleted = id = MagicMock(return_value=False)
 
     request = GetRequest("fqid", ["field"])
 
     assert reader.get(request) == model
 
     read_db.get_context.assert_called()
-    id.assert_called_with("fqid", None)
-    get.assert_called_with("fqid", ["field"])
+    get.assert_called_with("fqid", ["field"], DeletedModelsBehaviour.NO_DELETED)
 
 
 def test_get_with_position(
     reader: ReaderService, read_db: SqlReadDatabaseBackendService
 ):
+    fqid = "fqid"
     model = MagicMock()
-    read_db.is_deleted = MagicMock(return_value=False)
+    reader.filter_fqids_by_deleted_status = MagicMock(return_value=[fqid])
     read_db.build_model_ignore_deleted = bmid = MagicMock(return_value=model)
     reader.apply_mapped_fields = amf = MagicMock(return_value=model)
 
-    request = GetRequest("fqid", ["field"], 42)
+    request = GetRequest(fqid, ["field"], 42)
 
     assert reader.get(request) == model
 
@@ -76,18 +75,18 @@ def test_get_with_position(
     amf.assert_called_with(model, ["field"])
 
 
-def test_get_deleted_no_deleted(reader, read_db):
-    read_db.is_deleted = MagicMock(return_value=True)
+def test_get_with_position_deleted_no_deleted(reader, read_db):
+    reader.filter_fqids_by_deleted_status = MagicMock(return_value=[])
 
-    request = GetRequest("fqid", ["field"], None, DeletedModelsBehaviour.NO_DELETED)
+    request = GetRequest("fqid", ["field"], 42, DeletedModelsBehaviour.NO_DELETED)
     with pytest.raises(ModelDoesNotExist):
         reader.get(request)
 
 
-def test_get_not_deleted_only_deleted(reader, read_db):
-    read_db.is_deleted = MagicMock(return_value=False)
+def test_get_with_position_not_deleted_only_deleted(reader, read_db):
+    reader.filter_fqids_by_deleted_status = MagicMock(return_value=[])
 
-    request = GetRequest("fqid", ["field"], None, DeletedModelsBehaviour.ONLY_DELETED)
+    request = GetRequest("fqid", ["field"], 42, DeletedModelsBehaviour.ONLY_DELETED)
     with pytest.raises(ModelNotDeleted):
         reader.get(request)
 
@@ -262,6 +261,12 @@ def test_max(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     read_db.get_context.assert_called()
     aggregate.assert_called_with("collection", filter_operator, ("max", "field", "int"))
+
+
+def test_filter_fqids_by_deleted_status(reader: ReaderService):
+    fqids = MagicMock()
+    res = reader.filter_fqids_by_deleted_status(fqids, 42, DeletedModelsBehaviour.ALL_MODELS)
+    assert res == fqids
 
 
 def test_apply_mapped_fields(reader: ReaderService):

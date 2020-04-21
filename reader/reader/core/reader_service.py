@@ -8,6 +8,7 @@ from shared.core import (
     ReadDatabase,
     build_fqid,
     collection_from_fqid,
+    raise_exception_for_deleted_models_behaviour
 )
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
@@ -31,25 +32,19 @@ class ReaderService:
 
     def get(self, request: GetRequest) -> Model:
         with self.database.get_context():
-            deleted = self.database.is_deleted(request.fqid, request.position)
-            if (
-                deleted
-                and request.get_deleted_models == DeletedModelsBehaviour.NO_DELETED
-            ):
-                raise ModelDoesNotExist(request.fqid)
-            if (
-                not deleted
-                and request.get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED
-            ):
-                raise ModelNotDeleted(request.fqid)
-
             if request.position:
+                # if a position is given, first test if the model is in the correct state
+                # to prevent the unneccessary building of the model if it's not
+                fqids = self.filter_fqids_by_deleted_status([request.fqid], request.position, request.get_deleted_models)
+                if not len(fqids):
+                    raise_exception_for_deleted_models_behaviour(request.fqid, request.get_deleted_models)
+
                 model = self.database.build_model_ignore_deleted(
                     request.fqid, request.position
                 )
                 model = self.apply_mapped_fields(model, request.mapped_fields)
             else:
-                model = self.database.get(request.fqid, request.mapped_fields)
+                model = self.database.get(request.fqid, request.mapped_fields, request.get_deleted_models)
         return model
 
     def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
@@ -65,19 +60,7 @@ class ReaderService:
             }
 
             if request.position:
-                deleted_map = self.database.get_deleted_status(fqids, request.position)
-                if request.get_deleted_models != DeletedModelsBehaviour.ALL_MODELS:
-                    fqids = [
-                        fqid
-                        for fqid in fqids
-                        if fqid in deleted_map
-                        and deleted_map[fqid]
-                        == (
-                            request.get_deleted_models
-                            == DeletedModelsBehaviour.ONLY_DELETED
-                        )
-                    ]
-
+                fqids = self.filter_fqids_by_deleted_status(fqids, request.position, request.get_deleted_models)
                 result = self.database.build_models_ignore_deleted(
                     fqids, request.position
                 )
@@ -130,6 +113,22 @@ class ReaderService:
                 collection, filter, (function, field, type)
             )
         return result
+
+    def filter_fqids_by_deleted_status(self, fqids: List[str], position: int, get_deleted_models: DeletedModelsBehaviour) -> List[str]:
+        if get_deleted_models == DeletedModelsBehaviour.ALL_MODELS:
+            return fqids
+        else:
+            deleted_map = self.database.get_deleted_status(fqids, position)
+            return [
+                fqid
+                for fqid in fqids
+                if fqid in deleted_map
+                and deleted_map[fqid]
+                == (
+                    get_deleted_models
+                    == DeletedModelsBehaviour.ONLY_DELETED
+                )
+            ]
 
     def apply_mapped_fields(self, model: Model, mapped_fields: List[str]) -> Model:
         if not mapped_fields or not len(mapped_fields):

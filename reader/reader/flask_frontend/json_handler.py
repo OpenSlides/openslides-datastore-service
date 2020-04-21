@@ -16,7 +16,7 @@ from reader.core.requests import (
 from shared.core import DeletedModelsBehaviour
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
-from shared.postgresql_backend.sql_read_database_backend_service import (
+from shared.postgresql_backend.sql_query_helper import (
     VALID_AGGREGATE_CAST_TARGETS,
 )
 from shared.util import JSON, BadCodingError

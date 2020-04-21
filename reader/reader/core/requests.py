@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from shared.core import DeletedModelsBehaviour, Filter
-from shared.postgresql_backend.sql_read_database_backend_service import (
+from shared.postgresql_backend.sql_query_helper import (
     VALID_AGGREGATE_CAST_TARGETS,
 )
 

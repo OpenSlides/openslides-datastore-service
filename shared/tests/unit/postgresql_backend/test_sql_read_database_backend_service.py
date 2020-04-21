@@ -6,6 +6,8 @@ from shared.core import And, FilterOperator, ModelDoesNotExist, Not, Or, ReadDat
 from shared.di import injector
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.postgresql_backend.connection_handler import DatabaseError
+from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
+    SqlQueryHelper)
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
@@ -16,6 +18,7 @@ from shared.util import META_POSITION, BadCodingError
 @pytest.fixture(autouse=True)
 def provide_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, MagicMock)
+    injector.register_as_singleton(SqlQueryHelper, SqlQueryHelper)
     injector.register(ReadDatabase, SqlReadDatabaseBackendService)
     yield
 
@@ -28,6 +31,11 @@ def read_database(provide_di):
 @pytest.fixture()
 def connection(provide_di):
     yield injector.get(ConnectionHandler)
+
+
+@pytest.fixture()
+def query_helper(provide_di):
+    yield injector.get(SqlQueryHelper)
 
 
 def test_database_error():
@@ -65,7 +73,19 @@ def test_get_invalid(read_database: ReadDatabase):
     assert q.call_args.args[0] == [fqid]
 
 
-def test_get_many(read_database: ReadDatabase, connection: ConnectionHandler):
+# def test_get_with_position(read_database: ReadDatabase):
+#     fqid = "c/1"
+#     model = MagicMock()
+#     read_database.filter_fqids_by_deleted_status = ffbds = MagicMock(return_value=[fqid])
+#     read_database.get_many = q = MagicMock(return_value={fqid: model})
+
+#     model = read_database.get(fqid, [])
+
+#     assert q.call_args.args[0] == [fqid]
+#     assert model == model
+
+
+def test_get_many(read_database: ReadDatabase, connection: ConnectionHandler, query_helper: SqlQueryHelper):
     fqid1 = "c/1"
     model1 = MagicMock()
     fqid2 = "c/2"
@@ -116,8 +136,9 @@ def test_aggregate(read_database: ReadDatabase, connection: ConnectionHandler):
     res.copy = lambda: res
     connection.query = q = MagicMock(return_value=[res])
     filter = FilterOperator("a", "=", "a")
+    param = AggregateFilterQueryFieldsParameters("count")
 
-    models = read_database.aggregate("c", filter, ("count",))
+    models = read_database.aggregate("c", filter, param)
 
     q.assert_called()
     assert models == res
@@ -151,11 +172,7 @@ def test_fetch_list_of_models_mapped_fields(
     assert models == [row]
 
 
-def test_get_unique_mapped_fields(read_database: ReadDatabase):
-    assert read_database.get_unique_mapped_fields({"c": ["field"]}) == ["field"]
-
-
-def test_build_models_from_result(read_database: ReadDatabase):
+def test_build_models_from_result(read_database: ReadDatabase, query_helper: SqlQueryHelper):
     row = MagicMock()
     row["fqid"] = MagicMock()
     row.copy = lambda: row
@@ -164,98 +181,11 @@ def test_build_models_from_result(read_database: ReadDatabase):
     mfpc.__getitem__ = MagicMock(return_value=[MagicMock()])
     mfpc.__contains__ = MagicMock(return_value=True)
 
-    read_database.mapped_fields_map_has_empty_entry = MagicMock(return_value=False)
+    query_helper.mapped_fields_map_has_empty_entry = MagicMock(return_value=False)
 
     result = read_database.build_models_from_result([row], mfpc)
 
     assert result == {row["fqid"]: row}
-
-
-def test_build_filter_query_list(read_database: ReadDatabase):
-    read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
-    filter = MagicMock()
-    field = MagicMock()
-
-    q, a, s = read_database.build_filter_query(MagicMock(), filter, [field])
-
-    assert bfs.call_args[0] == (filter, [])
-    assert a[0] == field
-    assert s == [field]
-
-
-def test_build_filter_query_invalid_function(read_database: ReadDatabase):
-    read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
-    filter = MagicMock()
-
-    with pytest.raises(BadCodingError):
-        read_database.build_filter_query(MagicMock(), filter, ("invalid",))
-
-    assert bfs.call_args[0] == (filter, [])
-
-
-def test_build_filter_query_invalid_length(read_database: ReadDatabase):
-    read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
-    filter = MagicMock()
-
-    with pytest.raises(BadCodingError):
-        read_database.build_filter_query(MagicMock(), filter, ("min", "invalid"))
-
-    assert bfs.call_args[0] == (filter, [])
-
-
-def test_build_filter_query_invalid_cast_target(read_database: ReadDatabase):
-    read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
-    filter = MagicMock()
-
-    with pytest.raises(BadCodingError):
-        read_database.build_filter_query(
-            MagicMock(), filter, ("min", "field", "invalid")
-        )
-
-    assert bfs.call_args[0] == (filter, [])
-
-
-def test_build_filter_query_tuple(read_database: ReadDatabase):
-    read_database.build_filter_str = bfs = MagicMock(return_value=MagicMock())
-    filter = MagicMock()
-    field = MagicMock()
-
-    q, a, s = read_database.build_filter_query(
-        MagicMock(), filter, ("min", field, "int")
-    )
-
-    assert bfs.call_args[0] == (filter, [])
-    assert a[0] == field
-    assert s == []
-
-
-def test_build_filter_str_not(read_database: ReadDatabase):
-    f = read_database.build_filter_str
-    read_database.build_filter_str = MagicMock(return_value="")
-    filter = Not(MagicMock())
-
-    assert f(filter, []) == "NOT ()"
-
-
-def test_build_filter_str_or(read_database: ReadDatabase):
-    f = read_database.build_filter_str
-    read_database.build_filter_str = MagicMock(return_value="")
-    filter = Or([MagicMock(), MagicMock()])
-
-    assert f(filter, []) == "() OR ()"
-
-
-def test_build_filter_str_and(read_database: ReadDatabase):
-    f = read_database.build_filter_str
-    read_database.build_filter_str = MagicMock(return_value="")
-    filter = And([MagicMock(), MagicMock()])
-
-    assert f(filter, []) == "() AND ()"
-
-
-def test_build_filter_str_invalid(read_database: ReadDatabase):
-    with pytest.raises(BadCodingError):
-        read_database.build_filter_str("invalid", [])
 
 
 def test_create_or_update_models(

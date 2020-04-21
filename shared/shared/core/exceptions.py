@@ -1,27 +1,27 @@
-class WriterException(Exception):
+class DatastoreException(Exception):
     pass
 
 
-class InvalidFormat(WriterException):
+class InvalidFormat(DatastoreException):
     def __init__(self, msg):
         self.msg = msg
 
 
-class ModelDoesNotExist(WriterException):
+class ModelDoesNotExist(DatastoreException):
     def __init__(self, fqid):
         self.fqid = fqid
 
 
-class ModelExists(WriterException):
+class ModelExists(DatastoreException):
     def __init__(self, fqid):
         self.fqid = fqid
 
 
-class ModelNotDeleted(WriterException):
+class ModelNotDeleted(DatastoreException):
     def __init__(self, fqid):
         self.fqid = fqid
 
 
-class ModelLocked(WriterException):
+class ModelLocked(DatastoreException):
     def __init__(self, key):
         self.key = key

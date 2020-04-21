@@ -10,37 +10,34 @@ from shared.core import (
     Not,
     Or,
     collection_from_fqid,
+    raise_exception_for_deleted_models_behaviour
 )
 from shared.di import service_as_singleton
-from shared.util import KEYSEPARATOR, META_POSITION, BadCodingError, Model
+from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
+    MappedFieldsFilterQueryFieldsParameters, SqlQueryHelper)
+from shared.util import (BadCodingError, KEYSEPARATOR, META_POSITION, Model)
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES
 
 
-# extend if neccessary. first is always the default (should be int)
-# min/max functions support the following:
-# "any numeric, string, date/time, network, or enum type, or arrays of these types"
-VALID_AGGREGATE_CAST_TARGETS = ["int"]
-
-
 @service_as_singleton
 class SqlReadDatabaseBackendService:
 
-    VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
-
     connection: ConnectionHandler
+    query_helper: SqlQueryHelper
 
     def get_context(self) -> ContextManager[None]:
         return self.connection.get_connection_context()
 
-    def get(self, fqid: str, mapped_fields: List[str] = [],) -> Model:
+    def get(self, fqid: str, mapped_fields: List[str] = [],
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,) -> Model:
         collection = collection_from_fqid(fqid)
-        models = self.get_many([fqid], {collection: mapped_fields})
+        models = self.get_many([fqid], {collection: mapped_fields}, get_deleted_models)
         try:
             return models[fqid]
         except KeyError:
-            raise ModelDoesNotExist(fqid)
+            raise_exception_for_deleted_models_behaviour(fqid, get_deleted_models)
 
     def get_many(
         self,
@@ -52,11 +49,11 @@ class SqlReadDatabaseBackendService:
             return {}
 
         arguments = [tuple(fqids)]
-        del_cond = self.get_deleted_condition(get_deleted_models)
-        unique_mapped_fields: List[Any] = self.get_unique_mapped_fields(
+        del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
+        unique_mapped_fields: List[Any] = self.query_helper.get_unique_mapped_fields(
             mapped_fields_per_collection
         )
-        mapped_fields_str = self.build_select_mapped_fields(unique_mapped_fields)
+        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(unique_mapped_fields)
 
         query = f"""
             select fqid, {mapped_fields_str} from models
@@ -75,8 +72,8 @@ class SqlReadDatabaseBackendService:
         mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> List[Model]:
-        del_cond = self.get_deleted_condition(get_deleted_models)
-        mapped_fields_str = self.build_select_mapped_fields(mapped_fields)
+        del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
+        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(mapped_fields)
         query = f"""
             select {mapped_fields_str} from models
             {"natural join models_lookup" if del_cond else ""}
@@ -92,8 +89,9 @@ class SqlReadDatabaseBackendService:
     def filter(
         self, collection: str, filter: Filter, mapped_fields: List[str]
     ) -> List[Model]:
-        query, arguments, sql_params = self.build_filter_query(
-            collection, filter, mapped_fields
+        fields_params = MappedFieldsFilterQueryFieldsParameters(mapped_fields)
+        query, arguments, sql_params = self.query_helper.build_filter_query(
+            collection, filter, fields_params
         )
         models = self.fetch_list_of_models(query, arguments, sql_params, mapped_fields)
         return models
@@ -102,9 +100,9 @@ class SqlReadDatabaseBackendService:
         self,
         collection: str,
         filter: Filter,
-        fields_params: Tuple[str, Optional[str], Optional[str]],
+        fields_params: AggregateFilterQueryFieldsParameters,
     ) -> Any:
-        query, arguments, sql_params = self.build_filter_query(
+        query, arguments, sql_params = self.query_helper.build_filter_query(
             collection, filter, fields_params
         )
         value = self.connection.query(query, arguments, sql_params)
@@ -124,39 +122,6 @@ class SqlReadDatabaseBackendService:
             models = [row["data"] for row in result]
         return models
 
-    def get_unique_mapped_fields(
-        self, mapped_fields_per_collection: Dict[str, List[str]]
-    ) -> List[str]:
-        if len(mapped_fields_per_collection):
-            unique_mapped_fields: Set[str] = set.union(
-                *[set(fields) for fields in mapped_fields_per_collection.values()]
-            )
-            return list(unique_mapped_fields)
-        else:
-            return []
-
-    def build_select_mapped_fields(
-        self,
-        unique_mapped_fields: List[str],
-        mapped_fields_per_collection: Dict[str, List[str]] = None,
-    ) -> str:
-        if len(unique_mapped_fields) == 0 or (
-            mapped_fields_per_collection
-            and self.mapped_fields_map_has_empty_entry(mapped_fields_per_collection)
-        ):
-            # at least one collection needs all fields, so we just select data and
-            # calculate the mapped_fields later
-            return "data"
-        else:
-            return ", ".join(["data->%s AS {}"] * len(unique_mapped_fields))
-
-    def mapped_fields_map_has_empty_entry(
-        self, mapped_fields_per_collection: Dict[str, List[str]]
-    ) -> bool:
-        return not len(mapped_fields_per_collection) or any(
-            len(fields) == 0 for fields in mapped_fields_per_collection.values()
-        )
-
     def build_models_from_result(
         self, result, mapped_fields_per_collection: Dict[str, List[str]]
     ) -> Dict[str, Model]:
@@ -165,7 +130,7 @@ class SqlReadDatabaseBackendService:
             fqid = row["fqid"]
             collection = collection_from_fqid(fqid)
 
-            if self.mapped_fields_map_has_empty_entry(mapped_fields_per_collection):
+            if self.query_helper.mapped_fields_map_has_empty_entry(mapped_fields_per_collection):
                 # at least one collection needs all fields, so we just selected data
                 model = row["data"]
             else:
@@ -181,79 +146,6 @@ class SqlReadDatabaseBackendService:
             result_map[fqid] = model
 
         return result_map
-
-    def build_filter_query(
-        self,
-        collection: str,
-        filter: Filter,
-        fields_params: Union[
-            List[str], Tuple[str, Optional[str], Optional[str]]
-        ] = None,
-    ) -> Tuple[str, List[str], List[str]]:
-        arguments: List[str] = []
-        sql_parameters: List[str] = []
-        filter_str = self.build_filter_str(filter, arguments)
-
-        arguments = [collection + KEYSEPARATOR + "%"] + arguments
-
-        if fields_params:
-            if isinstance(fields_params, list):
-                fields = self.build_select_mapped_fields(fields_params)
-                arguments = fields_params + arguments
-                sql_parameters = fields_params
-            elif fields_params[0] not in self.VALID_AGGREGATE_FUNCTIONS:
-                raise BadCodingError(f"Invalid aggregate function: {fields_params[0]}")
-            else:
-                if len(fields_params) == 3 and fields_params[1] and fields_params[2]:
-                    if fields_params[2] not in VALID_AGGREGATE_CAST_TARGETS:
-                        raise BadCodingError("Invalid cast type: %s" % fields_params[2])
-                    fields = f"{fields_params[0]}((data->>%s)::{fields_params[2]})"
-                    arguments = [fields_params[1]] + arguments  # type: ignore
-                elif fields_params[0] == "count":
-                    fields = "count(*)"
-                else:
-                    raise BadCodingError(
-                        "Invalid fields_params for build_filter_query: %s"
-                        % list(fields_params)
-                    )
-                fields += f" AS {fields_params[0]},\
-                            (SELECT MAX(position) FROM positions) AS position"
-        else:
-            fields = "data"
-
-        query = f"select {fields} from models where fqid like %s and ({filter_str})"
-        return (
-            query,
-            arguments,
-            sql_parameters,
-        )
-
-    def build_filter_str(self, filter: Filter, arguments: List[str]) -> str:
-        if isinstance(filter, Not):
-            return f"NOT ({self.build_filter_str(filter.not_filter, arguments)})"
-        elif isinstance(filter, Or):
-            return " OR ".join(
-                f"({self.build_filter_str(part, arguments)})"
-                for part in filter.or_filter
-            )
-        elif isinstance(filter, And):
-            return " AND ".join(
-                f"({self.build_filter_str(part, arguments)})"
-                for part in filter.and_filter
-            )
-        elif isinstance(filter, FilterOperator):
-            condition = f"data->>%s {filter.operator} %s::text"
-            arguments += [filter.field, filter.value]
-            return condition
-        else:
-            raise BadCodingError("Invalid filter type")
-
-    def get_deleted_condition(self, flag: DeletedModelsBehaviour) -> str:
-        return (
-            ""
-            if flag == DeletedModelsBehaviour.ALL_MODELS
-            else "and deleted = " + str(flag == DeletedModelsBehaviour.ONLY_DELETED)
-        )
 
     def create_or_update_models(self, models: Dict[str, Model]) -> None:
         if not models:
@@ -323,15 +215,15 @@ class SqlReadDatabaseBackendService:
         args: List[Any] = [tuple(fqids)]
         db_events = self.connection.query(query, args + pos_args)
 
-        partitions = {}
+        events_per_fqid = {}
         for event in db_events:
-            if event["fqid"] not in partitions:
-                partitions[event["fqid"]] = [event]
+            if event["fqid"] not in events_per_fqid:
+                events_per_fqid[event["fqid"]] = [event]
             else:
-                partitions[event["fqid"]] += [event]
+                events_per_fqid[event["fqid"]] += [event]
 
         models = {}
-        for fqid, events in partitions.items():
+        for fqid, events in events_per_fqid.items():
             models[fqid] = self.build_model_from_events(events)
 
         return models

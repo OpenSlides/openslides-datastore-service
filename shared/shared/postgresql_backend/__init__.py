@@ -7,6 +7,8 @@ def setup_di():
     from .sql_read_database_backend_service import SqlReadDatabaseBackendService
     from shared.core import ReadDatabase
     from .pg_connection_handler import PgConnectionHandlerService
+    from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 
     injector.register(ConnectionHandler, PgConnectionHandlerService)
+    injector.register(SqlQueryHelper, SqlQueryHelper)
     injector.register(ReadDatabase, SqlReadDatabaseBackendService)
