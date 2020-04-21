@@ -35,7 +35,7 @@ field_regex = re.compile(f"^{_field_regex}$")
 
 def assert_string(key):
     if not isinstance(key, str):
-        raise InvalidFormat(f"The key has type {type(key)}, but string is expected")
+        raise InvalidFormat(f"The key `{key}` has type {type(key)}, but string is expected")
 
 
 def get_key_type(key):

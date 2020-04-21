@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from typing import Any, List, Literal, Union
+from .self_validating_dataclass import Field, SelfValidatingDataclass
 
 
 @dataclass
-class FilterOperator:
-    field: str
+class FilterOperator(SelfValidatingDataclass):
+    field: Field
     operator: Literal["=", "!=", "<", ">", ">=", "<="]
     value: Any
 

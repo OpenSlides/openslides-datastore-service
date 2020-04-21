@@ -7,7 +7,7 @@ from shared.di import injector
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    SqlQueryHelper)
+    CountFilterQueryFieldsParameters, SqlQueryHelper)
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
@@ -136,7 +136,7 @@ def test_aggregate(read_database: ReadDatabase, connection: ConnectionHandler):
     res.copy = lambda: res
     connection.query = q = MagicMock(return_value=[res])
     filter = FilterOperator("a", "=", "a")
-    param = AggregateFilterQueryFieldsParameters("count")
+    param = CountFilterQueryFieldsParameters()
 
     models = read_database.aggregate("c", filter, param)
 

@@ -26,11 +26,11 @@ def test_handle_request(reader):
     reader.get = get = MagicMock()
 
     json_handler = JSONHandler()
-    json_handler.handle_request(Route.GET, {"fqid": "fqid"})
+    json_handler.handle_request(Route.GET, {"fqid": "c/1"})
 
     request = get.call_args.args[0]
     assert isinstance(request, GetRequest)
-    assert request.fqid == "fqid"
+    assert request.fqid == "c/1"
 
 
 def test_handle_request_invalid_route():
@@ -56,4 +56,4 @@ def test_handle_request_invalid_config():
     }
 
     with pytest.raises(BadCodingError):
-        json_handler.handle_request(Route.GET, {"fqid": "fqid"})
+        json_handler.handle_request(Route.GET, {"fqid": "c/1"})

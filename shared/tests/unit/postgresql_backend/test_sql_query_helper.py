@@ -7,7 +7,7 @@ from shared.di import injector
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    MappedFieldsFilterQueryFieldsParameters, SqlQueryHelper)
+    CountFilterQueryFieldsParameters, MappedFieldsFilterQueryFieldsParameters, SqlQueryHelper)
 from shared.tests import reset_di  # noqa
 from shared.util import META_POSITION, BadCodingError
 
@@ -82,7 +82,7 @@ def test_build_filter_query_aggregate(query_helper: SqlQueryHelper):
 def test_build_filter_query_count(query_helper: SqlQueryHelper):
     query_helper.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
-    param = AggregateFilterQueryFieldsParameters("count")
+    param = CountFilterQueryFieldsParameters()
 
     q, a, s = query_helper.build_filter_query(
         MagicMock(), filter, param

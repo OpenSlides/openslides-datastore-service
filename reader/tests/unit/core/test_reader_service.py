@@ -22,6 +22,8 @@ from shared.core import (
 )
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
+    CountFilterQueryFieldsParameters)
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
@@ -50,18 +52,18 @@ def test_get(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     model = MagicMock()
     read_db.get = get = MagicMock(return_value=model)
 
-    request = GetRequest("fqid", ["field"])
+    request = GetRequest("c/1", ["field"])
 
     assert reader.get(request) == model
 
     read_db.get_context.assert_called()
-    get.assert_called_with("fqid", ["field"], DeletedModelsBehaviour.NO_DELETED)
+    get.assert_called_with("c/1", ["field"], DeletedModelsBehaviour.NO_DELETED)
 
 
 def test_get_with_position(
     reader: ReaderService, read_db: SqlReadDatabaseBackendService
 ):
-    fqid = "fqid"
+    fqid = "c/1"
     model = MagicMock()
     reader.filter_fqids_by_deleted_status = MagicMock(return_value=[fqid])
     read_db.build_model_ignore_deleted = bmid = MagicMock(return_value=model)
@@ -71,14 +73,14 @@ def test_get_with_position(
 
     assert reader.get(request) == model
 
-    bmid.assert_called_with("fqid", 42)
+    bmid.assert_called_with(fqid, 42)
     amf.assert_called_with(model, ["field"])
 
 
 def test_get_with_position_deleted_no_deleted(reader, read_db):
     reader.filter_fqids_by_deleted_status = MagicMock(return_value=[])
 
-    request = GetRequest("fqid", ["field"], 42, DeletedModelsBehaviour.NO_DELETED)
+    request = GetRequest("c/1", ["field"], 42, DeletedModelsBehaviour.NO_DELETED)
     with pytest.raises(ModelDoesNotExist):
         reader.get(request)
 
@@ -86,7 +88,7 @@ def test_get_with_position_deleted_no_deleted(reader, read_db):
 def test_get_with_position_not_deleted_only_deleted(reader, read_db):
     reader.filter_fqids_by_deleted_status = MagicMock(return_value=[])
 
-    request = GetRequest("fqid", ["field"], 42, DeletedModelsBehaviour.ONLY_DELETED)
+    request = GetRequest("c/1", ["field"], 42, DeletedModelsBehaviour.ONLY_DELETED)
     with pytest.raises(ModelNotDeleted):
         reader.get(request)
 
@@ -234,7 +236,7 @@ def test_count(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     assert reader.count(request) == result
 
     read_db.get_context.assert_called()
-    aggregate.assert_called_with("collection", filter_operator, ("count", None, None))
+    aggregate.assert_called_with("collection", filter_operator, CountFilterQueryFieldsParameters())
 
 
 def test_min(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
@@ -243,11 +245,12 @@ def test_min(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     filter_operator = FilterOperator("field", "=", "data")
     request = MinMaxRequest("collection", filter_operator, "field")
+    params = AggregateFilterQueryFieldsParameters("min", "field", "int")
 
     assert reader.min(request) == result
 
     read_db.get_context.assert_called()
-    aggregate.assert_called_with("collection", filter_operator, ("min", "field", "int"))
+    aggregate.assert_called_with("collection", filter_operator, params)
 
 
 def test_max(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
@@ -256,11 +259,12 @@ def test_max(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     filter_operator = FilterOperator("field", "=", "data")
     request = MinMaxRequest("collection", filter_operator, "field")
+    params = AggregateFilterQueryFieldsParameters("max", "field", "int")
 
     assert reader.max(request) == result
 
     read_db.get_context.assert_called()
-    aggregate.assert_called_with("collection", filter_operator, ("max", "field", "int"))
+    aggregate.assert_called_with("collection", filter_operator, params)
 
 
 def test_filter_fqids_by_deleted_status(reader: ReaderService):

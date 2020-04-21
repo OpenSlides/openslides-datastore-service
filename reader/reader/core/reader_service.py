@@ -1,17 +1,12 @@
 from typing import Any, Dict, List
 
 from reader.core.reader import CountResult, ExistsResult, MaxResult, MinResult
-from shared.core import (
-    DeletedModelsBehaviour,
-    ModelDoesNotExist,
-    ModelNotDeleted,
-    ReadDatabase,
-    build_fqid,
-    collection_from_fqid,
-    raise_exception_for_deleted_models_behaviour
-)
+from shared.core import (build_fqid, collection_from_fqid, DeletedModelsBehaviour, Filter,
+    ModelDoesNotExist, ModelNotDeleted, raise_exception_for_deleted_models_behaviour, ReadDatabase)
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
+    BaseAggregateFilterQueryFieldsParameters, CountFilterQueryFieldsParameters)
 from shared.util import Model
 
 from .requests import (
@@ -92,11 +87,12 @@ class ReaderService:
         return {"exists": count["count"] > 0, "position": count["position"]}
 
     def count(self, request: AggregateRequest) -> CountResult:
-        return self.aggregate(request.collection, request.filter, "count")
+        return self.aggregate(request.collection, request.filter, CountFilterQueryFieldsParameters())
 
     def minmax(self, request: MinMaxRequest, mode: str) -> Dict[str, Any]:
+        params = AggregateFilterQueryFieldsParameters(mode, request.field, request.type)
         return self.aggregate(
-            request.collection, request.filter, mode, request.field, request.type
+            request.collection, request.filter, params
         )
 
     def min(self, request: MinMaxRequest) -> MinResult:
@@ -106,11 +102,11 @@ class ReaderService:
         return self.minmax(request, "max")
 
     def aggregate(
-        self, collection, filter, function, field=None, type=None
+        self, collection: str, filter: Filter, fields_params: BaseAggregateFilterQueryFieldsParameters
     ) -> Dict[str, Any]:
         with self.database.get_context():
             result = self.database.aggregate(
-                collection, filter, (function, field, type)
+                collection, filter, fields_params
             )
         return result
 

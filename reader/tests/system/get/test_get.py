@@ -31,10 +31,18 @@ def test_simple(json_client, db_connection, db_cur):
     assert response.json == data
 
 
-def test_wrong_format(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+def test_wrong_format_fqid(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET.URL, {"fqid": "not valid"})
-    print(response.status_code, response.json)  # type 3 -> MODEL DOES NOT EXISTS...
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_wrong_format_mapped_fields(json_client, db_connection, db_cur):
+    response = json_client.post(Route.GET.URL, {"fqid": FQID, "mapped_fields": ["not valid"]})
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_wrong_format_position(json_client, db_connection, db_cur):
+    response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 0})
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
 
 

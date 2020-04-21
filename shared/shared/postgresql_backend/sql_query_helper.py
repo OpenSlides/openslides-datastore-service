@@ -1,7 +1,7 @@
 from shared.core import And, DeletedModelsBehaviour, FilterOperator, Not, Or, Filter
 from shared.di import service_as_singleton
 from shared.util import BadCodingError, KEYSEPARATOR
-from typing import List, Dict, Tuple, Set, Optional
+from typing import List, Dict, Tuple, Set
 from dataclasses import dataclass
 
 
@@ -21,10 +21,18 @@ class MappedFieldsFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
     mapped_fields: List[str]
 
 @dataclass
-class AggregateFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
+class BaseAggregateFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
     function: str
-    field: Optional[str] = None
-    type: Optional[str] = None
+
+@dataclass
+class CountFilterQueryFieldsParameters(BaseAggregateFilterQueryFieldsParameters):
+    function: str = "count"
+
+@dataclass
+class AggregateFilterQueryFieldsParameters(BaseAggregateFilterQueryFieldsParameters):
+    function: str
+    field: str
+    type: str
 
 
 @service_as_singleton
@@ -78,7 +86,7 @@ class SqlQueryHelper:
         self,
         collection: str,
         filter: Filter,
-        fields_params: BaseFilterQueryFieldsParameters,
+        fields_params: BaseFilterQueryFieldsParameters = None,
     ) -> Tuple[str, List[str], List[str]]:
         arguments: List[str] = []
         sql_parameters: List[str] = []
@@ -91,28 +99,19 @@ class SqlQueryHelper:
             arguments = fields_params.mapped_fields + arguments
             sql_parameters = fields_params.mapped_fields
         else:
-            if isinstance(fields_params, AggregateFilterQueryFieldsParameters):
-                # `function` gives the used aggregate function
+            if isinstance(fields_params, CountFilterQueryFieldsParameters):
+                fields = "count(*)"
+            elif isinstance(fields_params, AggregateFilterQueryFieldsParameters):
                 if fields_params.function not in VALID_AGGREGATE_FUNCTIONS:
-                    raise BadCodingError(f"Invalid aggregate function: {fields_params.function}")
+                    raise BadCodingError("Invalid aggregate function: %s" % fields_params.function)
+                if fields_params.type not in VALID_AGGREGATE_CAST_TARGETS:
+                    raise BadCodingError("Invalid cast type: %s" % fields_params.type)
 
-                # for `count` aggregation, no field or type is required
-                if fields_params.function == "count":
-                    fields = "count(*)"
-                else:
-                    # for all other types, we need a field to aggregate over and a type to cast to
-                    if fields_params.field and fields_params.type:
-                        if fields_params.type not in VALID_AGGREGATE_CAST_TARGETS:
-                            raise BadCodingError("Invalid cast type: %s" % fields_params.type)
-
-                        fields = f"{fields_params.function}((data->>%s)::{fields_params.type})"
-                        arguments = [fields_params.field] + arguments
-                    else:
-                        raise BadCodingError("For all functions except `count` you have to specify a field and a type.")
+                fields = f"{fields_params.function}((data->>%s)::{fields_params.type})"
+                arguments = [fields_params.field] + arguments
             else:
                 raise BadCodingError(
-                    "Invalid fields_params for build_filter_query: %s"
-                    % fields_params
+                    f"Invalid fields_params for build_filter_query: {fields_params}"
                 )
             fields += f" AS {fields_params.function},\
                         (SELECT MAX(position) FROM positions) AS position"
