@@ -18,7 +18,7 @@ run-integration-unit-tests-interactive: | build-tests
 	docker run -ti -p 5000:5000 -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests openslides-datastore-$(MODULE)-test bash
 
 run-cleanup: | build-tests
-	docker run -ti -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests openslides-datastore-$(MODULE)-test ./cleanup.sh
+	docker run -ti -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests -v `pwd`/cli:/app/cli openslides-datastore-$(MODULE)-test ./cleanup.sh
 
 # Docker compose
 setup-docker-compose: | build-tests

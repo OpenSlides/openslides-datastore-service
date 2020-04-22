@@ -7,6 +7,7 @@ services:
             - ./shared/shared:/app/shared
             - ./writer/writer:/app/writer
             - ./writer/tests:/app/tests
+            - ./cli:/app/cli
         depends_on:
             - postgresql
             - redis
