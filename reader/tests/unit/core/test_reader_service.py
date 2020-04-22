@@ -20,10 +20,12 @@ from shared.core import (
     ModelNotDeleted,
     ReadDatabase,
 )
+from shared.core.read_database import (
+    AggregateFilterQueryFieldsParameters,
+    CountFilterQueryFieldsParameters,
+)
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
-from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    CountFilterQueryFieldsParameters)
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
@@ -98,8 +100,8 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
     read_db.get_many = get_many = MagicMock(return_value=result)
 
     parts = [
-        GetManyRequestPart("c1", "1", ["field1"]),
-        GetManyRequestPart("c2", "1", ["field2"]),
+        GetManyRequestPart("a", "1", ["field1"]),
+        GetManyRequestPart("b", "1", ["field2"]),
     ]
     request = GetManyRequest(parts, ["field"])
 
@@ -107,8 +109,8 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
 
     read_db.get_context.assert_called()
     get_many.assert_called_with(
-        ["c1/1", "c2/1"],
-        {"c1": ["field1", "field"], "c2": ["field2", "field"]},
+        ["a/1", "b/1"],
+        {"a": ["field1", "field"], "b": ["field2", "field"]},
         DeletedModelsBehaviour.NO_DELETED,
     )
 
@@ -117,64 +119,64 @@ def test_get_many_with_position(
     reader: ReaderService, read_db: SqlReadDatabaseBackendService
 ):
     result = MagicMock()
-    deleted_map = {"c1/1": False, "c2/1": False}
+    deleted_map = {"a/1": False, "b/1": False}
     read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
     read_db.build_models_ignore_deleted = bmid = MagicMock(return_value=result)
     reader.apply_mapped_fields_multi = amfm = MagicMock(return_value=result)
 
     parts = [
-        GetManyRequestPart("c1", "1", ["field1"]),
-        GetManyRequestPart("c2", "1", ["field2"]),
+        GetManyRequestPart("a", "1", ["field1"]),
+        GetManyRequestPart("b", "1", ["field2"]),
     ]
     request = GetManyRequest(parts, ["field"], 42)
 
     assert reader.get_many(request) == result
 
-    gds.assert_called_with(["c1/1", "c2/1"], 42)
-    bmid.assert_called_with(["c1/1", "c2/1"], 42)
+    gds.assert_called_with(["a/1", "b/1"], 42)
+    bmid.assert_called_with(["a/1", "b/1"], 42)
     amfm.assert_called_with(
-        result, {"c1": ["field1", "field"], "c2": ["field2", "field"]}
+        result, {"a": ["field1", "field"], "b": ["field2", "field"]}
     )
 
 
 def test_get_many_with_position_deleted_no_deleted(
     reader: ReaderService, read_db: SqlReadDatabaseBackendService
 ):
-    deleted_map = {"c1/1": True, "c2/1": False}
+    deleted_map = {"a/1": True, "b/1": False}
     read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
     read_db.build_models_ignore_deleted = bmid = MagicMock()
     reader.apply_mapped_fields_multi = MagicMock()
 
     parts = [
-        GetManyRequestPart("c1", "1", ["field1"]),
-        GetManyRequestPart("c2", "1", ["field2"]),
+        GetManyRequestPart("a", "1", ["field1"]),
+        GetManyRequestPart("b", "1", ["field2"]),
     ]
     request = GetManyRequest(parts, ["field"], 42)
 
     reader.get_many(request)
 
-    gds.assert_called_with(["c1/1", "c2/1"], 42)
-    bmid.assert_called_with(["c2/1"], 42)
+    gds.assert_called_with(["a/1", "b/1"], 42)
+    bmid.assert_called_with(["b/1"], 42)
 
 
 def test_get_many_with_position_not_deleted_only_deleted(
     reader: ReaderService, read_db: SqlReadDatabaseBackendService
 ):
-    deleted_map = {"c1/1": True, "c2/1": False}
+    deleted_map = {"a/1": True, "b/1": False}
     read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
     read_db.build_models_ignore_deleted = bmid = MagicMock()
     reader.apply_mapped_fields_multi = MagicMock()
 
     parts = [
-        GetManyRequestPart("c1", "1", ["field1"]),
-        GetManyRequestPart("c2", "1", ["field2"]),
+        GetManyRequestPart("a", "1", ["field1"]),
+        GetManyRequestPart("b", "1", ["field2"]),
     ]
     request = GetManyRequest(parts, ["field"], 42, DeletedModelsBehaviour.ONLY_DELETED)
 
     reader.get_many(request)
 
-    gds.assert_called_with(["c1/1", "c2/1"], 42)
-    bmid.assert_called_with(["c1/1"], 42)
+    gds.assert_called_with(["a/1", "b/1"], 42)
+    bmid.assert_called_with(["a/1"], 42)
 
 
 def test_get_all(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
@@ -236,7 +238,9 @@ def test_count(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     assert reader.count(request) == result
 
     read_db.get_context.assert_called()
-    aggregate.assert_called_with("collection", filter_operator, CountFilterQueryFieldsParameters())
+    aggregate.assert_called_with(
+        "collection", filter_operator, CountFilterQueryFieldsParameters()
+    )
 
 
 def test_min(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
@@ -269,7 +273,9 @@ def test_max(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
 def test_filter_fqids_by_deleted_status(reader: ReaderService):
     fqids = MagicMock()
-    res = reader.filter_fqids_by_deleted_status(fqids, 42, DeletedModelsBehaviour.ALL_MODELS)
+    res = reader.filter_fqids_by_deleted_status(
+        fqids, 42, DeletedModelsBehaviour.ALL_MODELS
+    )
     assert res == fqids
 
 
@@ -285,12 +291,12 @@ def test_apply_mapped_fields_no_fields(reader: ReaderService):
 
 def test_apply_mapped_fields_multi(reader: ReaderService):
     result = {
-        "c1/1": {"f1": "a", "f2": "b", "f": "c"},
-        "c2/1": {"f3": "a", "f4": "b", "f": "c"},
+        "a/1": {"f1": "a", "f2": "b", "f": "c"},
+        "b/1": {"f3": "a", "f4": "b", "f": "c"},
     }
     assert reader.apply_mapped_fields_multi(
-        result, {"c1": ["f1", "f"], "c2": ["f3", "f"]}
-    ) == {"c1/1": {"f1": "a", "f": "c"}, "c2/1": {"f3": "a", "f": "c"}}
+        result, {"a": ["f1", "f"], "b": ["f3", "f"]}
+    ) == {"a/1": {"f1": "a", "f": "c"}, "b/1": {"f3": "a", "f": "c"}}
 
 
 def test_apply_mapped_fields_multi_no_fields(reader: ReaderService):

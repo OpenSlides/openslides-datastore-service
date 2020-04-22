@@ -31,21 +31,6 @@ def test_simple(json_client, db_connection, db_cur):
     assert response.json == data
 
 
-def test_wrong_format_fqid(json_client, db_connection, db_cur):
-    response = json_client.post(Route.GET.URL, {"fqid": "not valid"})
-    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
-
-
-def test_wrong_format_mapped_fields(json_client, db_connection, db_cur):
-    response = json_client.post(Route.GET.URL, {"fqid": FQID, "mapped_fields": ["not valid"]})
-    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
-
-
-def test_wrong_format_position(json_client, db_connection, db_cur):
-    response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 0})
-    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
-
-
 def test_no_model(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET.URL, {"fqid": FQID})
     assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
@@ -180,3 +165,20 @@ def test_position_mapped_fields(json_client, db_connection, db_cur):
     )
     assert_success_response(response)
     assert response.json == {"field_1": "data"}
+
+
+def test_invalid_fqid(json_client):
+    response = json_client.post(Route.GET.URL, {"fqid": "not valid"})
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_invalid_mapped_fields(json_client):
+    response = json_client.post(
+        Route.GET.URL, {"fqid": FQID, "mapped_fields": ["not valid"]}
+    )
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_invalid_position(json_client):
+    response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 0})
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)

@@ -1,9 +1,7 @@
-import pytest
-from unittest.mock import MagicMock, patch
-from reader.flask_frontend import FlaskFrontend
+from unittest.mock import MagicMock
+
 from reader.flask_frontend.routes import Route
-from reader.flask_frontend.routes_handler import get_route, register_routes
-from shared.flask_frontend import ERROR_CODES, InvalidRequest
+from reader.flask_frontend.routes_handler import register_routes
 
 
 def test_register_routes():

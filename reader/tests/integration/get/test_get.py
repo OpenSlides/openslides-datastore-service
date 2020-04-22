@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -19,6 +19,9 @@ from shared.tests import reset_di  # noqa
 class FakeConnectionHandler:
     def get_connection_context(self):
         return MagicMock()
+
+    def query(self):
+        pass
 
 
 @pytest.fixture(autouse=True)
@@ -41,12 +44,12 @@ def connection():
 
 def test_simple(json_handler: JSONHandler, connection: ConnectionHandler):
     model = MagicMock()
+    request = {"fqid": "c/1"}
 
     def query(query, arguments, sql_params=[]):
         return [{"fqid": fqid, "data": model} for fqid in arguments[0]]
 
-    connection.query = query
+    with patch.object(connection, "query", new=query):
+        result = json_handler.handle_request(Route.GET, request)
 
-    request = {"fqid": "c/1"}
-    result = json_handler.handle_request(Route.GET, request)
     assert result == model

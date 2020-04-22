@@ -2,12 +2,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import And, FilterOperator, ModelDoesNotExist, Not, Or, ReadDatabase
+from shared.core import FilterOperator, ModelDoesNotExist, ReadDatabase
+from shared.core.read_database import CountFilterQueryFieldsParameters
 from shared.di import injector
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.postgresql_backend.connection_handler import DatabaseError
-from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    CountFilterQueryFieldsParameters, SqlQueryHelper)
+from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
@@ -18,7 +18,7 @@ from shared.util import META_POSITION, BadCodingError
 @pytest.fixture(autouse=True)
 def provide_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, MagicMock)
-    injector.register_as_singleton(SqlQueryHelper, SqlQueryHelper)
+    injector.register(SqlQueryHelper, SqlQueryHelper)
     injector.register(ReadDatabase, SqlReadDatabaseBackendService)
     yield
 
@@ -73,19 +73,11 @@ def test_get_invalid(read_database: ReadDatabase):
     assert q.call_args.args[0] == [fqid]
 
 
-# def test_get_with_position(read_database: ReadDatabase):
-#     fqid = "c/1"
-#     model = MagicMock()
-#     read_database.filter_fqids_by_deleted_status = ffbds = MagicMock(return_value=[fqid])
-#     read_database.get_many = q = MagicMock(return_value={fqid: model})
-
-#     model = read_database.get(fqid, [])
-
-#     assert q.call_args.args[0] == [fqid]
-#     assert model == model
-
-
-def test_get_many(read_database: ReadDatabase, connection: ConnectionHandler, query_helper: SqlQueryHelper):
+def test_get_many(
+    read_database: ReadDatabase,
+    connection: ConnectionHandler,
+    query_helper: SqlQueryHelper,
+):
     fqid1 = "c/1"
     model1 = MagicMock()
     fqid2 = "c/2"
@@ -172,7 +164,9 @@ def test_fetch_list_of_models_mapped_fields(
     assert models == [row]
 
 
-def test_build_models_from_result(read_database: ReadDatabase, query_helper: SqlQueryHelper):
+def test_build_models_from_result(
+    read_database: ReadDatabase, query_helper: SqlQueryHelper
+):
     row = MagicMock()
     row["fqid"] = MagicMock()
     row.copy = lambda: row

@@ -2,19 +2,21 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import And, FilterOperator, ModelDoesNotExist, Not, Or, ReadDatabase
+from shared.core import And, Not, Or
+from shared.core.read_database import (
+    AggregateFilterQueryFieldsParameters,
+    CountFilterQueryFieldsParameters,
+    MappedFieldsFilterQueryFieldsParameters,
+)
 from shared.di import injector
-from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
-from shared.postgresql_backend.connection_handler import DatabaseError
-from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    CountFilterQueryFieldsParameters, MappedFieldsFilterQueryFieldsParameters, SqlQueryHelper)
+from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.tests import reset_di  # noqa
-from shared.util import META_POSITION, BadCodingError
+from shared.util import BadCodingError
 
 
 @pytest.fixture(autouse=True)
 def provide_di(reset_di):  # noqa
-    injector.register_as_singleton(SqlQueryHelper, SqlQueryHelper)
+    injector.register(SqlQueryHelper, SqlQueryHelper)
     yield
 
 
@@ -57,9 +59,7 @@ def test_build_filter_query_invalid_cast_target(query_helper: SqlQueryHelper):
     param = AggregateFilterQueryFieldsParameters("min", "field", "invalid")
 
     with pytest.raises(BadCodingError):
-        query_helper.build_filter_query(
-            MagicMock(), filter, param
-        )
+        query_helper.build_filter_query(MagicMock(), filter, param)
 
     assert bfs.call_args[0] == (filter, [])
 
@@ -70,9 +70,7 @@ def test_build_filter_query_aggregate(query_helper: SqlQueryHelper):
     field = MagicMock()
     param = AggregateFilterQueryFieldsParameters("min", field, "int")
 
-    q, a, s = query_helper.build_filter_query(
-        MagicMock(), filter, param
-    )
+    q, a, s = query_helper.build_filter_query(MagicMock(), filter, param)
 
     assert bfs.call_args[0] == (filter, [])
     assert a[0] == field
@@ -84,34 +82,19 @@ def test_build_filter_query_count(query_helper: SqlQueryHelper):
     filter = MagicMock()
     param = CountFilterQueryFieldsParameters()
 
-    q, a, s = query_helper.build_filter_query(
-        MagicMock(), filter, param
-    )
+    q, a, s = query_helper.build_filter_query(MagicMock(), filter, param)
 
     assert bfs.call_args[0] == (filter, [])
     assert s == []
 
 
 def test_build_filter_query_invalid_fields_params(query_helper: SqlQueryHelper):
-    query_helper.build_filter_str = bfs = MagicMock(return_value=MagicMock())
+    query_helper.build_filter_str = MagicMock(return_value=MagicMock())
     filter = MagicMock()
     param = "invalid"
 
     with pytest.raises(BadCodingError):
-        query_helper.build_filter_query(
-            MagicMock(), filter, param
-        )
-
-
-def test_build_filter_query_incomplete_fields_params(query_helper: SqlQueryHelper):
-    query_helper.build_filter_str = bfs = MagicMock(return_value=MagicMock())
-    filter = MagicMock()
-    param = AggregateFilterQueryFieldsParameters("min")
-
-    with pytest.raises(BadCodingError):
-        query_helper.build_filter_query(
-            MagicMock(), filter, param
-        )
+        query_helper.build_filter_query(MagicMock(), filter, param)
 
 
 def test_build_filter_str_not(query_helper: SqlQueryHelper):

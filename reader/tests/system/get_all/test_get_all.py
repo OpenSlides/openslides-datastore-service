@@ -2,17 +2,19 @@ import json
 
 from reader.flask_frontend.routes import Route
 from shared.core import DeletedModelsBehaviour
+from shared.flask_frontend import ERROR_CODES
+from shared.tests import assert_error_response
 from shared.tests.util import assert_success_response
 
 
 data = {
-    "c2/1": {
+    "b/1": {
         "field_4": "data",
         "field_5": 42,
         "field_6": [1, 2, 3],
         "meta_position": 2,
     },
-    "c2/2": {
+    "b/2": {
         "field_4": "data",
         "field_5": 42,
         "field_6": [1, 2, 3],
@@ -20,12 +22,7 @@ data = {
     },
 }
 other_models = {
-    "c1/2": {
-        "field_1": "data",
-        "field_2": 42,
-        "field_3": [1, 2, 3],
-        "meta_position": 1,
-    }
+    "a/2": {"field_1": "data", "field_2": 42, "field_3": [1, 2, 3], "meta_position": 1}
 }
 
 
@@ -40,33 +37,33 @@ def setup_data(connection, cursor, deleted=999):
 
 def test_simple(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
-    response = json_client.post(Route.GET_ALL.URL, {"collection": "c2"})
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "b"})
     assert_success_response(response)
     assert response.json == list(data.values())
 
 
 def test_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
-    response = json_client.post(Route.GET_ALL.URL, {"collection": "c2"})
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "b"})
     assert_success_response(response)
-    assert response.json == [data["c2/1"]]
+    assert response.json == [data["b/1"]]
 
 
 def test_only_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
     response = json_client.post(
         Route.GET_ALL.URL,
-        {"collection": "c2", "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
+        {"collection": "b", "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
     )
     assert_success_response(response)
-    assert response.json == [data["c2/2"]]
+    assert response.json == [data["b/2"]]
 
 
 def test_deleted_all_models(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
     response = json_client.post(
         Route.GET_ALL.URL,
-        {"collection": "c2", "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
+        {"collection": "b", "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
     )
     assert_success_response(response)
     assert response.json == list(data.values())
@@ -76,10 +73,22 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
         Route.GET_ALL.URL,
-        {"collection": "c2", "mapped_fields": ["field_4", "meta_position"]},
+        {"collection": "b", "mapped_fields": ["field_4", "meta_position"]},
     )
     assert_success_response(response)
     assert response.json == [
         {"field_4": "data", "meta_position": 2},
         {"field_4": "data", "meta_position": 3},
     ]
+
+
+def test_invalid_collection(json_client):
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "not valid"})
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_invalid_mapped_fields(json_client):
+    response = json_client.post(
+        Route.GET_ALL.URL, {"collection": "a", "mapped_fields": ["not valid"]}
+    )
+    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)

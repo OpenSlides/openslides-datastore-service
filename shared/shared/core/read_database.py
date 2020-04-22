@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ContextManager, Dict, List, Optional, Protocol, Tuple
+from typing import Any, ContextManager, Dict, List, Optional, Protocol
 
 from shared.core import Filter
 from shared.di import service_interface
@@ -12,6 +13,32 @@ class DeletedModelsBehaviour(int, Enum):
     ALL_MODELS = 3
 
 
+class BaseFilterQueryFieldsParameters:
+    pass
+
+
+@dataclass
+class MappedFieldsFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
+    mapped_fields: List[str]
+
+
+@dataclass
+class BaseAggregateFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
+    function: str
+
+
+@dataclass
+class CountFilterQueryFieldsParameters(BaseAggregateFilterQueryFieldsParameters):
+    function: str = "count"
+
+
+@dataclass
+class AggregateFilterQueryFieldsParameters(BaseAggregateFilterQueryFieldsParameters):
+    function: str
+    field: str
+    type: str
+
+
 @service_interface
 class ReadDatabase(Protocol):
     def get_context(self) -> ContextManager[None]:
@@ -19,7 +46,12 @@ class ReadDatabase(Protocol):
         Creates a new context to execute all actions inside
         """
 
-    def get(self, fqid: str, mapped_fields: List[str] = []) -> Model:
+    def get(
+        self,
+        fqid: str,
+        mapped_fields: List[str] = [],
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
+    ) -> Model:
         """
         Internally calls `get_many` to retrieve a single model. Raises a
         ModelDoesNotExist if the model does not exist.
@@ -60,16 +92,10 @@ class ReadDatabase(Protocol):
         self,
         collection: str,
         filter: Filter,
-        fields_params: Tuple[str, Optional[str], Optional[str]],
+        fields_params: BaseAggregateFilterQueryFieldsParameters,
     ) -> Any:
         """
         Aggregates the filtered models according to fields_params.
-        fields_params[0] must be one of `VALID_AGGREGATE_FUNCTIONS`.
-        If fields_params[0] == "count", the optional parameters must be None-like
-        and the amount of results is returned.
-        Else fields_params[1] defines the field over which the aggregate is run and
-        fields_params[2] defines the type to which the field is cast (must be one of
-        `VALID_AGGREGATE_CAST_TARGETS`).
         """
 
     def create_or_update_models(self, models: Dict[str, Dict[str, Any]]) -> None:

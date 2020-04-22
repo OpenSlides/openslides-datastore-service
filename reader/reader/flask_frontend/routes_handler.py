@@ -11,7 +11,7 @@ def get_route(route: Route):
     def route_func():
         if not request.is_json:
             raise InvalidRequest("Data must be json")
-        
+
         json_handler = JSONHandler()
         result = json_handler.handle_request(route, request.get_json())
         return jsonify(result), 200

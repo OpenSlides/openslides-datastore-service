@@ -1,6 +1,5 @@
 import os
 from typing import Any
-from unittest.mock import patch
 
 import psycopg2
 import pytest
@@ -31,8 +30,6 @@ def get_db_schema_definition():
 @pytest.fixture(autouse=True)
 def reset_di():
     injector.provider_map = {}
-    with patch("shared.di.dependency_provider.check_implements_protocol"):
-        yield
 
 
 # Postgresql

@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Any, List, Literal, Union
-from .self_validating_dataclass import Field, SelfValidatingDataclass
+
+from shared.util import Field
+
+from .self_validating_dataclass import SelfValidatingDataclass
 
 
 @dataclass

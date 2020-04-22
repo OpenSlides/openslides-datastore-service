@@ -1,4 +1,4 @@
-from typing import List, Protocol, TypedDict
+from typing import Dict, List, Protocol, TypedDict
 
 from shared.util import Model
 
@@ -38,10 +38,10 @@ class Reader(Protocol):
     def get(self, request: GetRequest) -> Model:
         """ Gets the specified model. """
 
-    def getMany(self, request: GetManyRequest) -> List[Model]:
+    def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
         """ Gets multiple models. """
 
-    def getAll(self, request: GetAllRequest) -> List[Model]:
+    def get_all(self, request: GetAllRequest) -> List[Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.

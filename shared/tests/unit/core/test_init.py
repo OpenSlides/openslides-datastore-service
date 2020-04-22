@@ -1,14 +1,29 @@
 from unittest.mock import MagicMock
-import pytest
-from shared.core import (DeletedModelsBehaviour, ModelDoesNotExist, ModelNotDeleted,
-    raise_exception_for_deleted_models_behaviour)
+
+from shared.core import (
+    DeletedModelsBehaviour,
+    ModelDoesNotExist,
+    ModelNotDeleted,
+    get_exception_for_deleted_models_behaviour,
+)
+
+
+def test_raise_exception_for_deleted_models_behaviour_all_models():
+    exception = get_exception_for_deleted_models_behaviour(
+        MagicMock(), DeletedModelsBehaviour.ALL_MODELS
+    )
+    assert type(exception) is ModelDoesNotExist
 
 
 def test_raise_exception_for_deleted_models_behaviour_no_deleted():
-    with pytest.raises(ModelDoesNotExist):
-        raise_exception_for_deleted_models_behaviour(MagicMock(), DeletedModelsBehaviour.NO_DELETED)
+    exception = get_exception_for_deleted_models_behaviour(
+        MagicMock(), DeletedModelsBehaviour.NO_DELETED
+    )
+    assert type(exception) is ModelDoesNotExist
 
 
 def test_raise_exception_for_deleted_models_behaviour_only_deleted():
-    with pytest.raises(ModelNotDeleted):
-        raise_exception_for_deleted_models_behaviour(MagicMock(), DeletedModelsBehaviour.ONLY_DELETED)
+    exception = get_exception_for_deleted_models_behaviour(
+        MagicMock(), DeletedModelsBehaviour.ONLY_DELETED
+    )
+    assert type(exception) is ModelNotDeleted

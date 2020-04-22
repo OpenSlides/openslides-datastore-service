@@ -8,7 +8,6 @@ from shared.di import (
     service_as_singleton,
     service_interface,
 )
-from shared.di.dependency_provider import check_implements_protocol
 from shared.di.exceptions import DependencyInjectionError
 
 
@@ -83,31 +82,31 @@ class TestWithProtocols:
         injector.register(MasterService, MasterServiceFactory)
         injector.register(ClientService, ClientServiceFactory)
 
-        c1 = injector.get(ClientService)
-        c2 = injector.get(ClientService)
+        a = injector.get(ClientService)
+        b = injector.get(ClientService)
 
-        assert c1 != c2
-        assert c1.master_service != c2.master_service
+        assert a != b
+        assert a.master_service != b.master_service
 
     def test_client_factory_service_singleton_multi_get(self):
         injector.register(MasterService, MasterServiceSingleton)
         injector.register(ClientService, ClientServiceFactory)
 
-        c1 = injector.get(ClientService)
-        c2 = injector.get(ClientService)
+        a = injector.get(ClientService)
+        b = injector.get(ClientService)
 
-        assert c1 != c2
-        assert c1.master_service == c2.master_service
+        assert a != b
+        assert a.master_service == b.master_service
 
     def test_client_singleton_service_singleton_multi_get(self):
         injector.register(MasterService, MasterServiceSingleton)
         injector.register(ClientService, ClientServiceSingleton)
 
-        c1 = injector.get(ClientService)
-        c2 = injector.get(ClientService)
+        a = injector.get(ClientService)
+        b = injector.get(ClientService)
 
-        assert c1 == c2
-        assert c1.master_service == c2.master_service
+        assert a == b
+        assert a.master_service == b.master_service
 
     def test_client_singleton_service_factory(self):
         injector.register(MasterService, MasterServiceFactory)
@@ -131,11 +130,11 @@ class TestClientSingletonDirectInjection:
         injector.register(MasterServiceSingleton, MasterServiceSingleton)
         injector.register(ClientService, ClientServiceSingletonDirectSingleton)
 
-        c1 = injector.get(ClientService)
-        c2 = injector.get(ClientService)
+        a = injector.get(ClientService)
+        b = injector.get(ClientService)
 
-        assert c1 == c2
-        assert c1.master_service == c2.master_service
+        assert a == b
+        assert a.master_service == b.master_service
 
     def test_master_factory(self):
         injector.register(MasterServiceFactory, MasterServiceFactory)
@@ -158,21 +157,21 @@ class TestClientFactoryDirectInjection:
         injector.register(MasterServiceSingleton, MasterServiceSingleton)
         injector.register(ClientService, ClientServiceFactoryDirectSingleton)
 
-        c1 = injector.get(ClientService)
-        c2 = injector.get(ClientService)
+        a = injector.get(ClientService)
+        b = injector.get(ClientService)
 
-        assert c1 != c2
-        assert c1.master_service == c2.master_service
+        assert a != b
+        assert a.master_service == b.master_service
 
     def test_master_factory(self):
         injector.register(MasterServiceFactory, MasterServiceFactory)
         injector.register(ClientService, ClientServiceFactoryDirectFactory)
 
-        c1 = injector.get(ClientService)
-        c2 = injector.get(ClientService)
+        a = injector.get(ClientService)
+        b = injector.get(ClientService)
 
-        assert c1 != c2
-        assert c1.master_service != c2.master_service
+        assert a != b
+        assert a.master_service != b.master_service
 
 
 def test_unknown_init_args():
@@ -195,4 +194,4 @@ def test_check_implements_protocol_fail():
         pass
 
     with pytest.raises(DependencyInjectionError):
-        check_implements_protocol(P, C)
+        injector.check_implements_protocol(P, C)

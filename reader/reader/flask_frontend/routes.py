@@ -16,6 +16,6 @@ class Route(str, Enum):
     MIN = "min"
     MAX = "max"
 
-
-for route in Route:
-    setattr(route, "URL", unify_urls(URL_PREFIX, route))
+    @property
+    def URL(self):
+        return unify_urls(URL_PREFIX, self.value)

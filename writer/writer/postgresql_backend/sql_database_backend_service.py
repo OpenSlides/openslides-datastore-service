@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Any, List
+from typing import Any, ContextManager, List
 
 from shared.core import (
     InvalidFormat,
@@ -12,7 +12,8 @@ from shared.core import (
 )
 from shared.di import service_as_singleton
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
-from shared.util import BadCodingError
+from shared.util import JSON, BadCodingError
+from writer.core import BaseDbEvent
 from writer.core.db_events import (
     DbCreateEvent,
     DbDeleteEvent,
@@ -40,10 +41,12 @@ class SqlDatabaseBackendService:
     connection: ConnectionHandler
     read_database: ReadDatabase
 
-    def get_context(self):
+    def get_context(self) -> ContextManager[None]:
         return self.connection.get_connection_context()
 
-    def insert_events(self, events, information, user_id) -> int:
+    def insert_events(
+        self, events: List[BaseDbEvent], information: JSON, user_id: int
+    ) -> int:
         if not events:
             raise BadCodingError()
 

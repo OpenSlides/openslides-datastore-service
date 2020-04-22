@@ -1,8 +1,14 @@
-from shared.core import And, DeletedModelsBehaviour, FilterOperator, Not, Or, Filter
+from typing import Dict, List, Set, Tuple
+
+from shared.core import And, DeletedModelsBehaviour, Filter, FilterOperator, Not, Or
+from shared.core.read_database import (
+    AggregateFilterQueryFieldsParameters,
+    BaseFilterQueryFieldsParameters,
+    CountFilterQueryFieldsParameters,
+    MappedFieldsFilterQueryFieldsParameters,
+)
 from shared.di import service_as_singleton
-from shared.util import BadCodingError, KEYSEPARATOR
-from typing import List, Dict, Tuple, Set
-from dataclasses import dataclass
+from shared.util import KEYSEPARATOR, BadCodingError
 
 
 # extend if neccessary. first is always the default (should be int)
@@ -13,31 +19,8 @@ VALID_AGGREGATE_CAST_TARGETS = ["int"]
 VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
 
 
-class BaseFilterQueryFieldsParameters:
-    pass
-
-@dataclass
-class MappedFieldsFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
-    mapped_fields: List[str]
-
-@dataclass
-class BaseAggregateFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
-    function: str
-
-@dataclass
-class CountFilterQueryFieldsParameters(BaseAggregateFilterQueryFieldsParameters):
-    function: str = "count"
-
-@dataclass
-class AggregateFilterQueryFieldsParameters(BaseAggregateFilterQueryFieldsParameters):
-    function: str
-    field: str
-    type: str
-
-
 @service_as_singleton
 class SqlQueryHelper:
-
     def get_unique_mapped_fields(
         self, mapped_fields_per_collection: Dict[str, List[str]]
     ) -> List[str]:
@@ -49,7 +32,6 @@ class SqlQueryHelper:
         else:
             return []
 
-
     def mapped_fields_map_has_empty_entry(
         self, mapped_fields_per_collection: Dict[str, List[str]]
     ) -> bool:
@@ -57,14 +39,12 @@ class SqlQueryHelper:
             len(fields) == 0 for fields in mapped_fields_per_collection.values()
         )
 
-
     def get_deleted_condition(self, flag: DeletedModelsBehaviour) -> str:
         return (
             ""
             if flag == DeletedModelsBehaviour.ALL_MODELS
             else "and deleted = " + str(flag == DeletedModelsBehaviour.ONLY_DELETED)
         )
-
 
     def build_select_from_mapped_fields(
         self,
@@ -80,7 +60,6 @@ class SqlQueryHelper:
             return "data"
         else:
             return ", ".join(["data->%s AS {}"] * len(unique_mapped_fields))
-
 
     def build_filter_query(
         self,
@@ -103,7 +82,9 @@ class SqlQueryHelper:
                 fields = "count(*)"
             elif isinstance(fields_params, AggregateFilterQueryFieldsParameters):
                 if fields_params.function not in VALID_AGGREGATE_FUNCTIONS:
-                    raise BadCodingError("Invalid aggregate function: %s" % fields_params.function)
+                    raise BadCodingError(
+                        "Invalid aggregate function: %s" % fields_params.function
+                    )
                 if fields_params.type not in VALID_AGGREGATE_CAST_TARGETS:
                     raise BadCodingError("Invalid cast type: %s" % fields_params.type)
 
@@ -122,7 +103,6 @@ class SqlQueryHelper:
             arguments,
             sql_parameters,
         )
-
 
     def build_filter_str(self, filter: Filter, arguments: List[str]) -> str:
         if isinstance(filter, Not):

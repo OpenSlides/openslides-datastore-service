@@ -1,21 +1,20 @@
 from textwrap import dedent
-from typing import Any, ContextManager, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, ContextManager, Dict, List, Optional
 
 from shared.core import (
-    And,
     DeletedModelsBehaviour,
     Filter,
-    FilterOperator,
     ModelDoesNotExist,
-    Not,
-    Or,
     collection_from_fqid,
-    raise_exception_for_deleted_models_behaviour
+    get_exception_for_deleted_models_behaviour,
+)
+from shared.core.read_database import (
+    BaseAggregateFilterQueryFieldsParameters,
+    MappedFieldsFilterQueryFieldsParameters,
 )
 from shared.di import service_as_singleton
-from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    MappedFieldsFilterQueryFieldsParameters, SqlQueryHelper)
-from shared.util import (BadCodingError, KEYSEPARATOR, META_POSITION, Model)
+from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
+from shared.util import KEYSEPARATOR, META_POSITION, BadCodingError, Model
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES
@@ -30,14 +29,18 @@ class SqlReadDatabaseBackendService:
     def get_context(self) -> ContextManager[None]:
         return self.connection.get_connection_context()
 
-    def get(self, fqid: str, mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,) -> Model:
+    def get(
+        self,
+        fqid: str,
+        mapped_fields: List[str] = [],
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
+    ) -> Model:
         collection = collection_from_fqid(fqid)
         models = self.get_many([fqid], {collection: mapped_fields}, get_deleted_models)
         try:
             return models[fqid]
         except KeyError:
-            raise_exception_for_deleted_models_behaviour(fqid, get_deleted_models)
+            raise get_exception_for_deleted_models_behaviour(fqid, get_deleted_models)
 
     def get_many(
         self,
@@ -53,7 +56,9 @@ class SqlReadDatabaseBackendService:
         unique_mapped_fields: List[Any] = self.query_helper.get_unique_mapped_fields(
             mapped_fields_per_collection
         )
-        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(unique_mapped_fields)
+        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(
+            unique_mapped_fields
+        )
 
         query = f"""
             select fqid, {mapped_fields_str} from models
@@ -73,7 +78,9 @@ class SqlReadDatabaseBackendService:
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> List[Model]:
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
-        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(mapped_fields)
+        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(
+            mapped_fields
+        )
         query = f"""
             select {mapped_fields_str} from models
             {"natural join models_lookup" if del_cond else ""}
@@ -100,7 +107,7 @@ class SqlReadDatabaseBackendService:
         self,
         collection: str,
         filter: Filter,
-        fields_params: AggregateFilterQueryFieldsParameters,
+        fields_params: BaseAggregateFilterQueryFieldsParameters,
     ) -> Any:
         query, arguments, sql_params = self.query_helper.build_filter_query(
             collection, filter, fields_params
@@ -130,7 +137,9 @@ class SqlReadDatabaseBackendService:
             fqid = row["fqid"]
             collection = collection_from_fqid(fqid)
 
-            if self.query_helper.mapped_fields_map_has_empty_entry(mapped_fields_per_collection):
+            if self.query_helper.mapped_fields_map_has_empty_entry(
+                mapped_fields_per_collection
+            ):
                 # at least one collection needs all fields, so we just selected data
                 model = row["data"]
             else:

@@ -124,6 +124,11 @@ def test_collection():
     assert_is_collection("my_collection")
 
 
+def test_collection_fail():
+    with pytest.raises(InvalidKeyFormat):
+        assert_is_collection("not valid")
+
+
 def test_id():
     assert_is_id("13942")
 

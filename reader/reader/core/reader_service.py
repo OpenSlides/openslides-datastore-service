@@ -1,12 +1,21 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from reader.core.reader import CountResult, ExistsResult, MaxResult, MinResult
-from shared.core import (build_fqid, collection_from_fqid, DeletedModelsBehaviour, Filter,
-    ModelDoesNotExist, ModelNotDeleted, raise_exception_for_deleted_models_behaviour, ReadDatabase)
+from shared.core import (
+    DeletedModelsBehaviour,
+    Filter,
+    ReadDatabase,
+    build_fqid,
+    collection_from_fqid,
+    get_exception_for_deleted_models_behaviour,
+)
+from shared.core.read_database import (
+    AggregateFilterQueryFieldsParameters,
+    BaseAggregateFilterQueryFieldsParameters,
+    CountFilterQueryFieldsParameters,
+)
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
-from shared.postgresql_backend.sql_query_helper import (AggregateFilterQueryFieldsParameters,
-    BaseAggregateFilterQueryFieldsParameters, CountFilterQueryFieldsParameters)
 from shared.util import Model
 
 from .requests import (
@@ -28,24 +37,30 @@ class ReaderService:
     def get(self, request: GetRequest) -> Model:
         with self.database.get_context():
             if request.position:
-                # if a position is given, first test if the model is in the correct state
-                # to prevent the unneccessary building of the model if it's not
-                fqids = self.filter_fqids_by_deleted_status([request.fqid], request.position, request.get_deleted_models)
+                # if a position is given, first test if the model is in the correct
+                # state to prevent the unneccessary building of the model if it's not
+                fqids = self.filter_fqids_by_deleted_status(
+                    [request.fqid], request.position, request.get_deleted_models
+                )
                 if not len(fqids):
-                    raise_exception_for_deleted_models_behaviour(request.fqid, request.get_deleted_models)
+                    raise get_exception_for_deleted_models_behaviour(
+                        request.fqid, request.get_deleted_models
+                    )
 
                 model = self.database.build_model_ignore_deleted(
                     request.fqid, request.position
                 )
                 model = self.apply_mapped_fields(model, request.mapped_fields)
             else:
-                model = self.database.get(request.fqid, request.mapped_fields, request.get_deleted_models)
+                model = self.database.get(
+                    request.fqid, request.mapped_fields, request.get_deleted_models
+                )
         return model
 
     def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
         with self.database.get_context():
             fqids = [
-                build_fqid(part.collection, id)
+                build_fqid(part.collection, str(id))
                 for part in request.requests
                 for id in part.ids
             ]
@@ -55,7 +70,9 @@ class ReaderService:
             }
 
             if request.position:
-                fqids = self.filter_fqids_by_deleted_status(fqids, request.position, request.get_deleted_models)
+                fqids = self.filter_fqids_by_deleted_status(
+                    fqids, request.position, request.get_deleted_models
+                )
                 result = self.database.build_models_ignore_deleted(
                     fqids, request.position
                 )
@@ -87,30 +104,39 @@ class ReaderService:
         return {"exists": count["count"] > 0, "position": count["position"]}
 
     def count(self, request: AggregateRequest) -> CountResult:
-        return self.aggregate(request.collection, request.filter, CountFilterQueryFieldsParameters())
+        res = self.aggregate(
+            request.collection, request.filter, CountFilterQueryFieldsParameters()
+        )
+        return cast(CountResult, res)
 
     def minmax(self, request: MinMaxRequest, mode: str) -> Dict[str, Any]:
         params = AggregateFilterQueryFieldsParameters(mode, request.field, request.type)
-        return self.aggregate(
-            request.collection, request.filter, params
-        )
+        return self.aggregate(request.collection, request.filter, params)
 
     def min(self, request: MinMaxRequest) -> MinResult:
-        return self.minmax(request, "min")
+        res = self.minmax(request, "min")
+        return cast(MinResult, res)
 
     def max(self, request: MinMaxRequest) -> MaxResult:
-        return self.minmax(request, "max")
+        res = self.minmax(request, "max")
+        return cast(MaxResult, res)
 
     def aggregate(
-        self, collection: str, filter: Filter, fields_params: BaseAggregateFilterQueryFieldsParameters
+        self,
+        collection: str,
+        filter: Filter,
+        fields_params: BaseAggregateFilterQueryFieldsParameters,
     ) -> Dict[str, Any]:
         with self.database.get_context():
-            result = self.database.aggregate(
-                collection, filter, fields_params
-            )
+            result = self.database.aggregate(collection, filter, fields_params)
         return result
 
-    def filter_fqids_by_deleted_status(self, fqids: List[str], position: int, get_deleted_models: DeletedModelsBehaviour) -> List[str]:
+    def filter_fqids_by_deleted_status(
+        self,
+        fqids: List[str],
+        position: int,
+        get_deleted_models: DeletedModelsBehaviour,
+    ) -> List[str]:
         if get_deleted_models == DeletedModelsBehaviour.ALL_MODELS:
             return fqids
         else:
@@ -120,10 +146,7 @@ class ReaderService:
                 for fqid in fqids
                 if fqid in deleted_map
                 and deleted_map[fqid]
-                == (
-                    get_deleted_models
-                    == DeletedModelsBehaviour.ONLY_DELETED
-                )
+                == (get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED)
             ]
 
     def apply_mapped_fields(self, model: Model, mapped_fields: List[str]) -> Model:

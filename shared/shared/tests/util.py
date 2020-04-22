@@ -18,7 +18,8 @@ def assert_response_code(response, code):
 def assert_error_response(response, type):
     assert_response_code(response, 400)
     assert isinstance(response.json.get("error"), dict)
-    if (error_type := response.json["error"].get("type")) != type:
+    error_type = response.json["error"].get("type")
+    if error_type != type:
         print("Error type:", error_type)
     assert error_type == type
 

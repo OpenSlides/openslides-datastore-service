@@ -1,3 +1,5 @@
+from shared.core.exceptions import DatastoreException
+
 from .exceptions import (  # noqa
     InvalidFormat,
     ModelDoesNotExist,
@@ -26,11 +28,13 @@ from .key_types import (  # noqa
     assert_string,
     get_key_type,
 )
-from .read_database import ReadDatabase, DeletedModelsBehaviour  # noqa
+from .read_database import DeletedModelsBehaviour, ReadDatabase  # noqa
 
 
-def raise_exception_for_deleted_models_behaviour(fqid: str, get_deleted_models: DeletedModelsBehaviour) -> None:
+def get_exception_for_deleted_models_behaviour(
+    fqid: str, get_deleted_models: DeletedModelsBehaviour
+) -> DatastoreException:
     if get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED:
-        raise ModelNotDeleted(fqid)
+        return ModelNotDeleted(fqid)
     else:
-        raise ModelDoesNotExist(fqid)
+        return ModelDoesNotExist(fqid)
