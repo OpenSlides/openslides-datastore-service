@@ -5,6 +5,7 @@ import redis
 
 from shared.di import injector
 from shared.postgresql_backend import setup_di as postgresql_setup_di
+from shared.services import setup_di as util_setup_di
 from shared.tests import (  # noqa
     db_connection,
     db_cur,
@@ -15,7 +16,6 @@ from shared.tests import (  # noqa
     reset_di,
     setup_db_connection,
 )
-from shared.util import setup_di as util_setup_di
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend import FlaskFrontend
 from writer.postgresql_backend import (

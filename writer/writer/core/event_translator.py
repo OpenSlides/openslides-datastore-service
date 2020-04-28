@@ -1,7 +1,8 @@
 from typing import Dict, List, Protocol
 
 from shared.di import service_as_singleton, service_interface
-from shared.util import JSON, BadCodingError
+from shared.typing import JSON
+from shared.util import BadCodingError
 from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,

@@ -1,6 +1,6 @@
 import inspect
 from textwrap import dedent
-from typing import Any, Dict, Optional, TypedDict
+from typing import Callable, Dict, Optional, Type, TypedDict
 
 from .exceptions import DependencyInjectionError, DependencyNotFound
 
@@ -20,7 +20,7 @@ _TYPE_FACTORY = "factory"
 
 class DependencyProvider:
     def __init__(self):
-        self.provider_map: Dict[Any, Any] = {}
+        self.provider_map: Dict[Type, Callable] = {}
 
     def get(self, protocol):
         try:

@@ -2,13 +2,12 @@ from typing import Set
 
 import pytest
 
-from shared.core import ReadDatabase
-from shared.core.exceptions import ModelDoesNotExist
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_event_types import EVENT_TYPES
+from shared.services import ReadDatabase
 from shared.tests.util import ALL_TABLES
-from shared.util import META_DELETED, META_POSITION
+from shared.util import META_DELETED, META_POSITION, ModelDoesNotExist
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 
 

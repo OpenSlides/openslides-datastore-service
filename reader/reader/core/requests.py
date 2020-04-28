@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from shared.core import DeletedModelsBehaviour, Filter
-from shared.core.self_validating_dataclass import SelfValidatingDataclass
 from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
-from shared.util import Collection, Field, Fqid, Id, Position
+from shared.typing import Collection, Field, Fqid, Id, Position
+from shared.util import DeletedModelsBehaviour, Filter, SelfValidatingDataclass
 
 
 @dataclass

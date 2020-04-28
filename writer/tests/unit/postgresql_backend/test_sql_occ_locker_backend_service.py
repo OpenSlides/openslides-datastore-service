@@ -2,10 +2,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import ModelLocked
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.tests import reset_di  # noqa
+from shared.util import ModelLocked
 from writer.core import OccLocker
 from writer.postgresql_backend import SqlOccLockerBackendService
 

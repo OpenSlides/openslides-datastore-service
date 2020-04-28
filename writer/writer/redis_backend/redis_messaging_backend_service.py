@@ -1,8 +1,7 @@
 from typing import List
 
-from shared.core import fqfield_from_fqid_and_field
 from shared.di import service_as_singleton
-from shared.util import META_POSITION
+from shared.util import META_POSITION, fqfield_from_fqid_and_field
 from writer.core import Messaging
 from writer.core.db_events import BaseDbEvent
 

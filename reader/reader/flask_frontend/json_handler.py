@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, TypedDict
+from typing import Callable, Dict, Type, TypedDict
 
 import fastjsonschema
 from dacite import Config, from_dict
@@ -13,11 +13,11 @@ from reader.core.requests import (
     GetRequest,
     MinMaxRequest,
 )
-from shared.core import DeletedModelsBehaviour
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
 from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
-from shared.util import JSON, BadCodingError
+from shared.typing import JSON
+from shared.util import BadCodingError, DeletedModelsBehaviour
 
 from .routes import Route
 
@@ -182,7 +182,7 @@ minmax_schema = fastjsonschema.compile(
 
 class RequestMapEntry(TypedDict):
     schema: Callable
-    request_class: type
+    request_class: Type
 
 
 # maps all available routes to the respective schema
@@ -218,9 +218,7 @@ class JSONHandler:
             raise InvalidRequest(e.message)
 
         try:
-            # TODO: replace Any. mypy wants a type annotation here and `request_class`
-            # is not a valid type
-            request_object: Any = from_dict(
+            request_object = from_dict(
                 request_class, request_data, Config(check_types=False)
             )
         except (TypeError, MissingValueError) as e:

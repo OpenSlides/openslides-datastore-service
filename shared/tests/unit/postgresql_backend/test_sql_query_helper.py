@@ -2,16 +2,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import And, Not, Or
-from shared.core.read_database import (
+from shared.di import injector
+from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
+from shared.services.read_database import (
     AggregateFilterQueryFieldsParameters,
     CountFilterQueryFieldsParameters,
     MappedFieldsFilterQueryFieldsParameters,
 )
-from shared.di import injector
-from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.tests import reset_di  # noqa
-from shared.util import BadCodingError
+from shared.util import And, BadCodingError, Not, Or
 
 
 @pytest.fixture(autouse=True)

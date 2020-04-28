@@ -1,6 +1,6 @@
 from typing import Dict, List, Protocol, TypedDict
 
-from shared.util import Model
+from shared.typing import Model
 
 from .requests import (
     AggregateRequest,

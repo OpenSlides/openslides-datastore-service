@@ -1,20 +1,23 @@
 from textwrap import dedent
 from typing import Any, ContextManager, Dict, List, Optional
 
-from shared.core import (
+from shared.di import service_as_singleton
+from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
+from shared.services.read_database import (
+    BaseAggregateFilterQueryFieldsParameters,
+    MappedFieldsFilterQueryFieldsParameters,
+)
+from shared.typing import Model
+from shared.util import (
+    KEYSEPARATOR,
+    META_POSITION,
+    BadCodingError,
     DeletedModelsBehaviour,
     Filter,
     ModelDoesNotExist,
     collection_from_fqid,
     get_exception_for_deleted_models_behaviour,
 )
-from shared.core.read_database import (
-    BaseAggregateFilterQueryFieldsParameters,
-    MappedFieldsFilterQueryFieldsParameters,
-)
-from shared.di import service_as_singleton
-from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
-from shared.util import KEYSEPARATOR, META_POSITION, BadCodingError, Model
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES

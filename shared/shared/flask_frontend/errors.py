@@ -2,7 +2,7 @@ from textwrap import dedent
 
 from werkzeug.exceptions import default_exceptions
 
-from shared.core.exceptions import (
+from shared.util import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,

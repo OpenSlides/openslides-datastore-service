@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from shared.core import (
+from shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
     ModelNotDeleted,

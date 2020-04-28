@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Optional, Type, get_args, get_origin, get_type_hints
 
-from shared.util import Collection, Field, Fqid, Id, Position
-from shared.util.typing import custom_types
+from shared.typing import Collection, Field, Fqid, Id, Position, custom_types
 
 from .exceptions import InvalidFormat
 from .key_types import (

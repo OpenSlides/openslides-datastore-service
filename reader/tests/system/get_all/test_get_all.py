@@ -1,10 +1,10 @@
 import json
 
 from reader.flask_frontend.routes import Route
-from shared.core import DeletedModelsBehaviour
 from shared.flask_frontend import ERROR_CODES
 from shared.tests import assert_error_response
 from shared.tests.util import assert_success_response
+from shared.util import DeletedModelsBehaviour
 
 
 data = {

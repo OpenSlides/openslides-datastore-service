@@ -1,14 +1,22 @@
 from typing import Dict, List, Set, Tuple
 
-from shared.core import And, DeletedModelsBehaviour, Filter, FilterOperator, Not, Or
-from shared.core.read_database import (
+from shared.di import service_as_singleton
+from shared.services.read_database import (
     AggregateFilterQueryFieldsParameters,
     BaseFilterQueryFieldsParameters,
     CountFilterQueryFieldsParameters,
     MappedFieldsFilterQueryFieldsParameters,
 )
-from shared.di import service_as_singleton
-from shared.util import KEYSEPARATOR, BadCodingError
+from shared.util import (
+    KEYSEPARATOR,
+    And,
+    BadCodingError,
+    DeletedModelsBehaviour,
+    Filter,
+    FilterOperator,
+    Not,
+    Or,
+)
 
 
 # extend if neccessary. first is always the default (should be int)

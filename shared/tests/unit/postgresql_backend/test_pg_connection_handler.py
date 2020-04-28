@@ -8,8 +8,9 @@ from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler, setup_di as postgres_setup_di
 from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.pg_connection_handler import ConnectionContext
+from shared.services import setup_di as util_setup_di
 from shared.tests import reset_di  # noqa
-from shared.util import BadCodingError, setup_di as util_setup_di
+from shared.util import BadCodingError
 
 
 @pytest.fixture(autouse=True)

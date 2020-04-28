@@ -2,8 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import ReadDatabase
 from shared.di import injector
+from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
 from shared.util import META_POSITION, BadCodingError
 from writer.core import (

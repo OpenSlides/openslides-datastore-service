@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from shared.util import KEYSEPARATOR
+from .key_strings import KEYSEPARATOR
 
 
 def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:

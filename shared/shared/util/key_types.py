@@ -1,6 +1,6 @@
 import re
 
-from shared.util import KEYSEPARATOR
+from .key_strings import KEYSEPARATOR
 
 from .exceptions import InvalidFormat
 

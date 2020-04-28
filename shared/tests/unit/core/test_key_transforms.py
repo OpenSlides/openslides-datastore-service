@@ -1,4 +1,4 @@
-from shared.core import (
+from shared.util import (
     build_fqid,
     collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,

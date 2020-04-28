@@ -1,10 +1,10 @@
 import json
 
 from reader.flask_frontend.routes import Route
-from shared.core import DeletedModelsBehaviour
 from shared.flask_frontend.errors import ERROR_CODES
 from shared.postgresql_backend import EVENT_TYPES
 from shared.tests.util import assert_error_response, assert_success_response
+from shared.util import DeletedModelsBehaviour
 
 
 FQID = "collection/1"

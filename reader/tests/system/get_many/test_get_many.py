@@ -1,11 +1,11 @@
 import json
 
 from reader.flask_frontend.routes import Route
-from shared.core import DeletedModelsBehaviour
 from shared.flask_frontend import ERROR_CODES
 from shared.postgresql_backend import EVENT_TYPES
 from shared.tests import assert_error_response
 from shared.tests.util import assert_success_response
+from shared.util import DeletedModelsBehaviour
 
 
 data = {
@@ -107,6 +107,19 @@ def test_mapped_fields(json_client, db_connection, db_cur):
         "b/1": {"field_4": "data", "field_5": 42, "common_field": 2},
         "b/2": {"field_4": "data", "field_5": 42, "common_field": 3},
     }
+
+
+def test_same_collection(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    request = {
+        "requests": [
+            {"collection": "b", "ids": [1], "mapped_fields": ["field_4"]},
+            {"collection": "b", "ids": [2], "mapped_fields": ["field_5"]},
+        ],
+    }
+    response = json_client.post(Route.GET_MANY.URL, request)
+    assert_success_response(response)
+    print(response.json)
 
 
 def setup_events_data(connection, cursor):

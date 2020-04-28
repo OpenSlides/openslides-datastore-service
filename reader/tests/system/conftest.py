@@ -3,6 +3,7 @@ import pytest
 from reader.core import setup_di as core_setup_di
 from reader.flask_frontend import FlaskFrontend
 from shared.postgresql_backend import setup_di as postgresql_setup_di
+from shared.services import setup_di as util_setup_di
 from shared.tests import (  # noqa
     db_connection,
     db_cur,
@@ -12,7 +13,6 @@ from shared.tests import (  # noqa
     reset_di,
     setup_db_connection,
 )
-from shared.util import setup_di as util_setup_di
 
 
 @pytest.fixture(autouse=True)

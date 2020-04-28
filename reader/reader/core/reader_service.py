@@ -1,22 +1,22 @@
 from typing import Any, Dict, List, cast
 
 from reader.core.reader import CountResult, ExistsResult, MaxResult, MinResult
-from shared.core import (
-    DeletedModelsBehaviour,
-    Filter,
-    ReadDatabase,
-    build_fqid,
-    collection_from_fqid,
-    get_exception_for_deleted_models_behaviour,
-)
-from shared.core.read_database import (
+from shared.di import service_as_factory
+from shared.postgresql_backend import ConnectionHandler
+from shared.services import ReadDatabase
+from shared.services.read_database import (
     AggregateFilterQueryFieldsParameters,
     BaseAggregateFilterQueryFieldsParameters,
     CountFilterQueryFieldsParameters,
 )
-from shared.di import service_as_factory
-from shared.postgresql_backend import ConnectionHandler
-from shared.util import Model
+from shared.typing import Model
+from shared.util import (
+    DeletedModelsBehaviour,
+    Filter,
+    build_fqid,
+    collection_from_fqid,
+    get_exception_for_deleted_models_behaviour,
+)
 
 from .requests import (
     AggregateRequest,

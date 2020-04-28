@@ -2,8 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import FilterOperator, ModelDoesNotExist, ReadDatabase
-from shared.core.read_database import CountFilterQueryFieldsParameters
 from shared.di import injector
 from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.postgresql_backend.connection_handler import DatabaseError
@@ -11,8 +9,9 @@ from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
+from shared.services.read_database import CountFilterQueryFieldsParameters, ReadDatabase
 from shared.tests import reset_di  # noqa
-from shared.util import META_POSITION, BadCodingError
+from shared.util import META_POSITION, BadCodingError, FilterOperator, ModelDoesNotExist
 
 
 @pytest.fixture(autouse=True)

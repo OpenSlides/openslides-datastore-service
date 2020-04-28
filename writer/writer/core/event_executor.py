@@ -1,8 +1,8 @@
 import copy
 from typing import Dict, List, Protocol
 
-from shared.core import ReadDatabase
 from shared.di import service_as_factory, service_interface
+from shared.services import ReadDatabase
 from shared.util import META_POSITION, BadCodingError
 from writer.core.db_events import (
     BaseDbEvent,

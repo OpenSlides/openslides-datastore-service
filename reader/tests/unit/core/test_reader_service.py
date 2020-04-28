@@ -13,23 +13,23 @@ from reader.core.requests import (
     GetRequest,
     MinMaxRequest,
 )
-from shared.core import (
-    DeletedModelsBehaviour,
-    FilterOperator,
-    ModelDoesNotExist,
-    ModelNotDeleted,
-    ReadDatabase,
-)
-from shared.core.read_database import (
-    AggregateFilterQueryFieldsParameters,
-    CountFilterQueryFieldsParameters,
-)
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
+from shared.services import ReadDatabase
+from shared.services.read_database import (
+    AggregateFilterQueryFieldsParameters,
+    CountFilterQueryFieldsParameters,
+)
 from shared.tests import reset_di  # noqa
+from shared.util import (
+    DeletedModelsBehaviour,
+    FilterOperator,
+    ModelDoesNotExist,
+    ModelNotDeleted,
+)
 
 
 @pytest.fixture(autouse=True)

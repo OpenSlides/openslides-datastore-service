@@ -1,13 +1,14 @@
 from typing import Any, Dict, List
 
-from shared.core import (
+from shared.typing import JSON
+from shared.util import (
     KEY_TYPE,
     InvalidFormat,
     assert_is_field,
     assert_is_fqid,
     get_key_type,
+    is_reserved_field,
 )
-from shared.util import JSON, is_reserved_field
 
 
 def assert_no_special_field(field: Any) -> None:

@@ -77,7 +77,7 @@ run-cleanup:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
 
-# no-down mode speeds up the proces by up to 50%
+# no-down mode speeds up the process by up to 50%
 run-tests run-travis:
 	@$(MAKE) -C shared $@-no-down
 	@$(MAKE) -C reader $@-no-down

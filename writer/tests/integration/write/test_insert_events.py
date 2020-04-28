@@ -3,10 +3,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.core import ModelDoesNotExist, ModelExists, ReadDatabase
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
+from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
+from shared.util import ModelDoesNotExist, ModelExists
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import WriteHandler
 from writer.postgresql_backend import SqlDatabaseBackendService

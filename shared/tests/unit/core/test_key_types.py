@@ -1,6 +1,6 @@
 import pytest
 
-from shared.core import (
+from shared.util import (
     KEY_TYPE,
     InvalidFormat,
     InvalidKeyFormat,

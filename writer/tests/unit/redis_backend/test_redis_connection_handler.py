@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from shared.di import injector
+from shared.services import EnvironmentService, ShutdownService
 from shared.tests import reset_di  # noqa
-from shared.util import EnvironmentService, ShutdownService
 from writer.redis_backend.connection_handler import ConnectionHandler
 from writer.redis_backend.redis_connection_handler import RedisConnectionHandlerService
 

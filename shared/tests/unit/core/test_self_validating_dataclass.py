@@ -4,9 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from shared.core import InvalidFormat
-from shared.core.self_validating_dataclass import SelfValidatingDataclass
-from shared.util import Collection, Field, Fqid, Id, Position
+from shared.typing import Collection, Field, Fqid, Id, Position
+from shared.util import InvalidFormat, SelfValidatingDataclass
 
 
 @dataclass
@@ -27,13 +26,13 @@ def test_simple():
     position.__le__.return_value = False
 
     with patch(
-        "shared.core.self_validating_dataclass.assert_is_collection"
+        "shared.util.self_validating_dataclass.assert_is_collection"
     ) as assert_is_collection, patch(
-        "shared.core.self_validating_dataclass.assert_is_fqid"
+        "shared.util.self_validating_dataclass.assert_is_fqid"
     ) as assert_is_fqid, patch(
-        "shared.core.self_validating_dataclass.assert_is_field"
+        "shared.util.self_validating_dataclass.assert_is_field"
     ) as assert_is_field, patch(
-        "shared.core.self_validating_dataclass.assert_is_id"
+        "shared.util.self_validating_dataclass.assert_is_id"
     ) as assert_is_id:
         A(fqid, collection, field, id, position)
 
@@ -56,7 +55,7 @@ def test_extended():
     position.__le__.return_value = True
 
     with patch(
-        "shared.core.self_validating_dataclass.assert_is_fqid"
+        "shared.util.self_validating_dataclass.assert_is_fqid"
     ) as assert_is_fqid:
         with pytest.raises(InvalidFormat):
             B([fqid], position)

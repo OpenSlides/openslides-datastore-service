@@ -5,7 +5,8 @@ from psycopg2 import sql
 from psycopg2.extras import DictCursor, Json
 
 from shared.di import service_as_singleton
-from shared.util import BadCodingError, EnvironmentService, ShutdownService
+from shared.services import EnvironmentService, ShutdownService
+from shared.util import BadCodingError
 
 from .connection_handler import DatabaseError
 

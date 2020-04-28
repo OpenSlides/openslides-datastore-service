@@ -4,7 +4,8 @@ import fastjsonschema
 
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
-from shared.util import JSON, BadCodingError
+from shared.typing import JSON
+from shared.util import BadCodingError
 from writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,

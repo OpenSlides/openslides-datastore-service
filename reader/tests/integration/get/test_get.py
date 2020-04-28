@@ -6,13 +6,13 @@ from reader.core import Reader
 from reader.core.reader_service import ReaderService
 from reader.flask_frontend.json_handler import JSONHandler
 from reader.flask_frontend.routes import Route
-from shared.core import ReadDatabase
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
+from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
 
 

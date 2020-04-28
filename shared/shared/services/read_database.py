@@ -1,16 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, ContextManager, Dict, List, Optional, Protocol
 
-from shared.core import Filter
 from shared.di import service_interface
-from shared.util import Model
-
-
-class DeletedModelsBehaviour(int, Enum):
-    NO_DELETED = 1
-    ONLY_DELETED = 2
-    ALL_MODELS = 3
+from shared.typing import Model
+from shared.util import DeletedModelsBehaviour, Filter
 
 
 class BaseFilterQueryFieldsParameters:
