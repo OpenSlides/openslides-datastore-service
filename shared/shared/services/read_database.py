@@ -53,7 +53,7 @@ class ReadDatabase(Protocol):
     def get_many(
         self,
         fqids: List[str],
-        mapped_fields_per_collection: Dict[str, List[str]] = {},
+        mapped_fields_per_fqid: Dict[str, List[str]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
     ) -> Dict[str, Model]:
         """

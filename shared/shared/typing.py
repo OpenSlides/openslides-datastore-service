@@ -10,14 +10,16 @@ _Collection = NewType("_Collection", str)
 _Field = NewType("_Field", str)
 _Id = NewType("_Id", int)
 _Fqid = NewType("_Fqid", str)
+_Fqfield = NewType("_Fqfield", str)
 _Position = NewType("_Position", int)
 
 Collection = Union[str, _Collection]
 Field = Union[str, _Field]
 Id = Union[int, _Id]
 Fqid = Union[str, _Fqid]
+Fqfield = Union[str, _Fqfield]
 Position = Union[int, _Position]
 
 # TODO: remove type comments as soon as mypy is fixed
 # (which may be a while, see https://github.com/python/mypy/issues/5354)
-custom_types = [Collection, Field, Id, Fqid, Position]  # type: ignore
+custom_types = [Collection, Field, Id, Fqid, Fqfield, Position]  # type: ignore

@@ -110,7 +110,7 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
     read_db.get_context.assert_called()
     get_many.assert_called_with(
         ["a/1", "b/1"],
-        {"a": ["field1", "field"], "b": ["field2", "field"]},
+        {"a/1": ["field1", "field"], "b/1": ["field2", "field"]},
         DeletedModelsBehaviour.NO_DELETED,
     )
 
@@ -135,7 +135,7 @@ def test_get_many_with_position(
     gds.assert_called_with(["a/1", "b/1"], 42)
     bmid.assert_called_with(["a/1", "b/1"], 42)
     amfm.assert_called_with(
-        result, {"a": ["field1", "field"], "b": ["field2", "field"]}
+        result, {"a/1": ["field1", "field"], "b/1": ["field2", "field"]}
     )
 
 
@@ -295,7 +295,7 @@ def test_apply_mapped_fields_multi(reader: ReaderService):
         "b/1": {"f3": "a", "f4": "b", "f": "c"},
     }
     assert reader.apply_mapped_fields_multi(
-        result, {"a": ["f1", "f"], "b": ["f3", "f"]}
+        result, {"a/1": ["f1", "f"], "b/1": ["f3", "f"]}
     ) == {"a/1": {"f1": "a", "f": "c"}, "b/1": {"f3": "a", "f": "c"}}
 
 

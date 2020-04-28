@@ -109,6 +109,22 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     }
 
 
+def test_partial_mapped_fields(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    request = {
+        "requests": [
+            {"collection": "a", "ids": [1], "mapped_fields": ["field_1"]},
+            {"collection": "b", "ids": [1]},
+        ],
+    }
+    response = json_client.post(Route.GET_MANY.URL, request)
+    assert_success_response(response)
+    assert response.json == {
+        "a/1": {"field_1": "data"},
+        "b/1": data["b/1"],
+    }
+
+
 def test_same_collection(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     request = {
@@ -119,7 +135,23 @@ def test_same_collection(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    print(response.json)
+    assert response.json == {
+        "b/1": {"field_4": "data"},
+        "b/2": {"field_5": 42},
+    }
+
+
+def test_fqfields(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    request = {
+        "requests": ["b/1/field_4", "b/2/field_5"],
+    }
+    response = json_client.post(Route.GET_MANY.URL, request)
+    assert_success_response(response)
+    assert response.json == {
+        "b/1": {"field_4": "data"},
+        "b/2": {"field_5": 42},
+    }
 
 
 def setup_events_data(connection, cursor):

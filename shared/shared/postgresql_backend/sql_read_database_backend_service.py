@@ -9,12 +9,12 @@ from shared.services.read_database import (
 )
 from shared.typing import Model
 from shared.util import (
-    KEYSEPARATOR,
     META_POSITION,
     BadCodingError,
     DeletedModelsBehaviour,
     Filter,
     ModelDoesNotExist,
+    build_fqid,
     collection_from_fqid,
     get_exception_for_deleted_models_behaviour,
 )
@@ -48,19 +48,22 @@ class SqlReadDatabaseBackendService:
     def get_many(
         self,
         fqids: List[str],
-        mapped_fields_per_collection: Dict[str, List[str]] = {},
+        mapped_fields_per_fqid: Dict[str, List[str]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
     ) -> Dict[str, Model]:
         if not fqids:
             return {}
 
-        arguments = [tuple(fqids)]
+        arguments: List[Any] = [tuple(fqids)]
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
-        unique_mapped_fields: List[Any] = self.query_helper.get_unique_mapped_fields(
-            mapped_fields_per_collection
+        unique_mapped_fields = self.query_helper.get_unique_mapped_fields(
+            mapped_fields_per_fqid
         )
-        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(
-            unique_mapped_fields
+        (
+            mapped_fields_str,
+            mapped_field_args,
+        ) = self.query_helper.build_select_from_mapped_fields(
+            unique_mapped_fields, mapped_fields_per_fqid
         )
 
         query = f"""
@@ -68,10 +71,10 @@ class SqlReadDatabaseBackendService:
             {"natural join models_lookup" if del_cond else ""}
             where fqid in %s {del_cond}"""
         result = self.connection.query(
-            query, unique_mapped_fields + arguments, unique_mapped_fields
+            query, mapped_field_args + arguments, unique_mapped_fields
         )
 
-        models = self.build_models_from_result(result, mapped_fields_per_collection)
+        models = self.build_models_from_result(result, mapped_fields_per_fqid)
         return models
 
     def get_all(
@@ -81,16 +84,17 @@ class SqlReadDatabaseBackendService:
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> List[Model]:
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
-        mapped_fields_str = self.query_helper.build_select_from_mapped_fields(
-            mapped_fields
-        )
+        (
+            mapped_fields_str,
+            mapped_field_args,
+        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
         query = f"""
             select {mapped_fields_str} from models
             {"natural join models_lookup" if del_cond else ""}
             where fqid like %s {del_cond}"""
         models = self.fetch_list_of_models(
             query,
-            mapped_fields + [collection + KEYSEPARATOR + "%"],
+            mapped_field_args + [build_fqid(collection, "%")],
             mapped_fields,
             mapped_fields,
         )
@@ -133,27 +137,23 @@ class SqlReadDatabaseBackendService:
         return models
 
     def build_models_from_result(
-        self, result, mapped_fields_per_collection: Dict[str, List[str]]
+        self, result, mapped_fields_per_fqid: Dict[str, List[str]]
     ) -> Dict[str, Model]:
         result_map = {}
         for row in result:
             fqid = row["fqid"]
-            collection = collection_from_fqid(fqid)
 
             if self.query_helper.mapped_fields_map_has_empty_entry(
-                mapped_fields_per_collection
+                mapped_fields_per_fqid
             ):
                 # at least one collection needs all fields, so we just selected data
                 model = row["data"]
             else:
                 model = row.copy()
 
-            if (
-                collection in mapped_fields_per_collection
-                and len(mapped_fields_per_collection[collection]) > 0
-            ):
+            if fqid in mapped_fields_per_fqid and len(mapped_fields_per_fqid[fqid]) > 0:
                 for key in list(model.keys()):
-                    if key not in mapped_fields_per_collection[collection]:
+                    if key not in mapped_fields_per_fqid[fqid]:
                         del model[key]
             result_map[fqid] = model
 

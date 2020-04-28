@@ -11,6 +11,14 @@ def fqfield_from_fqid_and_field(fqid: str, field: str) -> str:
     return f"{fqid}{KEYSEPARATOR}{field}"
 
 
+def fqid_from_fqfield(fqfield: str) -> str:
+    return collectionfield_and_fqid_from_fqfield(fqfield)[1]
+
+
+def field_from_fqfield(fqfield: str) -> str:
+    return fqfield.split(KEYSEPARATOR)[2]
+
+
 def field_from_collectionfield(collectionfield: str) -> str:
     return collectionfield.split(KEYSEPARATOR)[1]
 

@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, cast
 
 from reader.core.reader import CountResult, ExistsResult, MaxResult, MinResult
+from reader.core.requests import GetManyRequestPart
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
 from shared.services import ReadDatabase
@@ -14,9 +15,9 @@ from shared.util import (
     DeletedModelsBehaviour,
     Filter,
     build_fqid,
-    collection_from_fqid,
     get_exception_for_deleted_models_behaviour,
 )
+from shared.util.key_transforms import field_from_fqfield, fqid_from_fqfield
 
 from .requests import (
     AggregateRequest,
@@ -59,15 +60,22 @@ class ReaderService:
 
     def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
         with self.database.get_context():
-            fqids = [
-                build_fqid(part.collection, str(id))
-                for part in request.requests
-                for id in part.ids
-            ]
-            mapped_fields_per_collection = {
-                part.collection: part.mapped_fields + request.mapped_fields
-                for part in request.requests
-            }
+            if isinstance(request.requests[0], GetManyRequestPart):
+                requests = cast(List[GetManyRequestPart], request.requests)
+                mapped_fields_per_fqid = {
+                    build_fqid(part.collection, str(id)): part.mapped_fields
+                    + request.mapped_fields
+                    for part in requests
+                    for id in part.ids
+                }
+            else:
+                fqfield_requests = cast(List[str], request.requests)
+                mapped_fields_per_fqid = {
+                    fqid_from_fqfield(fqfield): [field_from_fqfield(fqfield)]
+                    for fqfield in fqfield_requests
+                }
+
+            fqids = list(mapped_fields_per_fqid.keys())
 
             if request.position:
                 fqids = self.filter_fqids_by_deleted_status(
@@ -76,12 +84,10 @@ class ReaderService:
                 result = self.database.build_models_ignore_deleted(
                     fqids, request.position
                 )
-                result = self.apply_mapped_fields_multi(
-                    result, mapped_fields_per_collection
-                )
+                result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
             else:
                 result = self.database.get_many(
-                    fqids, mapped_fields_per_collection, request.get_deleted_models,
+                    fqids, mapped_fields_per_fqid, request.get_deleted_models,
                 )
         return result
 
@@ -155,15 +161,11 @@ class ReaderService:
         return {field: model[field] for field in mapped_fields if field in model}
 
     def apply_mapped_fields_multi(
-        self,
-        models: Dict[str, Model],
-        mapped_fields_per_collection: Dict[str, List[str]],
+        self, models: Dict[str, Model], mapped_fields_per_fqid: Dict[str, List[str]],
     ) -> Dict[str, Model]:
-        if not mapped_fields_per_collection or not len(mapped_fields_per_collection):
+        if not mapped_fields_per_fqid or not len(mapped_fields_per_fqid):
             return models
         return {
-            fqid: self.apply_mapped_fields(
-                model, mapped_fields_per_collection[collection_from_fqid(fqid)]
-            )
+            fqid: self.apply_mapped_fields(model, mapped_fields_per_fqid.get(fqid, []))
             for fqid, model in models.items()
         }

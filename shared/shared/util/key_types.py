@@ -1,8 +1,7 @@
 import re
 
-from .key_strings import KEYSEPARATOR
-
 from .exceptions import InvalidFormat
+from .key_strings import KEYSEPARATOR
 
 
 class InvalidKeyFormat(InvalidFormat):

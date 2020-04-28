@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
-from shared.typing import Collection, Field, Fqid, Id, Position
+from shared.typing import Collection, Field, Fqfield, Fqid, Id, Position
 from shared.util import DeletedModelsBehaviour, Filter, SelfValidatingDataclass
 
 
@@ -23,7 +23,7 @@ class GetManyRequestPart(SelfValidatingDataclass):
 
 @dataclass
 class GetManyRequest(SelfValidatingDataclass):
-    requests: List[GetManyRequestPart]
+    requests: Union[List[GetManyRequestPart], List[Fqfield]]
     mapped_fields: List[Field] = field(default_factory=list)
     position: Optional[Position] = None
     get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED

@@ -51,16 +51,24 @@ get_many_schema = fastjsonschema.compile(
         "type": "object",
         "properties": {
             "requests": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "collection": {"type": "string"},
-                        "ids": {"type": "array", "items": {"type": "integer"}},
-                        "mapped_fields": {"type": "array", "items": {"type": "string"}},
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "collection": {"type": "string"},
+                                "ids": {"type": "array", "items": {"type": "integer"}},
+                                "mapped_fields": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                            "required": ["collection", "ids"],
+                        },
                     },
-                    "required": ["collection", "ids"],
-                },
+                    {"type": "array", "items": {"type": "string"}},
+                ],
             },
             "position": {"type": "integer"},
             "mapped_fields": {"type": "array", "items": {"type": "string"}},

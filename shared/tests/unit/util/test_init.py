@@ -1,17 +1,29 @@
-from shared.util import is_reserved_field
+from unittest.mock import MagicMock
+
+from shared.util import (
+    DeletedModelsBehaviour,
+    ModelDoesNotExist,
+    ModelNotDeleted,
+    get_exception_for_deleted_models_behaviour,
+)
 
 
-def test_is_reserved_field_1():
-    assert is_reserved_field("meta_something")
+def test_raise_exception_for_deleted_models_behaviour_all_models():
+    exception = get_exception_for_deleted_models_behaviour(
+        MagicMock(), DeletedModelsBehaviour.ALL_MODELS
+    )
+    assert type(exception) is ModelDoesNotExist
 
 
-def test_is_reserved_field_2():
-    assert is_reserved_field("meta")
+def test_raise_exception_for_deleted_models_behaviour_no_deleted():
+    exception = get_exception_for_deleted_models_behaviour(
+        MagicMock(), DeletedModelsBehaviour.NO_DELETED
+    )
+    assert type(exception) is ModelDoesNotExist
 
 
-def test_is_reserved_field_None():
-    assert is_reserved_field(None) is False
-
-
-def test_is_reserved_field_other_string():
-    assert is_reserved_field("some_string") is False
+def test_raise_exception_for_deleted_models_behaviour_only_deleted():
+    exception = get_exception_for_deleted_models_behaviour(
+        MagicMock(), DeletedModelsBehaviour.ONLY_DELETED
+    )
+    assert type(exception) is ModelNotDeleted

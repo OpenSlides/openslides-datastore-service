@@ -25,3 +25,12 @@ class ModelNotDeleted(DatastoreException):
 class ModelLocked(DatastoreException):
     def __init__(self, key):
         self.key = key
+
+
+class BadCodingError(RuntimeError):
+    """
+    Should be thrown for errors that theoretically should never happen, except when the
+    programmer fucked up.
+    """
+
+    pass

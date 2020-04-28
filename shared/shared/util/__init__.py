@@ -1,8 +1,7 @@
-from typing import Any
-
 from ..typing import JSON, Collection, Field, Fqid, Id, Model, Position  # noqa
 from .deleted_models_behaviour import DeletedModelsBehaviour  # noqa
 from .exceptions import (  # noqa
+    BadCodingError,
     DatastoreException,
     InvalidFormat,
     ModelDoesNotExist,
@@ -11,6 +10,13 @@ from .exceptions import (  # noqa
     ModelNotDeleted,
 )
 from .filter import And, Filter, FilterOperator, Not, Or  # noqa
+from .key_strings import (  # noqa
+    KEYSEPARATOR,
+    META_DELETED,
+    META_FIELD_PREFIX,
+    META_POSITION,
+    is_reserved_field,
+)
 from .key_transforms import (  # noqa
     build_fqid,
     collection_from_fqid,
@@ -32,7 +38,6 @@ from .key_types import (  # noqa
     get_key_type,
 )
 from .self_validating_dataclass import SelfValidatingDataclass  # noqa
-from .key_strings import META_FIELD_PREFIX, KEYSEPARATOR, META_DELETED, META_POSITION, is_reserved_field  # noqa
 
 
 def get_exception_for_deleted_models_behaviour(
@@ -42,12 +47,3 @@ def get_exception_for_deleted_models_behaviour(
         return ModelNotDeleted(fqid)
     else:
         return ModelDoesNotExist(fqid)
-
-
-class BadCodingError(RuntimeError):
-    """
-    Should be thrown for errors that theoretically should never happen, except when the
-    programmer fucked up.
-    """
-
-    pass
