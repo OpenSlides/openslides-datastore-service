@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, Optional
 
 import redis
 
@@ -40,15 +40,11 @@ class RedisConnectionHandlerService:
         port = int(self.environment.try_get(ENVIRONMENT_VARIABLES.PORT) or 6379)
         return redis.Redis(host=host, port=port)
 
-    def xadd(self, topic: str, parts: List[str]) -> None:
-        # We cannot use connection.xadd(name, fields) here, becuase `fields`
-        # is a dict of key values to add to the stream. Python does not support
-        # multiple keys in one dict, so we have to do this manually. For reference:
-        # https://github.com/andymccurdy/redis-py/blob/master/redis/client.py#L2318
-        if not parts or not topic:
+    def xadd(self, topic: str, fields: Dict[str, str]) -> None:
+        if not fields or not topic:
             return
         connection = self.ensure_connection()
-        connection.execute_command("XADD", topic, "*", *parts)
+        connection.xadd(topic, fields)
 
     def shutdown(self):
         if self.connection:

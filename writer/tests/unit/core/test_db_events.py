@@ -29,7 +29,7 @@ def test_db_create_event():
     assert "my_key" in event.field_data
     assert META_DELETED in event.field_data
 
-    fields = event.get_fields()
+    fields = event.get_modified_fields()
     assert "my_key" in fields
     assert META_DELETED in fields
 
@@ -48,7 +48,7 @@ def test_db_update_event():
     assert event.fqid == fqid
     assert "my_key" in event.field_data
 
-    fields = event.get_fields()
+    fields = event.get_modified_fields()
     assert "my_key" in fields
 
     modified_fields = event.get_modified_fields()
@@ -57,48 +57,50 @@ def test_db_update_event():
 
 def test_db_delete_fields_event():
     fqid = MagicMock()
-    fields = MagicMock()
+    field = MagicMock()
 
-    event = DbDeleteFieldsEvent(fqid, fields)
+    event = DbDeleteFieldsEvent(fqid, [field])
 
     assert event.fqid == fqid
-    assert event.fields == fields
-    assert event.get_modified_fields() == fields
+    assert event.fields == [field]
+    assert event.get_modified_fields() == {field: None}
 
 
 def test_db_delete_event():
     fqid = MagicMock()
+    field = MagicMock()
 
     event = DbDeleteEvent(fqid)
-    event.modified_fields = fields = MagicMock()
+    event.fields = [field]
 
     assert event.fqid == fqid
-    assert event.get_modified_fields() == fields
+    assert event.get_modified_fields() == {field: None}
 
 
 def test_db_delete_event_set_modified_fields():
-    fields = MagicMock()
+    field = MagicMock()
 
     event = DbDeleteEvent(None)
-    event.set_modified_fields(fields)
+    event.set_modified_fields([field])
 
-    assert event.get_modified_fields() == fields
+    assert event.get_modified_fields() == {field: None}
 
 
 def test_db_restore_event():
     fqid = MagicMock()
+    field = MagicMock()
 
     event = DbRestoreEvent(fqid)
-    event.modified_fields = fields = MagicMock()
+    event.fields = [field]
 
     assert event.fqid == fqid
-    assert event.get_modified_fields() == fields
+    assert event.get_modified_fields() == {field: None}
 
 
 def test_db_restore_event_set_modified_fields():
-    fields = MagicMock()
+    field = MagicMock()
 
     event = DbRestoreEvent(None)
-    event.set_modified_fields(fields)
+    event.set_modified_fields([field])
 
-    assert event.get_modified_fields() == fields
+    assert event.get_modified_fields() == {field: None}
