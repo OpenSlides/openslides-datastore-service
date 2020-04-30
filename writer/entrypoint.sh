@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export DATASTORE_DATABASE_PORT="${DATASTORE_DATABASE_PORT:-5432}"
+export MESSAGE_BUS_PORT="${DATASTORE_DATABASE_PORT:-6379}"
 
 # TODO: read optional ports from env variables: db_port and redis_port
 wait-for-it --timeout=15 "$DATASTORE_DATABASE_HOST:$DATASTORE_DATABASE_PORT"

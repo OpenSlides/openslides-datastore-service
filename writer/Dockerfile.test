@@ -9,6 +9,8 @@ COPY writer/requirements.txt .
 RUN pip install -U -r requirements-testing.txt
 COPY scripts/ .
 COPY writer/.coveragerc .
+COPY writer/entrypoint.sh .
 ENV PYTHONPATH /app/
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["pytest"]

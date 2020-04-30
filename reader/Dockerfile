@@ -10,14 +10,14 @@ RUN git clone --no-checkout -- $REPOSITORY_URL .
 RUN git checkout $GIT_CHECKOUT
 RUN git pull
 RUN mkdir /app
-RUN mv shared/shared writer/writer writer/entrypoint.sh writer/requirements.txt requirements/requirements-general.txt /app
+RUN mv shared/shared reader/reader reader/entrypoint.sh reader/requirements.txt requirements/requirements-general.txt /app
 
 WORKDIR /app
 RUN rm -rf /tmp
 RUN pip install -U -r requirements-general.txt
 
-EXPOSE 8000
+EXPOSE 8001
 ENV PYTHONPATH /app/
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "writer.app:application"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8001", "reader.app:application"]

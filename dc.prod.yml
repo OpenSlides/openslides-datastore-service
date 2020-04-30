@@ -1,0 +1,56 @@
+version: '3'
+services:
+    reader:
+        build:
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#prod-startup:reader"
+            args:
+                GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH}"
+        image: openslides-datastore-reader
+        ports:
+            - "8001:8001"
+        depends_on:
+            - postgresql
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_PASSWORD=openslides
+            - DATASTORE_DATABASE_NAME=openslides
+        networks:
+            - postgresql
+    writer:
+        build:
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#prod-startup:writer"
+            args:
+                GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH}"
+        image: openslides-datastore-writer
+        ports:
+            - "8000:8000"
+        depends_on:
+            - postgresql
+            - redis
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_PASSWORD=openslides
+            - DATASTORE_DATABASE_NAME=openslides
+            - MESSAGE_BUS_HOST=redis
+        networks:
+            - postgresql
+            - redis
+    postgresql:
+        image: sameersbn/postgresql:10
+        labels:
+            org.openslides.role: "postgres"
+        environment:
+            - DB_USER=openslides
+            - DB_PASS=openslides
+            - DB_NAME=openslides
+        networks:
+            - postgresql
+    redis:
+        image: redis:alpine
+        networks:
+            - redis
+networks:
+    postgresql:
+    redis:
