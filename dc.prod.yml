@@ -2,40 +2,41 @@ version: '3'
 services:
     reader:
         build:
-            # TODO: if you read this comment on master, the branch tag needs to be removed
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#:reader"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
             args:
+                REPOSITORY_URL: "https://github.com/jsangmeister/openslides-datastore-service.git"
                 GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH}"
+                MODULE: "reader"
+                PORT: "${OPENSLIDES_DATASTORE_READER_PORT}"
         image: openslides-datastore-reader
         ports:
-            - "8001:8001"
+            - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
         depends_on:
             - postgresql
+        env_file: settings.env
         environment:
-            - DATASTORE_DATABASE_HOST=postgresql
-            - DATASTORE_DATABASE_USER=openslides
-            - DATASTORE_DATABASE_PASSWORD=openslides
-            - DATASTORE_DATABASE_NAME=openslides
+            - DATASTORE_DATABASE_PORT=${DATASTORE_DATABASE_PORT}
         networks:
             - postgresql
     writer:
         build:
-            # TODO: if you read this comment on master, the branch tag needs to be removed
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#:writer"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
             args:
+                REPOSITORY_URL: "https://github.com/jsangmeister/openslides-datastore-service.git"
                 GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH}"
+                MODULE: "writer"
+                PORT: "${OPENSLIDES_DATASTORE_WRITER_PORT}"
+                USE_REDIS: "1"
         image: openslides-datastore-writer
         ports:
-            - "8000:8000"
+            - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
         depends_on:
             - postgresql
             - redis
+        env_file: settings.env
         environment:
-            - DATASTORE_DATABASE_HOST=postgresql
-            - DATASTORE_DATABASE_USER=openslides
-            - DATASTORE_DATABASE_PASSWORD=openslides
-            - DATASTORE_DATABASE_NAME=openslides
-            - MESSAGE_BUS_HOST=redis
+            - DATASTORE_DATABASE_PORT=${DATASTORE_DATABASE_PORT}
+            - MESSAGE_BUS_PORT=${MESSAGE_BUS_PORT}
         networks:
             - postgresql
             - redis
@@ -51,6 +52,8 @@ services:
             - postgresql
     redis:
         image: redis:alpine
+        ports:
+            - "${MESSAGE_BUS_PORT}:${MESSAGE_BUS_PORT}"
         networks:
             - redis
 networks:

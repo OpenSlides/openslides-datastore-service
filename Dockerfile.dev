@@ -1,0 +1,30 @@
+FROM python:3.8.1
+
+ARG USE_REDIS
+ENV USE_REDIS=$USE_REDIS
+
+RUN apt-get -y update && apt-get -y upgrade && \
+    apt-get install --no-install-recommends -y wait-for-it postgresql-client ${USE_REDIS:+redis-tools}
+
+WORKDIR /app
+COPY requirements/requirements-general.txt .
+COPY scripts/entrypoint.sh .
+
+ARG MODULE
+RUN test -n "$MODULE" || (echo "MODULE not set" && false)
+
+COPY $MODULE/requirements.txt .
+RUN pip install -U -r requirements-general.txt
+
+ENV PYTHONPATH /app/
+
+ENV FLASK_APP=$MODULE.app
+ENV FLASK_ENV=development
+
+ENTRYPOINT ["./entrypoint.sh"]
+
+ARG PORT
+RUN test -n "$PORT" || (echo "PORT not set" && false)
+ENV PORT=$PORT
+
+CMD flask run --host 0.0.0.0 --port $PORT
