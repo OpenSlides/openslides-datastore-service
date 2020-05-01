@@ -91,6 +91,6 @@ build-dev:
 	@$(MAKE) -C writer $@
 
 run-prod:
-	docker-compose -f dc.prod.yml up -d
+	docker-compose -f dc.prod.yml up
 
 endif
