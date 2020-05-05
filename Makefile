@@ -5,25 +5,29 @@ export COMPOSE_FILE=dc.test.yml
 ifdef MODULE
 # targets are only available if MODULE is defined (meaning if called from a module=subdirectory)
 
+args=-t -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests -v `pwd`/cli:/app/cli
+
 build-tests:
-	docker build -t openslides-datastore-$(MODULE)-test -f $(MODULE)/Dockerfile.test .
+	docker build -t openslides-datastore-$(MODULE)-test -f Dockerfile.test . --build-arg MODULE=$(MODULE)
 
 run-integration-unit-tests: | build-tests
-	docker run -t -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests openslides-datastore-$(MODULE)-test pytest tests/unit tests/integration
+	docker run $(args) openslides-datastore-$(MODULE)-test pytest tests/unit tests/integration
 
 run-coverage-integration-unit: | build-tests
-	docker run -t -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests openslides-datastore-$(MODULE)-test pytest tests/integration tests/unit --cov --cov-report html
+	docker run $(args) openslides-datastore-$(MODULE)-test pytest tests/integration tests/unit --cov --cov-report html
 
 run-integration-unit-tests-interactive: | build-tests
-	docker run -ti -p 5000:5000 -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests openslides-datastore-$(MODULE)-test bash
+	docker run -i -p 5000:5000 $(args) openslides-datastore-$(MODULE)-test bash
 
 run-cleanup: | build-tests
-	docker run -ti -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -v `pwd`/$(MODULE)/tests:/app/tests -v `pwd`/cli:/app/cli openslides-datastore-$(MODULE)-test ./cleanup.sh
+	docker run -i $(args) openslides-datastore-$(MODULE)-test ./cleanup.sh
 
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose up -d $(MODULE)
+ifdef USE_POSTGRES
 	docker-compose exec $(MODULE) wait-for-it --timeout=15 postgresql:5432
+endif
 ifdef USE_REDIS
 	docker-compose exec $(MODULE) wait-for-it --timeout=15 redis:6379
 endif
@@ -54,16 +58,26 @@ run-travis: | run-travis-no-down
 
 # PROD
 
+# pass env variables to container
+build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT) --build-arg USE_REDIS=$(USE_REDIS)
+
 build-prod:
-	docker build -t openslides-datastore-$(MODULE) -f $(MODULE)/Dockerfile .
+	docker build -t openslides-datastore-$(MODULE) .  $(build_args)
 
 # DEVELOPMENT SERVER
 
 build-dev:
-	docker build -t openslides-datastore-$(MODULE)-dev -f $(MODULE)/Dockerfile.dev .
+	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev . $(build_args)
 
+# postgres and redis (if needed) must be running for this
 run-dev: | build-dev
-	docker run -t -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) -p 127.0.0.1:8000:8000/tcp openslides-datastore-$(MODULE)-dev
+	docker run -t \
+			   -v `pwd`/shared/shared:/app/shared \
+			   -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) \
+			   -p 127.0.0.1:$(PORT):$(PORT)/tcp \
+			   --env-file settings.env \
+			   -e MESSAGE_BUS_HOST=redis \
+			   openslides-datastore-$(MODULE)-dev
 
 endif
 

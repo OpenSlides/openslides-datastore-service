@@ -20,7 +20,9 @@ Since reader, writer and shared mostly need the same commands, the main Makefile
 
 ## Productive start
 
-`run-prod` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 8000 and the reader on 8001, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port in `dc.prod.yml`. If you need other ports or another setup, you can copy this file into your project and adjust it to your needs.
+`run-prod` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 8000 and the reader on 8001, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port in `dc.prod.yml`. Since we need the ability to checkout specific commits, the productive setup clones the repository and checks out the branch or commit set by `OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH`.
+
+All variables are read from `settings.env` and `.env`. If you need other ports or another setup, you can either override these with a shell variable or copy this file into your project and adjust it to your needs.
 
 ### Curl example
 
@@ -40,3 +42,13 @@ All other commands work analogous to this.
 - `run-cleanup`: executes `cleanup.sh` which in turn runs `black`, `isort`, `flake8` and `mypy`.
 - `run-tests`: executes `pytest`
 - `run-coverage`: runs tests and creates a coverage report in `htmlcov`. The needed coverage to pass is defined in `.coveragerc`.
+
+## Development
+
+Since the folder structure inside the docker container differs from the real one, IDEs like VS Code can't follow the imports correctly. To solve that, if you use VS Code, you need to create a `.env` file preferably in the `.vscode` folder (adjust your settings variable `python.envFile` accordingly) with the following entry:
+
+    PYTHONPATH=shared:reader:writer
+
+Since `docker-compose` uses the `.env` file in the root of the repository, this file should not also be used by VS Code, so it has to be placed elsewhere.
+
+For other IDEs there are probably similar solutions. Feel free to add them here for your IDE.

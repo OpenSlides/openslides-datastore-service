@@ -1,0 +1,24 @@
+FROM python:3.8.1
+
+ARG USE_REDIS
+ENV USE_REDIS=$USE_REDIS
+
+RUN apt-get -y update && apt-get -y upgrade && \
+    apt-get install --no-install-recommends -y wait-for-it postgresql-client ${USE_REDIS:+redis-tools}
+
+WORKDIR /app
+COPY requirements/ .
+COPY scripts/ .
+
+ARG MODULE
+RUN test -n "$MODULE" || (echo "MODULE not set" && false)
+
+COPY $MODULE/requirements.txt .
+COPY $MODULE/.coveragerc .
+
+RUN pip install -U -r requirements-testing.txt
+
+ENV PYTHONPATH /app/
+
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["pytest"]
