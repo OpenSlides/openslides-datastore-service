@@ -3,7 +3,7 @@ services:
     reader:
         build:
             # TODO: if you read this comment on master, the branch tag needs to be removed
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#prod-startup:reader"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#:reader"
             args:
                 GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH}"
         image: openslides-datastore-reader
@@ -21,7 +21,7 @@ services:
     writer:
         build:
             # TODO: if you read this comment on master, the branch tag needs to be removed
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#prod-startup:writer"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#:writer"
             args:
                 GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH}"
         image: openslides-datastore-writer
