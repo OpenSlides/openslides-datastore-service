@@ -71,6 +71,7 @@ endif
 # the two available targets without a MODULE:
 
 ifndef MODULE
+
 # execute the target for all modules
 run-cleanup:
 	@$(MAKE) -C shared $@
@@ -88,5 +89,14 @@ run-tests run-travis:
 build-dev:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
+
+run-prod:
+	docker-compose -f dc.prod.yml up -d
+
+run-prod-verbose:
+	docker-compose -f dc.prod.yml up
+
+stop-prod:
+	docker-compose -f dc.prod.yml down
 
 endif
