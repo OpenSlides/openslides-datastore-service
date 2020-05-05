@@ -1,8 +1,12 @@
 import copy
+from unittest.mock import patch
 
+import psycopg2
 import pytest
 
+from shared.di import injector
 from shared.flask_frontend import ERROR_CODES
+from shared.postgresql_backend import ConnectionHandler
 from shared.tests.util import assert_error_response
 from tests.system.util import (
     WRITE_URL,
@@ -12,6 +16,7 @@ from tests.system.util import (
     assert_no_model,
     assert_no_modified_fields,
 )
+from writer.core import Messaging
 
 
 @pytest.fixture()
@@ -222,3 +227,21 @@ def test_update_delete_restore_update(
     assert response.status_code == 200
     assert_model("a/1", {"another": "value", "third_field": ["my", "list"]}, 2)
     assert_modified_fields(redis_connection, {"a/1": ["f", "another", "third_field"]})
+
+
+def test_read_db_is_updated_before_redis_fires(json_client, data):
+    messaging = injector.get(Messaging)
+    connection_handler = injector.get(ConnectionHandler)
+
+    def assert_read_db_data(_, __):
+        connection = psycopg2.connect(**connection_handler.get_connection_params())
+        with connection.cursor() as cursor:
+            cursor.execute("select * from models where fqid = 'a/1'")
+            result = cursor.fetchone()
+
+            # assert the model exists
+            assert result
+
+    with patch.object(messaging, "handle_events", new=assert_read_db_data):
+        response = json_client.post(WRITE_URL, data)
+        assert response.status_code == 200

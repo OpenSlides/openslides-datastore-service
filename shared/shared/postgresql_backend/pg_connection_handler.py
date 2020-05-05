@@ -97,7 +97,6 @@ class PgConnectionHandlerService:
         connection = self.get_connection_with_open_transaction()
         prepared_query = self.prepare_query(query, sql_parameters)
         with connection.cursor() as cursor:
-            # print(cursor.mogrify(prepared_query, arguments))
             cursor.execute(prepared_query, arguments)
             result = cursor.fetchall()
             return result

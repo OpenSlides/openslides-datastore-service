@@ -27,6 +27,9 @@ class WriterService:
         with self.database.get_context():
             self.write_with_database_context()
 
+        # Only propagate updates to redis after the transaction has finished
+        self.messaging.handle_events(self.db_events, self.position)
+
     def write_with_database_context(self) -> None:
         # Check locked_fields -> Possible LockedError
         self.assert_locked_fields()
@@ -36,8 +39,8 @@ class WriterService:
             self.db_events, self.write_request.information, self.write_request.user_id
         )
 
-        # Store updated models in the Read-DB, Cache and Message-Bus
-        self.propagate_updates()
+        # Store updated models in the Read-DB
+        self.event_executor.update(self.db_events, self.position)
 
     def assert_locked_fields(self) -> None:
         """ May raise a ModelLockedException """
@@ -46,10 +49,6 @@ class WriterService:
         self.occ_locker.assert_collectionfield_positions(
             self.write_request.locked_collectionfields
         )
-
-    def propagate_updates(self) -> None:
-        self.event_executor.update(self.db_events, self.position)
-        self.messaging.handle_events(self.db_events, self.position)
 
     def get_ids(self, collection: str, amount: int) -> List[int]:
         with self.database.get_context():
