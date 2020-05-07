@@ -12,7 +12,7 @@ def write():
 
     write_handler = WriteHandler()
     write_handler.write(request.get_json())
-    return "", 200
+    return "", 201
 
 
 @handle_internal_errors
