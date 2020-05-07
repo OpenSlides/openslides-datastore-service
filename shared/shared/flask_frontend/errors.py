@@ -29,17 +29,41 @@ def handle_internal_errors(fn):
         try:
             return fn(*args, **kwargs)
         except InvalidFormat as e:
-            error_dict = {"type": ERROR_CODES.INVALID_FORMAT, "msg": e.msg}
+            error_dict = {
+                "type": ERROR_CODES.INVALID_FORMAT,
+                "msg": e.msg,
+                "type_verbose": "INVALID_FORMAT",
+            }
         except InvalidRequest as e:
-            error_dict = {"type": ERROR_CODES.INVALID_REQUEST, "msg": e.msg}
+            error_dict = {
+                "type": ERROR_CODES.INVALID_REQUEST,
+                "msg": e.msg,
+                "type_verbose": "INVALID_REQUEST",
+            }
         except ModelDoesNotExist as e:
-            error_dict = {"type": ERROR_CODES.MODEL_DOES_NOT_EXIST, "fqid": e.fqid}
+            error_dict = {
+                "type": ERROR_CODES.MODEL_DOES_NOT_EXIST,
+                "fqid": e.fqid,
+                "type_verbose": "MODEL_DOES_NOT_EXIST",
+            }
         except ModelExists as e:
-            error_dict = {"type": ERROR_CODES.MODEL_EXISTS, "fqid": e.fqid}
+            error_dict = {
+                "type": ERROR_CODES.MODEL_EXISTS,
+                "fqid": e.fqid,
+                "type_verbose": "MODEL_EXISTS",
+            }
         except ModelNotDeleted as e:
-            error_dict = {"type": ERROR_CODES.MODEL_NOT_DELETED, "fqid": e.fqid}
+            error_dict = {
+                "type": ERROR_CODES.MODEL_NOT_DELETED,
+                "fqid": e.fqid,
+                "type_verbose": "MODEL_NOT_DELETED",
+            }
         except ModelLocked as e:
-            error_dict = {"type": ERROR_CODES.MODEL_LOCKED, "key": e.key}
+            error_dict = {
+                "type": ERROR_CODES.MODEL_LOCKED,
+                "key": e.key,
+                "type_verbose": "MODEL_LOCKED",
+            }
         return {"error": error_dict}, 400
 
     return wrapper
