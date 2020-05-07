@@ -63,7 +63,9 @@ def test_writer_creation(writer):
     assert bool(writer)
 
 
-def test_writer_distribution(writer, database, occ_locker, event_translator):
+def test_writer_distribution(
+    writer, database, occ_locker, event_translator, event_executor, messaging
+):
     events = [RequestCreateEvent("a/1", {"a": 1}), RequestDeleteEvent("b/2")]
     locked_fields = {
         "c/1": 3,
@@ -72,7 +74,8 @@ def test_writer_distribution(writer, database, occ_locker, event_translator):
     }
     write_request = WriteRequest(events, {}, 1, locked_fields)
     event_translator.translate = MagicMock(return_value=[2, 3, 4])
-    writer.propagate_updates = pu = MagicMock()
+    event_executor.update = eeu = MagicMock()
+    messaging.handle_events = he = MagicMock()
 
     writer.write(write_request)
 
@@ -82,19 +85,8 @@ def test_writer_distribution(writer, database, occ_locker, event_translator):
     occ_locker.assert_fqfield_positions.assert_called_with({"c/2/f": 4})
     occ_locker.assert_collectionfield_positions.assert_called_with({"c/f": 5})
     database.insert_events.assert_called_with([2, 3, 4], {}, 1)
-    pu.assert_called_once()
-
-
-def test_propagate_updates(writer, event_executor, messaging):
-    writer.position = p = MagicMock()
-    writer.db_events = dbe = MagicMock()
-    event_executor.update = u = MagicMock()
-    messaging.handle_events = he = MagicMock()
-
-    writer.propagate_updates()
-
-    u.assert_called_with(dbe, p)
-    he.assert_called_with(dbe, p)
+    eeu.assert_called_once()
+    he.assert_called_once()
 
 
 def test_writer_get_ids(writer, database):
