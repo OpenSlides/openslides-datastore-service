@@ -10,19 +10,51 @@ Service for OpenSlides which wraps the database. Includes reader and writer func
 - /scripts: useful scripts
 - /requirements: the requirements for testing and in general
 
-## Setup
+## Makefile
 
-Since reader, writer and shared mostly need the same commands, the main Makefile contains those. Still, most of the commands need to be issued when in the respective subdirectory since the Makefile there sets the right environment variables. Exceptions to this are the following commands, which are available in the main folder:
+Since reader, writer and shared mostly need the same commands, the main Makefile contains those. If you issue commands in a subfolder, they are forwarded to the root Makefile. The following commands are available from the root directory:
 
-- `run-cleanup`, `run-tests`, `run-travis`: runs the corresponding command in all three modules
-- `build-dev`: build the dev images for reader and writer (shared has no dev image since it's included in both the reader and the writer)
-- `run-prod`: see below
+Utility:
+- `make run-cleanup`: runs the cleanup script in all modules
+- `make run-travis`: runs the travis script in all modules
+- `make run-tests`: runs the tests of all modules
 
-## Productive start
+Development environment:
+- `make build-dev`: builds all development images
+- `make run-dev`: runs the development environment
+- `make run-dev-verbose`: same as `make run-dev`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C.
+- `make run-dev-manually`: starts the development environment without any services like postgres or redis. These have to be running for this command to succeed.
+- `make stop-dev`: stops all dev containers
 
-`run-prod` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 8000 and the reader on 8001, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port in `dc.prod.yml`. Since we need the ability to checkout specific commits, the productive setup clones the repository and checks out the branch or commit set by `OPENSLIDES_DATASTORE_SERVICE_COMMIT_HASH`.
+(Local) Productive environment:
+- `make build-prod`: builds all productive images from the local files
+- `make run-prod`: runs the productive environment. See below for details.
+- `make run-prod-verbose` same as `run-prod`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C
+- `make stop-prod`: stops all prod containers
 
-All variables are read from `settings.env` and `.env`. If you need other ports or another setup, you can either override these with a shell variable or copy this file into your project and adjust it to your needs.
+"Real" productive environment:
+While the local environment runs directly on the local files, this is not the typical use case; by default, we want to use the files of a specific commit or branch because that's tested in combination with all other services. The commands with a suffix like `-dev` or `-prod` are specifically for this: They ignore all local files and pull the code directly from the given repository.
+- `make build`: builds all productive images from the remote files
+- `make run`: runs the productive environment. See below for details.
+- `make run-verbose` same as `run-prod`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C
+- `make stop-prod`: stops all prod containers
+
+All these commands are also avaible inside the modules and only affect the current module there. Additional commands available inside the modules (primarily for testing purposes):
+
+- `make run-bash`, `make run-tests-interactive`: opens a bash console in the container, so tests/cleanup can be run interactively
+- `make run-coverage`: creates a coverage report for all tests.  The needed coverage to pass is defined in `.coveragerc`.
+
+The following commands are only available in the `reader` and `writer`, since `shared` is no real module and has no integration/system tests:
+
+- `make run-integration-unit-tests`: runs only the integration and unit tests. Saves time and resources since no database and message bus has to be started.
+- `make run-system-tests`: runs only the system tests
+- `make run-coverage-integration-unit`: creates a coverage report for only the integration and unit tests
+- `make run-integration-unit-tests-interactive`: opens a bash console in the container, but with no connected database or message bus, so only integration and unit tests can be executed
+
+
+## Productive environment
+
+`make run[-prod]` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 8000 and the reader on 8001, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port in `dc.prod.yml`. 
 
 ### Curl example
 
@@ -35,13 +67,6 @@ Then you can get that model with:
     curl --header "Content-Type: application/json" -d '{"fqid": "a/1"}' http://localhost:8001/internal/datastore/reader/get
 
 All other commands work analogous to this.
-
-## Other commands
-
-- `run-bash`: starts the module's container and enters an interactive bash where you can issue commands inside the container. Useful for development if you need to repeatedly test and clean up.
-- `run-cleanup`: executes `cleanup.sh` which in turn runs `black`, `isort`, `flake8` and `mypy`.
-- `run-tests`: executes `pytest`
-- `run-coverage`: runs tests and creates a coverage report in `htmlcov`. The needed coverage to pass is defined in `.coveragerc`.
 
 ## Development
 
