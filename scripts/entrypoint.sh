@@ -22,4 +22,9 @@ if [ -v DATASTORE_DATABASE_HOST ]; then
             -d "$DATASTORE_DATABASE_NAME" -f shared/postgresql_backend/schema.sql
 fi
 
+if [ "$MODULE" = "writer" -a "$COMMAND" = "create_example_data" ]; then
+    echo "creating example data"
+    python cli/create_initial_data.py
+fi
+
 exec "$@"

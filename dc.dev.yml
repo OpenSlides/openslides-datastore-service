@@ -1,0 +1,51 @@
+version: '3'
+services:
+    reader:
+        image: openslides-datastore-reader-dev
+        volumes:
+            - ./shared/shared:/app/shared
+            - ./reader/reader:/app/reader
+            - ./reader/tests:/app/tests
+        ports:
+            - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
+        depends_on:
+            - postgresql
+        env_file: database.env
+        networks:
+            - postgresql
+    writer:
+        image: openslides-datastore-writer-dev
+        volumes:
+            - ./shared/shared:/app/shared
+            - ./writer/writer:/app/writer
+            - ./writer/tests:/app/tests
+            - ./cli:/app/cli
+        ports:
+            - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
+        depends_on:
+            - postgresql
+            - redis
+        env_file: database.env
+        environment:
+            - MESSAGE_BUS_HOST=redis
+            - COMMAND=create_example_data
+        networks:
+            - postgresql
+            - redis
+    postgresql:
+        image: sameersbn/postgresql:10
+        labels:
+            org.openslides.role: "postgres"
+        environment:
+            - DB_USER=openslides
+            - DB_PASS=openslides
+            - DB_NAME=openslides
+        networks:
+            - postgresql
+    redis:
+        image: redis:alpine
+        networks:
+            - redis
+networks:
+    postgresql:
+    redis:

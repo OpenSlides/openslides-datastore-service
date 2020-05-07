@@ -79,6 +79,9 @@ run-dev: | build-dev
 			   -e MESSAGE_BUS_HOST=redis \
 			   openslides-datastore-$(MODULE)-dev
 
+run-dev-standalone: | build-dev
+	docker-compose -f dc.dev.yml up $(MODULE)
+
 endif
 
 
@@ -100,7 +103,7 @@ run-tests run-travis:
 	docker-compose down
 
 # shared has no dev image
-build-dev:
+build-dev run-dev-standalone:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
 
