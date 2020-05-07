@@ -7,7 +7,7 @@ import pytest
 from shared.di import injector
 from shared.flask_frontend import ERROR_CODES
 from shared.postgresql_backend import ConnectionHandler
-from shared.tests.util import assert_error_response
+from shared.tests.util import assert_error_response, assert_response_code
 from tests.system.util import (
     WRITE_URL,
     assert_model,
@@ -33,7 +33,7 @@ def data():
 
 def create_model(json_client, data, redis_connection, reset_redis_data):
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 1)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
     reset_redis_data()
@@ -46,7 +46,7 @@ def test_create_simple(json_client, data, redis_connection, reset_redis_data):
 def test_create_empty_field(json_client, data, redis_connection):
     data["events"][0]["fields"]["empty"] = None
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 1)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
@@ -69,7 +69,7 @@ def test_create_update(json_client, data, redis_connection):
         }
     )
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"another_field": field_data}, 1)
     assert_modified_fields(redis_connection, {"a/1": ["f", "another_field"]})
 
@@ -84,7 +84,7 @@ def test_single_update(json_client, data, redis_connection, reset_redis_data):
         "fields": {"f": None, "another_field": field_data},
     }
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"another_field": field_data}, 2)
     assert_modified_fields(
         redis_connection, {"a/1": ["f", "another_field"]}, meta_deleted=False
@@ -110,7 +110,7 @@ def test_update_non_existing_2(json_client, data, db_cur, redis_connection):
 def test_create_delete(json_client, data, redis_connection, reset_redis_data):
     data["events"].append({"type": "delete", "fqid": "a/1"})
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_no_model("a/1")
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
@@ -120,7 +120,7 @@ def test_single_delete(json_client, data, redis_connection, reset_redis_data):
 
     data["events"][0] = {"type": "delete", "fqid": "a/1"}
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_no_model("a/1")
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
@@ -139,7 +139,7 @@ def test_create_delete_restore(json_client, data, redis_connection):
     data["events"].append({"type": "delete", "fqid": "a/1"})
     data["events"].append({"type": "restore", "fqid": "a/1"})
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 1)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
@@ -147,21 +147,21 @@ def test_create_delete_restore(json_client, data, redis_connection):
 def test_single_restore(json_client, data, redis_connection, reset_redis_data):
     data["events"].append({"type": "delete", "fqid": "a/1"})
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_no_model("a/1")
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
     reset_redis_data()
 
     data["events"] = [{"type": "restore", "fqid": "a/1"}]
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 2)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
 
 def test_restore_without_delete(json_client, data, redis_connection, reset_redis_data):
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 1)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
     reset_redis_data()
@@ -180,7 +180,7 @@ def test_create_delete_restore_different_positions(
 
     data["events"][0] = {"type": "delete", "fqid": "a/1"}
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_no_model("a/1")
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
     reset_redis_data()
@@ -188,7 +188,7 @@ def test_create_delete_restore_different_positions(
     data["events"][0] = {"type": "restore", "fqid": "a/1"}
 
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 3)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
@@ -203,7 +203,7 @@ def test_delete_restore_delete_restore(
     data["events"].append({"type": "delete", "fqid": "a/1"})
     data["events"].append({"type": "restore", "fqid": "a/1"})
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"f": 1}, 2)
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
@@ -224,7 +224,7 @@ def test_update_delete_restore_update(
         {"type": "update", "fqid": "a/1", "fields": {"third_field": ["my", "list"]}}
     )
     response = json_client.post(WRITE_URL, data)
-    assert response.status_code == 200
+    assert_response_code(response, 201)
     assert_model("a/1", {"another": "value", "third_field": ["my", "list"]}, 2)
     assert_modified_fields(redis_connection, {"a/1": ["f", "another", "third_field"]})
 
@@ -244,4 +244,4 @@ def test_read_db_is_updated_before_redis_fires(json_client, data):
 
     with patch.object(messaging, "handle_events", new=assert_read_db_data):
         response = json_client.post(WRITE_URL, data)
-        assert response.status_code == 200
+        assert_response_code(response, 201)
