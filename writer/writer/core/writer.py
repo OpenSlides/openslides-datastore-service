@@ -9,5 +9,5 @@ class Writer(Protocol):
     def write(self, write_request: WriteRequest) -> None:
         """ Writes into the DB. """
 
-    def get_ids(self, collection: str, amount: int) -> List[int]:
+    def reserve_ids(self, collection: str, amount: int) -> List[int]:
         """ Gets multiple reserved ids """

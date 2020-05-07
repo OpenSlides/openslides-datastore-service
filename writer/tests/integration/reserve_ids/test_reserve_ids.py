@@ -9,7 +9,7 @@ from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
 from shared.util import InvalidFormat
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
-from writer.flask_frontend.json_handlers import GetIdsHandler
+from writer.flask_frontend.json_handlers import ReserveIdsHandler
 from writer.postgresql_backend import SqlDatabaseBackendService
 from writer.postgresql_backend.sql_database_backend_service import COLLECTION_MAX_LEN
 
@@ -44,8 +44,8 @@ def setup_di(reset_di):  # noqa
 
 
 @pytest.fixture()
-def get_ids_handler():
-    yield GetIdsHandler()
+def reserve_ids_handler():
+    yield ReserveIdsHandler()
 
 
 @pytest.fixture()
@@ -53,48 +53,56 @@ def connection_handler():
     yield injector.get(ConnectionHandler)
 
 
-def test_simple(get_ids_handler, connection_handler):
-    ids = get_ids_handler.get_ids({"amount": 1, "collection": "test_collection"})
+def test_simple(reserve_ids_handler, connection_handler):
+    ids = reserve_ids_handler.reserve_ids(
+        {"amount": 1, "collection": "test_collection"}
+    )
 
     assert ids == [1]
     assert connection_handler.storage.get("test_collection") == 2
 
 
-def test_wrong_format(get_ids_handler):
+def test_wrong_format(reserve_ids_handler):
     with pytest.raises(InvalidRequest):
-        get_ids_handler.get_ids({"unknown_field": "some value"})
+        reserve_ids_handler.reserve_ids({"unknown_field": "some value"})
 
 
-def test_negative_amount(get_ids_handler, connection_handler):
+def test_negative_amount(reserve_ids_handler, connection_handler):
     with pytest.raises(InvalidFormat):
-        get_ids_handler.get_ids({"amount": -1, "collection": "test_collection"})
+        reserve_ids_handler.reserve_ids({"amount": -1, "collection": "test_collection"})
 
 
-def test_too_long_collection(get_ids_handler, connection_handler):
+def test_too_long_collection(reserve_ids_handler, connection_handler):
     with pytest.raises(InvalidFormat):
-        get_ids_handler.get_ids(
+        reserve_ids_handler.reserve_ids(
             {"amount": 1, "collection": "x" * (COLLECTION_MAX_LEN + 1)}
         )
 
 
-def test_multiple_ids(get_ids_handler, connection_handler):
-    ids = get_ids_handler.get_ids({"amount": 4, "collection": "test_collection"})
+def test_multiple_ids(reserve_ids_handler, connection_handler):
+    ids = reserve_ids_handler.reserve_ids(
+        {"amount": 4, "collection": "test_collection"}
+    )
 
     assert ids == [1, 2, 3, 4]
     assert connection_handler.storage.get("test_collection") == 5
 
 
-def test_successive_collections(get_ids_handler, connection_handler):
-    get_ids_handler.get_ids({"amount": 2, "collection": "test_collection1"})
-    ids = get_ids_handler.get_ids({"amount": 3, "collection": "test_collection2"})
+def test_successive_collections(reserve_ids_handler, connection_handler):
+    reserve_ids_handler.reserve_ids({"amount": 2, "collection": "test_collection1"})
+    ids = reserve_ids_handler.reserve_ids(
+        {"amount": 3, "collection": "test_collection2"}
+    )
 
     assert ids == [1, 2, 3]
     assert connection_handler.storage.get("test_collection2") == 4
 
 
-def test_successive_ids(get_ids_handler, connection_handler):
-    get_ids_handler.get_ids({"amount": 2, "collection": "test_collection"})
-    ids = get_ids_handler.get_ids({"amount": 3, "collection": "test_collection"})
+def test_successive_ids(reserve_ids_handler, connection_handler):
+    reserve_ids_handler.reserve_ids({"amount": 2, "collection": "test_collection"})
+    ids = reserve_ids_handler.reserve_ids(
+        {"amount": 3, "collection": "test_collection"}
+    )
 
     assert ids == [3, 4, 5]
     assert connection_handler.storage.get("test_collection") == 6

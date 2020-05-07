@@ -12,7 +12,7 @@ from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS
 
 
 WRITE_URL = "/internal/datastore/writer/write"
-GET_IDS_URL = "/internal/datastore/writer/get_ids"
+RESERVE_IDS_URL = "/internal/datastore/writer/reserve_ids"
 
 
 def assert_model(fqid, model, position):
