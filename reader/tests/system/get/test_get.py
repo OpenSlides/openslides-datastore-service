@@ -114,6 +114,15 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     }
 
 
+def test_mapped_fields_filter_none_values(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    response = json_client.post(
+        Route.GET.URL, {"fqid": FQID, "mapped_fields": ["field_that_doesnt_exist"]}
+    )
+    assert_success_response(response)
+    assert response.json == {}
+
+
 def setup_events_data(connection, cursor):
     cursor.execute("insert into positions (user_id) values (0), (0), (0), (0), (0)")
     cursor.execute(
@@ -165,6 +174,16 @@ def test_position_mapped_fields(json_client, db_connection, db_cur):
     )
     assert_success_response(response)
     assert response.json == {"field_1": "data"}
+
+
+def test_position_mapped_fields_filter_none_values(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    response = json_client.post(
+        Route.GET.URL,
+        {"fqid": FQID, "position": 1, "mapped_fields": ["field_that_doesnt_exist"]},
+    )
+    assert_success_response(response)
+    assert response.json == {}
 
 
 def test_invalid_fqid(json_client):

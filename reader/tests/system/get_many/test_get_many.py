@@ -181,6 +181,16 @@ def test_fqfields_same_fqid(json_client, db_connection, db_cur):
     }
 
 
+def test_filter_none_values(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    request = {
+        "requests": ["b/1/not_existent_field"],
+    }
+    response = json_client.post(Route.GET_MANY.URL, request)
+    assert_success_response(response)
+    assert response.json == {"b/1": {}}
+
+
 def setup_events_data(connection, cursor):
     cursor.execute(
         "insert into positions (user_id) values (0), (0), (0), (0), (0), (0)"
@@ -309,6 +319,17 @@ def test_position_mapped_fields(json_client, db_connection, db_cur):
         "b/1": {"field_4": "data", "field_5": 42, "common_field": 2},
         "b/2": {"field_4": "data", "field_5": 42, "common_field": 3},
     }
+
+
+def test_position_mapped_fields_filter_none_values(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    request = {
+        "requests": ["b/1/not_existent_field"],
+        "position": 1,
+    }
+    response = json_client.post(Route.GET_MANY.URL, request)
+    assert_success_response(response)
+    assert response.json == {"b/1": {}}
 
 
 def test_negative_id(json_client):

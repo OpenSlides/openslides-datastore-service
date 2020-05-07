@@ -15,7 +15,6 @@ from shared.util import (
     Filter,
     ModelDoesNotExist,
     build_fqid,
-    collection_from_fqid,
     get_exception_for_deleted_models_behaviour,
 )
 
@@ -38,8 +37,7 @@ class SqlReadDatabaseBackendService:
         mapped_fields: List[str] = [],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
     ) -> Model:
-        collection = collection_from_fqid(fqid)
-        models = self.get_many([fqid], {collection: mapped_fields}, get_deleted_models)
+        models = self.get_many([fqid], {fqid: mapped_fields}, get_deleted_models)
         try:
             return models[fqid]
         except KeyError:
@@ -153,7 +151,7 @@ class SqlReadDatabaseBackendService:
 
             if fqid in mapped_fields_per_fqid and len(mapped_fields_per_fqid[fqid]) > 0:
                 for key in list(model.keys()):
-                    if key not in mapped_fields_per_fqid[fqid]:
+                    if key not in mapped_fields_per_fqid[fqid] or model[key] is None:
                         del model[key]
             result_map[fqid] = model
 

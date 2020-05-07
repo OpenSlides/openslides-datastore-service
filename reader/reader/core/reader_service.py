@@ -160,7 +160,11 @@ class ReaderService:
     def apply_mapped_fields(self, model: Model, mapped_fields: List[str]) -> Model:
         if not mapped_fields or not len(mapped_fields):
             return model
-        return {field: model[field] for field in mapped_fields if field in model}
+        return {
+            field: model[field]
+            for field in mapped_fields
+            if field in model and model[field] is not None
+        }
 
     def apply_mapped_fields_multi(
         self, models: Dict[str, Model], mapped_fields_per_fqid: Dict[str, List[str]],
