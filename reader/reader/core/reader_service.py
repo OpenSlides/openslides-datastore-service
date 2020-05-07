@@ -60,20 +60,22 @@ class ReaderService:
 
     def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
         with self.database.get_context():
+            mapped_fields_per_fqid: Dict[str, List[str]] = {}
             if isinstance(request.requests[0], GetManyRequestPart):
                 requests = cast(List[GetManyRequestPart], request.requests)
-                mapped_fields_per_fqid = {
-                    build_fqid(part.collection, str(id)): part.mapped_fields
-                    + request.mapped_fields
-                    for part in requests
-                    for id in part.ids
-                }
+                for part in requests:
+                    for id in part.ids:
+                        fqid = build_fqid(part.collection, str(id))
+                        mapped_fields_per_fqid.setdefault(fqid, []).extend(
+                            part.mapped_fields + request.mapped_fields
+                        )
             else:
                 fqfield_requests = cast(List[str], request.requests)
-                mapped_fields_per_fqid = {
-                    fqid_from_fqfield(fqfield): [field_from_fqfield(fqfield)]
-                    for fqfield in fqfield_requests
-                }
+                for fqfield in fqfield_requests:
+                    fqid = fqid_from_fqfield(fqfield)
+                    mapped_fields_per_fqid.setdefault(fqid, []).append(
+                        field_from_fqfield(fqfield)
+                    )
 
             fqids = list(mapped_fields_per_fqid.keys())
 
