@@ -89,7 +89,7 @@ def test_writer_distribution(
     he.assert_called_once()
 
 
-def test_writer_get_ids(writer, database):
-    writer.get_ids("collection", 4)
+def test_writer_reserve_ids(writer, database):
+    writer.reserve_ids("collection", 4)
     database.get_context.assert_called()
     database.reserve_next_ids.assert_called_with("collection", 4)

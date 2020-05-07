@@ -1,12 +1,12 @@
 from shared.flask_frontend import ERROR_CODES
 from shared.tests.util import assert_error_response
-from tests.system.util import GET_IDS_URL
+from tests.system.util import RESERVE_IDS_URL
 from writer.postgresql_backend.sql_database_backend_service import COLLECTION_MAX_LEN
 
 
 def test_simple(json_client, db_cur):
     response = json_client.post(
-        GET_IDS_URL, {"amount": 1, "collection": "test_collection"}
+        RESERVE_IDS_URL, {"amount": 1, "collection": "test_collection"}
     )
     assert response.status_code == 200
 
@@ -18,7 +18,7 @@ def test_simple(json_client, db_cur):
 
 def test_multiple(json_client, db_cur):
     response = json_client.post(
-        GET_IDS_URL, {"amount": 3, "collection": "test_collection"}
+        RESERVE_IDS_URL, {"amount": 3, "collection": "test_collection"}
     )
     assert response.status_code == 200
 
@@ -30,12 +30,12 @@ def test_multiple(json_client, db_cur):
 
 def test_successive(json_client, db_cur):
     response = json_client.post(
-        GET_IDS_URL, {"amount": 3, "collection": "test_collection"}
+        RESERVE_IDS_URL, {"amount": 3, "collection": "test_collection"}
     )
     assert response.status_code == 200
 
     response = json_client.post(
-        GET_IDS_URL, {"amount": 4, "collection": "test_collection"}
+        RESERVE_IDS_URL, {"amount": 4, "collection": "test_collection"}
     )
     assert response.status_code == 200
 
@@ -51,14 +51,14 @@ def assert_no_db_entry(db_cur):
 
 
 def test_wrong_format(json_client, db_cur):
-    response = json_client.post(GET_IDS_URL, ["not_valid", None])
+    response = json_client.post(RESERVE_IDS_URL, ["not_valid", None])
     assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
     assert_no_db_entry(db_cur)
 
 
 def test_negative_amount(json_client, db_cur):
     response = json_client.post(
-        GET_IDS_URL, {"amount": -1, "collection": "test_collection"}
+        RESERVE_IDS_URL, {"amount": -1, "collection": "test_collection"}
     )
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
     assert_no_db_entry(db_cur)
@@ -66,7 +66,7 @@ def test_negative_amount(json_client, db_cur):
 
 def test_too_long_collection(json_client, db_cur):
     response = json_client.post(
-        GET_IDS_URL, {"amount": 1, "collection": "x" * (COLLECTION_MAX_LEN + 1)}
+        RESERVE_IDS_URL, {"amount": 1, "collection": "x" * (COLLECTION_MAX_LEN + 1)}
     )
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
     assert_no_db_entry(db_cur)
@@ -74,7 +74,7 @@ def test_too_long_collection(json_client, db_cur):
 
 def test_no_json(client):
     response = client.post(
-        GET_IDS_URL, data={"amount": 1, "collection": "test_collection"}
+        RESERVE_IDS_URL, data={"amount": 1, "collection": "test_collection"}
     )
     assert response.is_json
     assert_error_response(response, ERROR_CODES.INVALID_REQUEST)

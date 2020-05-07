@@ -106,7 +106,7 @@ class WriteHandler:
         return request_event
 
 
-get_ids_schema = fastjsonschema.compile(
+reserve_ids_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
@@ -119,17 +119,17 @@ get_ids_schema = fastjsonschema.compile(
 )
 
 
-class GetIdsRequestJSON(TypedDict):
+class ReserveIdsRequestJSON(TypedDict):
     collection: str
     amount: int
 
 
-class GetIdsHandler:
-    def get_ids(self, data: JSON) -> List[int]:
+class ReserveIdsHandler:
+    def reserve_ids(self, data: JSON) -> List[int]:
         try:
-            parsed_data = cast(GetIdsRequestJSON, get_ids_schema(data))
+            parsed_data = cast(ReserveIdsRequestJSON, reserve_ids_schema(data))
         except fastjsonschema.JsonSchemaException as e:
             raise InvalidRequest(e.message)
 
         writer = injector.get(Writer)
-        return writer.get_ids(parsed_data["collection"], parsed_data["amount"])
+        return writer.reserve_ids(parsed_data["collection"], parsed_data["amount"])

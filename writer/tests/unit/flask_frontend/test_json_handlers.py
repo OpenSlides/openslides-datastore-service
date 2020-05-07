@@ -7,7 +7,7 @@ from shared.flask_frontend import InvalidRequest
 from shared.tests import reset_di  # noqa
 from shared.util import BadCodingError
 from writer.core import Writer
-from writer.flask_frontend.json_handlers import GetIdsHandler, WriteHandler
+from writer.flask_frontend.json_handlers import ReserveIdsHandler, WriteHandler
 
 
 @pytest.fixture()
@@ -22,8 +22,8 @@ def write_handler():
 
 
 @pytest.fixture()
-def get_ids_handler():
-    yield GetIdsHandler()
+def reserve_ids_handler():
+    yield ReserveIdsHandler()
 
 
 class TestWriteHandler:
@@ -121,14 +121,14 @@ class TestWriteHandler:
             write_handler.create_event(event)
 
 
-class TestGetIdsHandler:
-    def test_wrong_schema(self, get_ids_handler):
+class TestReserveIdsHandler:
+    def test_wrong_schema(self, reserve_ids_handler):
         with pytest.raises(InvalidRequest):
-            get_ids_handler.get_ids(None)
+            reserve_ids_handler.reserve_ids(None)
 
-    def test_correct_schema(self, get_ids_handler, writer):
-        writer.get_ids = gi = MagicMock()
+    def test_correct_schema(self, reserve_ids_handler, writer):
+        writer.reserve_ids = gi = MagicMock()
         data = {"collection": "my_collection", "amount": -3}
-        get_ids_handler.get_ids(data)
+        reserve_ids_handler.reserve_ids(data)
         gi.assert_called_once()
         assert gi.call_args.args == ("my_collection", -3,)

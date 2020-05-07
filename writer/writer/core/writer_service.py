@@ -50,6 +50,6 @@ class WriterService:
             self.write_request.locked_collectionfields
         )
 
-    def get_ids(self, collection: str, amount: int) -> List[int]:
+    def reserve_ids(self, collection: str, amount: int) -> List[int]:
         with self.database.get_context():
             return self.database.reserve_next_ids(collection, amount)

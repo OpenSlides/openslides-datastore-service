@@ -1,4 +1,4 @@
-from tests.system.util import GET_IDS_URL, WRITE_URL
+from tests.system.util import RESERVE_IDS_URL, WRITE_URL
 
 
 def test_wrong_method_write(client):
@@ -6,8 +6,8 @@ def test_wrong_method_write(client):
     assert response.status_code == 405
 
 
-def test_wrong_method_get_ids(client):
-    response = client.get(GET_IDS_URL)
+def test_wrong_method_reserve_ids(client):
+    response = client.get(RESERVE_IDS_URL)
     assert response.status_code == 405
 
 
