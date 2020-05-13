@@ -173,6 +173,16 @@ def test_restore_without_delete(json_client, data, redis_connection, reset_redis
     assert_no_modified_fields(redis_connection)
 
 
+def test_write_none(json_client, data, redis_connection, reset_redis_data):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+
+    data["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f": None}}
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert_model("a/1", {}, 2)
+    assert_modified_fields(redis_connection, {"a/1": ["f"]}, meta_deleted=False)
+
+
 def test_create_delete_restore_different_positions(
     json_client, data, redis_connection, reset_redis_data
 ):
