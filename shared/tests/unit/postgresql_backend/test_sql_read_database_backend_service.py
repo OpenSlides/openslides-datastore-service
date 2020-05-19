@@ -103,7 +103,7 @@ def test_get_many_no_fqids(read_database: ReadDatabase):
 
 def test_get_all(read_database: ReadDatabase):
     res = MagicMock()
-    read_database.fetch_list_of_models = f = MagicMock(return_value=res)
+    read_database.fetch_models = f = MagicMock(return_value=res)
 
     models = read_database.get_all("c", ["f"])
 
@@ -113,7 +113,7 @@ def test_get_all(read_database: ReadDatabase):
 
 def test_filter(read_database: ReadDatabase):
     res = MagicMock()
-    read_database.fetch_list_of_models = f = MagicMock(return_value=res)
+    read_database.fetch_models = f = MagicMock(return_value=res)
     filter = FilterOperator("a", "=", "a")
 
     models = read_database.filter("c", filter, [])
@@ -135,21 +135,19 @@ def test_aggregate(read_database: ReadDatabase, connection: ConnectionHandler):
     assert models == res
 
 
-def test_fetch_list_of_models(
-    read_database: ReadDatabase, connection: ConnectionHandler
-):
+def test_fetch_models(read_database: ReadDatabase, connection: ConnectionHandler):
     args = [MagicMock(), MagicMock(), MagicMock()]
     row = MagicMock()
     row["data"] = MagicMock()
     connection.query = q = MagicMock(return_value=[row])
 
-    models = read_database.fetch_list_of_models(*args, [])
+    models = read_database.fetch_models(*args, [])
 
     q.assert_called_with(*args)
-    assert models == [row["data"]]
+    assert list(models.values()) == [row["data"]]
 
 
-def test_fetch_list_of_models_mapped_fields(
+def test_fetch_models_mapped_fields(
     read_database: ReadDatabase, connection: ConnectionHandler
 ):
     args = [MagicMock(), MagicMock(), MagicMock()]
@@ -157,10 +155,10 @@ def test_fetch_list_of_models_mapped_fields(
     row.copy = lambda: row
     connection.query = q = MagicMock(return_value=[row])
 
-    models = read_database.fetch_list_of_models(*args, [1])
+    models = read_database.fetch_models(*args, [1])
 
     q.assert_called_with(*args)
-    assert models == [row]
+    assert list(models.values()) == [row]
 
 
 def test_build_models_from_result(

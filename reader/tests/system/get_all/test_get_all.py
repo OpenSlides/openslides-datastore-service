@@ -8,13 +8,13 @@ from shared.util import DeletedModelsBehaviour
 
 
 data = {
-    "b/1": {
+    "a/1": {
         "field_4": "data",
         "field_5": 42,
         "field_6": [1, 2, 3],
         "meta_position": 2,
     },
-    "b/2": {
+    "a/2": {
         "field_4": "data",
         "field_5": 42,
         "field_6": [1, 2, 3],
@@ -22,7 +22,7 @@ data = {
     },
 }
 other_models = {
-    "a/2": {"field_1": "data", "field_2": 42, "field_3": [1, 2, 3], "meta_position": 1}
+    "b/1": {"field_1": "data", "field_2": 42, "field_3": [1, 2, 3], "meta_position": 1}
 }
 
 
@@ -37,49 +37,49 @@ def setup_data(connection, cursor, deleted=999):
 
 def test_simple(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
-    response = json_client.post(Route.GET_ALL.URL, {"collection": "b"})
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "a"})
     assert_success_response(response)
-    assert response.json == list(data.values())
+    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
 
 
 def test_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
-    response = json_client.post(Route.GET_ALL.URL, {"collection": "b"})
+    response = json_client.post(Route.GET_ALL.URL, {"collection": "a"})
     assert_success_response(response)
-    assert response.json == [data["b/1"]]
+    assert response.json == {"1": data["a/1"]}
 
 
 def test_only_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
     response = json_client.post(
         Route.GET_ALL.URL,
-        {"collection": "b", "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
+        {"collection": "a", "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
     )
     assert_success_response(response)
-    assert response.json == [data["b/2"]]
+    assert response.json == {"2": data["a/2"]}
 
 
 def test_deleted_all_models(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, 2)
     response = json_client.post(
         Route.GET_ALL.URL,
-        {"collection": "b", "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
+        {"collection": "a", "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
     )
     assert_success_response(response)
-    assert response.json == list(data.values())
+    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     response = json_client.post(
         Route.GET_ALL.URL,
-        {"collection": "b", "mapped_fields": ["field_4", "meta_position"]},
+        {"collection": "a", "mapped_fields": ["field_4", "meta_position"]},
     )
     assert_success_response(response)
-    assert response.json == [
-        {"field_4": "data", "meta_position": 2},
-        {"field_4": "data", "meta_position": 3},
-    ]
+    assert response.json == {
+        "1": {"field_4": "data", "meta_position": 2},
+        "2": {"field_4": "data", "meta_position": 3},
+    }
 
 
 def test_invalid_collection(json_client):

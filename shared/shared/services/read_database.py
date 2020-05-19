@@ -67,7 +67,7 @@ class ReadDatabase(Protocol):
         collection: str,
         mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> List[Model]:
+    ) -> Dict[str, Model]:
         """
         Returns all models of the given collection. WARNING: May result in a huge
         amount of data. Use with caution!
@@ -75,7 +75,7 @@ class ReadDatabase(Protocol):
 
     def filter(
         self, collection: str, filter: Filter, mapped_fields: List[str]
-    ) -> List[Model]:
+    ) -> Dict[str, Model]:
         """
         Returns all models of the given collection that satisfy the filter criteria.
         May result in a huge amount of data when used with wide filters.
