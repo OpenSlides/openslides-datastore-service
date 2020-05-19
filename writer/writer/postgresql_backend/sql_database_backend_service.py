@@ -262,7 +262,7 @@ class SqlDatabaseBackendService:
 
         statement = "update id_sequences set id=%s where collection=%s"
         statement = dedent(
-            f"""\
+            """\
             insert into id_sequences (collection, id) values (%s, %s)
             on conflict(collection) do update set id=excluded.id;"""
         )

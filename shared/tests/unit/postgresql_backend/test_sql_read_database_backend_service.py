@@ -272,7 +272,7 @@ def test_build_model_ignore_deleted_position(
 
     result = read_database.build_model_ignore_deleted(fqid, pos)
 
-    assert f"position <= %s" in q.call_args.args[0]
+    assert "position <= %s" in q.call_args.args[0]
     assert q.call_args.args[1] == [(fqid,), pos]
     bmfe.assert_called_with(events)
     assert result == model
