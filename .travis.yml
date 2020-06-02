@@ -9,3 +9,10 @@ jobs:
       script: make -C reader run-travis
     - name: "Tests: Writer"
       script: make -C writer run-travis
+    - name: "Test: Productive start"
+      script: 
+        - make run-prod
+        - sleep 10
+        - curl http://localhost:8000/
+        - curl http://localhost:8001/
+

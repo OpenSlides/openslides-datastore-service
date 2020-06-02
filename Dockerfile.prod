@@ -3,35 +3,32 @@ FROM python:3.8.1
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it postgresql-client redis-tools
 
-WORKDIR /tmp
-ARG REPOSITORY_URL=https://github.com/OpenSlides/openslides-datastore-service.git
-ARG GIT_CHECKOUT=master
+WORKDIR /app
+ENV PYTHONPATH /app/
 
-RUN git clone --no-checkout -- $REPOSITORY_URL .
-RUN git checkout $GIT_CHECKOUT
-RUN git pull
-RUN mkdir /app
-RUN mv shared/shared cli scripts/system/* requirements/requirements-general.txt /app
+COPY requirements/requirements-general.txt /app/
 
 ARG MODULE
 RUN test -n "$MODULE" || (echo "MODULE not set" && false)
 ENV MODULE=$MODULE
 
-RUN mv $MODULE/$MODULE $MODULE/requirements.txt $MODULE/entrypoint.sh /app
+COPY $MODULE/requirements.txt .
 
-WORKDIR /app
-RUN rm -rf /tmp
 RUN pip install -U -r requirements-general.txt
+
+COPY cli cli
+COPY shared/shared shared
+COPY $MODULE/$MODULE $MODULE
+COPY $MODULE/entrypoint.sh scripts/system/* ./
+
+ARG COMMAND
+ENV COMMAND=$COMMAND
 
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)
 ENV PORT=$PORT
 
 EXPOSE $PORT
-ENV PYTHONPATH /app/
-
-ARG COMMAND
-ENV COMMAND=$COMMAND
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD gunicorn -w 1 -b 0.0.0.0:$PORT $MODULE.app:application

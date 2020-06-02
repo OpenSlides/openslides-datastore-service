@@ -8,10 +8,12 @@ services:
             - ./writer/writer:/app/writer
             - ./writer/tests:/app/tests
             - ./cli:/app/cli
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - MESSAGE_BUS_HOST=redis
         depends_on:
             - postgresql
             - redis
-        env_file: settings.env
         networks:
             - postgresql
             - redis
@@ -21,7 +23,12 @@ services:
         volumes:
             - ./shared/shared:/app/shared
             - ./shared/tests:/app/tests
-        env_file: settings.env
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+        depends_on:
+            - postgresql
+        networks:
+            - postgresql
     reader:
         image: openslides-datastore-reader-test
         command: ["sleep", "infinity"]
@@ -29,19 +36,17 @@ services:
             - ./shared/shared:/app/shared
             - ./reader/reader:/app/reader
             - ./reader/tests:/app/tests
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
         depends_on:
             - postgresql
-        env_file: settings.env
         networks:
             - postgresql
     postgresql:
         image: sameersbn/postgresql:10
         labels:
             org.openslides.role: "postgres"
-        environment:
-            - DB_USER=openslides
-            - DB_PASS=openslides
-            - DB_NAME=openslides
+        env_file: database.env
         networks:
             - postgresql
     redis:
