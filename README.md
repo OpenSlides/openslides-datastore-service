@@ -1,6 +1,6 @@
 # OpenSlides datastore service
 
-Service for OpenSlides which wraps the database. Includes reader and writer functionality. For available methods see [the specs](https://github.com/OpenSlides/OpenSlides/blob/openslides4-dev/docs/interfaces/datastore-service.txt). For an extensive documentation, see TODO.
+Service for OpenSlides which wraps the database. Includes reader and writer functionality. For available methods see [the specs](https://github.com/OpenSlides/OpenSlides/blob/openslides4-dev/docs/interfaces/datastore-service.txt). For an extensive documentation, see [here](docs/DOCUMENTATION.md).
 
 ## Structure
 
