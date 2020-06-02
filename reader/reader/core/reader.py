@@ -38,7 +38,7 @@ class Reader(Protocol):
     def get(self, request: GetRequest) -> Model:
         """ Gets the specified model. """
 
-    def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
+    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[str, Model]]:
         """ Gets multiple models. """
 
     def get_all(self, request: GetAllRequest) -> List[Model]:

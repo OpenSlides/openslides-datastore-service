@@ -13,22 +13,19 @@ class FilterOperator(SelfValidatingDataclass):
     value: Any
 
 
-# TODO: mypy doesn't seem to support this kind of recursive typing.
-
-
 @dataclass
 class Not:
-    not_filter: "Filter"  # type: ignore
+    not_filter: "Filter"
 
 
 @dataclass
 class And:
-    and_filter: List["Filter"]  # type: ignore
+    and_filter: List["Filter"]
 
 
 @dataclass
 class Or:
-    or_filter: List["Filter"]  # type: ignore
+    or_filter: List["Filter"]
 
 
-Filter = Union[And, Or, Not, FilterOperator]  # type: ignore
+Filter = Union[And, Or, Not, FilterOperator]

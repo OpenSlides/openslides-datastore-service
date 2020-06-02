@@ -5,6 +5,7 @@ from shared.util import (
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
     fqfield_from_fqid_and_field,
+    id_from_fqid,
 )
 from shared.util.key_transforms import field_from_fqfield, fqid_from_fqfield
 
@@ -39,6 +40,12 @@ def test_field_from_collectionfield():
     collectionfield = "a/f"
 
     assert field_from_collectionfield(collectionfield) == "f"
+
+
+def test_id_from_fqid():
+    fqid = "a/1"
+
+    assert id_from_fqid(fqid) == "1"
 
 
 def test_collectionfield_and_fqid_from_fqfield():

@@ -24,6 +24,7 @@ from .key_transforms import (  # noqa
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
     fqfield_from_fqid_and_field,
+    id_from_fqid,
 )
 from .key_types import (  # noqa
     KEY_TYPE,

@@ -5,13 +5,32 @@ from shared.flask_frontend import ERROR_CODES
 from shared.postgresql_backend import EVENT_TYPES
 from shared.tests import assert_error_response
 from shared.tests.util import assert_success_response
-from shared.util import DeletedModelsBehaviour
+from shared.util import DeletedModelsBehaviour, build_fqid
 
 
 data = {
-    "a/1": {"field_1": "data", "field_2": 42, "field_3": [1, 2, 3], "common_field": 1},
-    "b/1": {"field_4": "data", "field_5": 42, "field_6": [1, 2, 3], "common_field": 2},
-    "b/2": {"field_4": "data", "field_5": 42, "field_6": [1, 2, 3], "common_field": 3},
+    "a": {
+        "1": {
+            "field_1": "data",
+            "field_2": 42,
+            "field_3": [1, 2, 3],
+            "common_field": 1,
+        },
+    },
+    "b": {
+        "1": {
+            "field_4": "data",
+            "field_5": 42,
+            "field_6": [1, 2, 3],
+            "common_field": 2,
+        },
+        "2": {
+            "field_4": "data",
+            "field_5": 42,
+            "field_6": [1, 2, 3],
+            "common_field": 3,
+        },
+    },
 }
 default_request_parts = [
     {"collection": "a", "ids": [1]},
@@ -21,9 +40,13 @@ default_request = {"requests": default_request_parts}
 
 
 def setup_data(connection, cursor, deleted=False):
-    for fqid, model in data.items():
-        cursor.execute("insert into models values (%s, %s)", [fqid, json.dumps(model)])
-        cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
+    for collection, models in data.items():
+        for id, model in models.items():
+            fqid = build_fqid(collection, id)
+            cursor.execute(
+                "insert into models values (%s, %s)", [fqid, json.dumps(model)]
+            )
+            cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
     connection.commit()
 
 
@@ -103,9 +126,11 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "a/1": {"field_1": "data", "common_field": 1},
-        "b/1": {"field_4": "data", "field_5": 42, "common_field": 2},
-        "b/2": {"field_4": "data", "field_5": 42, "common_field": 3},
+        "a": {"1": {"field_1": "data", "common_field": 1}},
+        "b": {
+            "1": {"field_4": "data", "field_5": 42, "common_field": 2},
+            "2": {"field_4": "data", "field_5": 42, "common_field": 3},
+        },
     }
 
 
@@ -120,8 +145,8 @@ def test_partial_mapped_fields(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "a/1": {"field_1": "data"},
-        "b/1": data["b/1"],
+        "a": {"1": {"field_1": "data"}},
+        "b": {"1": data["b"]["1"]},
     }
 
 
@@ -136,8 +161,7 @@ def test_same_collection(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "b/1": {"field_4": "data"},
-        "b/2": {"field_5": 42},
+        "b": {"1": {"field_4": "data"}, "2": {"field_5": 42}},
     }
 
 
@@ -152,7 +176,7 @@ def test_same_fqid(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "b/1": {"field_4": "data", "field_5": 42},
+        "b": {"1": {"field_4": "data", "field_5": 42}},
     }
 
 
@@ -164,8 +188,7 @@ def test_fqfields(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "b/1": {"field_4": "data"},
-        "b/2": {"field_5": 42},
+        "b": {"1": {"field_4": "data"}, "2": {"field_5": 42}},
     }
 
 
@@ -177,7 +200,7 @@ def test_fqfields_same_fqid(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "b/1": {"field_4": "data", "field_5": 42},
+        "b": {"1": {"field_4": "data", "field_5": 42}},
     }
 
 
@@ -188,26 +211,30 @@ def test_filter_none_values(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    assert response.json == {"b/1": {}}
+    assert response.json == {"b": {"1": {}}}
 
 
 def setup_events_data(connection, cursor):
     cursor.execute(
         "insert into positions (user_id) values (0), (0), (0), (0), (0), (0)"
     )
-    for fqid, model in data.items():
-        cursor.execute(
-            "insert into events (position, fqid, type, data) values (1, %s, %s, %s)",
-            [fqid, EVENT_TYPES.CREATE, json.dumps(model)],
-        )
-        cursor.execute(
-            "insert into events (position, fqid, type, data) values (2, %s, %s, %s)",
-            [fqid, EVENT_TYPES.UPDATE, json.dumps({"common_field": 0})],
-        )
+    for collection, models in data.items():
+        for id, model in models.items():
+            fqid = build_fqid(collection, id)
+            cursor.execute(
+                "insert into events (position, fqid, type, data) \
+                values (1, %s, %s, %s)",
+                [fqid, EVENT_TYPES.CREATE, json.dumps(model)],
+            )
+            cursor.execute(
+                "insert into events (position, fqid, type, data) \
+                values (2, %s, %s, %s)",
+                [fqid, EVENT_TYPES.UPDATE, json.dumps({"common_field": 0})],
+            )
     connection.commit()
 
 
-def test_position(json_client, db_connection, db_cur):
+def test_position_simple(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     request = {
         "requests": default_request_parts,
@@ -216,26 +243,30 @@ def test_position(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "a/1": {
-            "field_1": "data",
-            "field_2": 42,
-            "field_3": [1, 2, 3],
-            "common_field": 1,
-            "meta_position": 1,
+        "a": {
+            "1": {
+                "field_1": "data",
+                "field_2": 42,
+                "field_3": [1, 2, 3],
+                "common_field": 1,
+                "meta_position": 1,
+            },
         },
-        "b/1": {
-            "field_4": "data",
-            "field_5": 42,
-            "field_6": [1, 2, 3],
-            "common_field": 2,
-            "meta_position": 1,
-        },
-        "b/2": {
-            "field_4": "data",
-            "field_5": 42,
-            "field_6": [1, 2, 3],
-            "common_field": 3,
-            "meta_position": 1,
+        "b": {
+            "1": {
+                "field_4": "data",
+                "field_5": 42,
+                "field_6": [1, 2, 3],
+                "common_field": 2,
+                "meta_position": 1,
+            },
+            "2": {
+                "field_4": "data",
+                "field_5": 42,
+                "field_6": [1, 2, 3],
+                "common_field": 3,
+                "meta_position": 1,
+            },
         },
     }
 
@@ -257,19 +288,23 @@ def test_position_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert response.json == {
-        "a/1": {
-            "field_1": "data",
-            "field_2": 42,
-            "field_3": [1, 2, 3],
-            "common_field": 0,
-            "meta_position": 2,
+        "a": {
+            "1": {
+                "field_1": "data",
+                "field_2": 42,
+                "field_3": [1, 2, 3],
+                "common_field": 0,
+                "meta_position": 2,
+            },
         },
-        "b/2": {
-            "field_4": "data",
-            "field_5": 42,
-            "field_6": [1, 2, 3],
-            "common_field": 0,
-            "meta_position": 2,
+        "b": {
+            "2": {
+                "field_4": "data",
+                "field_5": 42,
+                "field_6": [1, 2, 3],
+                "common_field": 0,
+                "meta_position": 2,
+            },
         },
     }
 
@@ -288,12 +323,14 @@ def test_position_not_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert response.json == {
-        "b/1": {
-            "field_4": "data",
-            "field_5": 42,
-            "field_6": [1, 2, 3],
-            "common_field": 0,
-            "meta_position": 2,
+        "b": {
+            "1": {
+                "field_4": "data",
+                "field_5": 42,
+                "field_6": [1, 2, 3],
+                "common_field": 0,
+                "meta_position": 2,
+            },
         },
     }
 
@@ -315,9 +352,11 @@ def test_position_mapped_fields(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {
-        "a/1": {"field_1": "data", "common_field": 1},
-        "b/1": {"field_4": "data", "field_5": 42, "common_field": 2},
-        "b/2": {"field_4": "data", "field_5": 42, "common_field": 3},
+        "a": {"1": {"field_1": "data", "common_field": 1}},
+        "b": {
+            "1": {"field_4": "data", "field_5": 42, "common_field": 2},
+            "2": {"field_4": "data", "field_5": 42, "common_field": 3},
+        },
     }
 
 
@@ -329,7 +368,7 @@ def test_position_mapped_fields_filter_none_values(json_client, db_connection, d
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    assert response.json == {"b/1": {}}
+    assert response.json == {"b": {"1": {}}}
 
 
 def test_negative_id(json_client):

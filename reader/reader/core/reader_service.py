@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict, List, cast
 
 from reader.core.reader import CountResult, ExistsResult, MaxResult, MinResult
@@ -15,9 +16,14 @@ from shared.util import (
     DeletedModelsBehaviour,
     Filter,
     build_fqid,
+    collection_from_fqid,
     get_exception_for_deleted_models_behaviour,
 )
-from shared.util.key_transforms import field_from_fqfield, fqid_from_fqfield
+from shared.util.key_transforms import (
+    field_from_fqfield,
+    fqid_from_fqfield,
+    id_from_fqid,
+)
 
 from .requests import (
     AggregateRequest,
@@ -58,7 +64,7 @@ class ReaderService:
                 )
         return model
 
-    def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
+    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[str, Model]]:
         with self.database.get_context():
             mapped_fields_per_fqid: Dict[str, List[str]] = {}
             if isinstance(request.requests[0], GetManyRequestPart):
@@ -91,7 +97,13 @@ class ReaderService:
                 result = self.database.get_many(
                     fqids, mapped_fields_per_fqid, request.get_deleted_models,
                 )
-        return result
+
+        # change mapping fqid->model to collection->id->model
+        final: Dict[str, Dict[str, Model]] = defaultdict(dict)
+        for fqid, model in result.items():
+            final[collection_from_fqid(fqid)][id_from_fqid(fqid)] = model
+
+        return final
 
     def get_all(self, request: GetAllRequest) -> List[Model]:
         with self.database.get_context():

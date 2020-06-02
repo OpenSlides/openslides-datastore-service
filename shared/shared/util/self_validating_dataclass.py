@@ -76,7 +76,7 @@ class SelfValidatingDataclass:
     def normalize_type_hint(self, type_hint: Type) -> Type:
         for t in custom_types:
             if Optional[t] == type_hint:
-                return t
+                return t  # type: ignore
         return type_hint
 
     def validate(self, value: Any, type: Type) -> None:
