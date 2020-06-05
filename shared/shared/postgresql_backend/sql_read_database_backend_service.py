@@ -16,6 +16,7 @@ from shared.util import (
     ModelDoesNotExist,
     build_fqid,
     get_exception_for_deleted_models_behaviour,
+    id_from_fqid,
 )
 
 from .connection_handler import ConnectionHandler
@@ -80,17 +81,17 @@ class SqlReadDatabaseBackendService:
         collection: str,
         mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> List[Model]:
+    ) -> Dict[str, Model]:
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
         (
             mapped_fields_str,
             mapped_field_args,
         ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
         query = f"""
-            select {mapped_fields_str} from models
+            select fqid as __fqid__, {mapped_fields_str} from models
             {"natural join models_lookup" if del_cond else ""}
             where fqid like %s {del_cond}"""
-        models = self.fetch_list_of_models(
+        models = self.fetch_models(
             query,
             mapped_field_args + [build_fqid(collection, "%")],
             mapped_fields,
@@ -100,12 +101,12 @@ class SqlReadDatabaseBackendService:
 
     def filter(
         self, collection: str, filter: Filter, mapped_fields: List[str]
-    ) -> List[Model]:
+    ) -> Dict[str, Model]:
         fields_params = MappedFieldsFilterQueryFieldsParameters(mapped_fields)
         query, arguments, sql_params = self.query_helper.build_filter_query(
-            collection, filter, fields_params
+            collection, filter, fields_params, select_fqid=True
         )
-        models = self.fetch_list_of_models(query, arguments, sql_params, mapped_fields)
+        models = self.fetch_models(query, arguments, sql_params, mapped_fields)
         return models
 
     def aggregate(
@@ -120,18 +121,24 @@ class SqlReadDatabaseBackendService:
         value = self.connection.query(query, arguments, sql_params)
         return value[0].copy()
 
-    def fetch_list_of_models(
+    def fetch_models(
         self,
         query: str,
         arguments: List[str],
         sql_parameters: List[str],
         mapped_fields: List[str],
-    ) -> List[Model]:
+    ) -> Dict[str, Model]:
         result = self.connection.query(query, arguments, sql_parameters)
-        if len(mapped_fields) > 0:
-            models = [row.copy() for row in result]
-        else:
-            models = [row["data"] for row in result]
+        models = {}
+        for row in result:
+            # if there are mapped_fields, we already resolved them in the query and
+            # can just copy all fields. else we can just use the whole `data` field
+            if len(mapped_fields) > 0:
+                model = row.copy()
+                del model["__fqid__"]
+            else:
+                model = row["data"]
+            models[id_from_fqid(row["__fqid__"])] = model
         return models
 
     def build_models_from_result(

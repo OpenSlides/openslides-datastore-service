@@ -1,4 +1,4 @@
-from typing import Dict, List, Protocol, TypedDict
+from typing import Dict, Protocol, TypedDict
 
 from shared.typing import Model
 
@@ -41,13 +41,13 @@ class Reader(Protocol):
     def get_many(self, request: GetManyRequest) -> Dict[str, Model]:
         """ Gets multiple models. """
 
-    def get_all(self, request: GetAllRequest) -> List[Model]:
+    def get_all(self, request: GetAllRequest) -> Dict[str, Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.
         """
 
-    def filter(self, request: FilterRequest) -> List[Model]:
+    def filter(self, request: FilterRequest) -> Dict[str, Model]:
         """ Returns all models that satisfy the filter condition. """
 
     def exists(self, request: AggregateRequest) -> ExistsResult:

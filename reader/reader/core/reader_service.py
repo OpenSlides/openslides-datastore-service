@@ -93,14 +93,14 @@ class ReaderService:
                 )
         return result
 
-    def get_all(self, request: GetAllRequest) -> List[Model]:
+    def get_all(self, request: GetAllRequest) -> Dict[str, Model]:
         with self.database.get_context():
             result = self.database.get_all(
                 request.collection, request.mapped_fields, request.get_deleted_models
             )
         return result
 
-    def filter(self, request: FilterRequest) -> List[Model]:
+    def filter(self, request: FilterRequest) -> Dict[str, Model]:
         with self.database.get_context():
             result = self.database.filter(
                 request.collection, request.filter, request.mapped_fields

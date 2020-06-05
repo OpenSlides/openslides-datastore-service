@@ -77,6 +77,7 @@ class SqlQueryHelper:
         collection: str,
         filter: Filter,
         fields_params: BaseFilterQueryFieldsParameters = None,
+        select_fqid: bool = False,
     ) -> Tuple[str, List[str], List[str]]:
         arguments: List[str] = []
         sql_parameters: List[str] = []
@@ -109,6 +110,9 @@ class SqlQueryHelper:
                 )
             fields += f" AS {fields_params.function},\
                         (SELECT MAX(position) FROM positions) AS position"
+
+        if select_fqid:
+            fields = f"fqid as __fqid__, {fields}"
 
         query = f"select {fields} from models where fqid like %s and ({filter_str})"
         return (
