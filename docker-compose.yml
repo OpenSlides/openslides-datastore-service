@@ -11,6 +11,8 @@ services:
         image: openslides-datastore-reader
         ports:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
         depends_on:
             - postgresql
         networks:
@@ -26,6 +28,9 @@ services:
         image: openslides-datastore-writer
         ports:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
+        environment:
+            - DATASTORE_DATABASE_HOST=postgresql
+            - MESSAGE_BUS_HOST=redis
         depends_on:
             - postgresql
             - redis

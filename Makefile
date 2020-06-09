@@ -121,8 +121,8 @@ run-tests run-travis:
 run-verbose:
 	docker-compose up
 
-run-prod-verbose: | build-prod-local
-	docker-compose -f dc.prod.local.yml up
+run-prod-verbose: | build-prod
+	docker-compose -f dc.prod.yml up
 
 run-dev-verbose:
 	docker-compose -f dc.dev.yml up
