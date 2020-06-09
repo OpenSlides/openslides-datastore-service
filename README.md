@@ -54,17 +54,17 @@ The following commands are only available in the `reader` and `writer`, since `s
 
 ## Productive environment
 
-`make run[-prod]` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 8000 and the reader on 8001, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port in `dc.prod.yml`. 
+`make run[-prod]` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 9011 and the reader on 9010, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port via `OPENSLIDES_DATASTORE_%SERVICE%_PORT` (`%SERVICE%` \in {`READER`, `WRITER`}). 
 
 ### Curl example
 
 After you started the productive environment, you can issue requests e.g. via curl. First, create a model:
 
-    curl --header "Content-Type: application/json" -d '{"user_id": 1, "information": {}, "locked_fields": {}, "events": [{"type": "create", "fqid": "a/1", "fields": {"f": 1}}]}' http://localhost:8000/internal/datastore/writer/write
+    curl --header "Content-Type: application/json" -d '{"user_id": 1, "information": {}, "locked_fields": {}, "events": [{"type": "create", "fqid": "a/1", "fields": {"f": 1}}]}' http://localhost:9011/internal/datastore/writer/write
 
 Then you can get that model with:
 
-    curl --header "Content-Type: application/json" -d '{"fqid": "a/1"}' http://localhost:8001/internal/datastore/reader/get
+    curl --header "Content-Type: application/json" -d '{"fqid": "a/1"}' http://localhost:9010/internal/datastore/reader/get
 
 All other commands work analogous to this.
 
