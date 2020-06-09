@@ -7,7 +7,9 @@ import pytest
 from shared.di import injector
 from shared.flask_frontend import ERROR_CODES
 from shared.postgresql_backend import ConnectionHandler
+from shared.services import ReadDatabase
 from shared.tests.util import assert_error_response, assert_response_code
+from shared.util import DeletedModelsBehaviour
 from tests.system.util import (
     WRITE_URL,
     assert_model,
@@ -122,6 +124,16 @@ def test_single_delete(json_client, data, redis_connection, reset_redis_data):
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
     assert_no_model("a/1")
+
+    # assert the model is still in the lookup table, but marked as deleted
+    connection_handler = injector.get(ConnectionHandler)
+    with connection_handler.get_connection_context():
+        # read from read db
+        read_db: ReadDatabase = injector.get(ReadDatabase)
+        model = read_db.get("a/1", [], DeletedModelsBehaviour.ONLY_DELETED)
+        assert model == {"f": 1, "meta_deleted": True, "meta_position": 2}
+        assert read_db.is_deleted("a/1")
+
     assert_modified_fields(redis_connection, {"a/1": ["f"]})
 
 

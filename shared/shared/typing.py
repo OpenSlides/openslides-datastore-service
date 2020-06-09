@@ -20,4 +20,4 @@ Fqid = Union[str, _Fqid]
 Fqfield = Union[str, _Fqfield]
 Position = Union[int, _Position]
 
-custom_types = [Collection, Field, Id, Fqid, Fqfield, Position]
+custom_types = [Collection, Field, Id, Fqid, Fqfield, Position]  # type: ignore

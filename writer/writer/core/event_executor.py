@@ -3,7 +3,12 @@ from typing import Dict, List, Protocol
 
 from shared.di import service_as_factory, service_interface
 from shared.services import ReadDatabase
-from shared.util import META_POSITION, BadCodingError
+from shared.util import (
+    META_DELETED,
+    META_POSITION,
+    BadCodingError,
+    DeletedModelsBehaviour,
+)
 from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,
@@ -44,7 +49,9 @@ class EventExecutorService:
 
     def get_models(self):
         modified_fqids = list(set(event.fqid for event in self.events))
-        return self.read_database.get_many(modified_fqids)
+        return self.read_database.get_many(
+            modified_fqids, {}, DeletedModelsBehaviour.ALL_MODELS
+        )
 
     def execute_events(self) -> None:
         for event in self.events:
@@ -52,11 +59,10 @@ class EventExecutorService:
                 MODEL_STATUS.RESTORE,
                 MODEL_STATUS.DELETE,
             ):
-                if isinstance(event, DbDeleteEvent):
-                    self.model_status[event.fqid] = MODEL_STATUS.DELETE
-                elif isinstance(event, DbRestoreEvent):
-                    self.model_status[event.fqid] = MODEL_STATUS.RESTORE
-                continue  # Skip, creates and updates for this element. This
+                if isinstance(event, (DbDeleteEvent, DbRestoreEvent)):
+                    self.execute_event(event)
+                continue
+                # Skip creates and updates for this element. This
                 # element will either be restored in the write-back phase or
                 # deleted. If it is restored, the correct data will be builded
                 # from all correct and up-to-date events in the database.
@@ -87,7 +93,7 @@ class EventExecutorService:
 
         elif isinstance(event, DbDeleteEvent):
             if event.fqid in self.models:
-                del self.models[event.fqid]
+                self.models[event.fqid][META_DELETED] = True
             self.model_status[event.fqid] = MODEL_STATUS.DELETE
 
         else:
@@ -111,16 +117,16 @@ class EventExecutorService:
             model[META_POSITION] = self.position
 
     def write_back(self):
-        deleted_fqids = [
-            fqid
-            for fqid, status in self.model_status.items()
-            if status == MODEL_STATUS.DELETE
-        ]
+        print(self.models)
         write_models = {
             fqid: self.models[fqid]
             for fqid, status in self.model_status.items()
-            if status == MODEL_STATUS.WRITE
+            if status in [MODEL_STATUS.WRITE, MODEL_STATUS.DELETE]
         }
-
         self.read_database.create_or_update_models(write_models)
-        self.read_database.delete_models(deleted_fqids)
+
+        # Don't delete the built models from the lookup table since the reader
+        # relies on them being there. If the amount of deleted models gets too
+        # high and they consume too mush space/slow down the lookup too much,
+        # we have to rewrite the reader to differenciate between deleted and
+        # non-deleted models and delete the model here from the lookup table.

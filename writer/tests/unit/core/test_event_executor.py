@@ -5,7 +5,7 @@ import pytest
 from shared.di import injector
 from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
-from shared.util import META_POSITION, BadCodingError
+from shared.util import META_DELETED, META_POSITION, BadCodingError
 from writer.core import (
     DbCreateEvent,
     DbDeleteEvent,
@@ -138,12 +138,12 @@ def test_execute_delete_fields_event(event_executor):
 def test_execute_delete_event(event_executor):
     event = MagicMock(spec=DbDeleteEvent)
     event.fqid = fqid = MagicMock()
-    event_executor.models = {fqid: MagicMock()}
+    event_executor.models = {fqid: {}}
     event_executor.model_status = {fqid: MagicMock()}
 
     event_executor.execute_event(event)
 
-    assert fqid not in event_executor.models
+    assert event_executor.models[fqid][META_DELETED]
     assert event_executor.model_status[fqid] == MODEL_STATUS.DELETE
 
 
@@ -181,7 +181,8 @@ def test_execute_events_skip_write_after_delete_or_restore(event_executor):
         event_executor.execute_events()
 
         ee.assert_called_with(initial_event)
-        assert fqid not in event_executor.models
+        if initial_event_class == DbRestoreEvent:
+            assert fqid not in event_executor.models
         assert event_executor.model_status[fqid] in (
             MODEL_STATUS.DELETE,
             MODEL_STATUS.RESTORE,
@@ -195,7 +196,7 @@ def test_execute_events_change_model_status(event_executor):
         event = MagicMock(spec=A)
         event.fqid = fqid
         event_executor.events = [event]
-        event_executor.execute_event = ee = MagicMock()
+        event_executor.models = {fqid: MagicMock()}
         if A == DbRestoreEvent:
             event_executor.model_status = {fqid: MODEL_STATUS.DELETE}
         else:
@@ -203,7 +204,6 @@ def test_execute_events_change_model_status(event_executor):
 
         event_executor.execute_events()
 
-        assert ee.call_count == 0
         if A == DbRestoreEvent:
             assert event_executor.model_status[fqid] == MODEL_STATUS.RESTORE
         else:
@@ -255,7 +255,9 @@ def test_add_position(event_executor):
 
 def test_write_back(event_executor, read_database):
     deleted_1 = MagicMock()
+    deleted_1_data = MagicMock()
     deleted_2 = MagicMock()
+    deleted_2_data = MagicMock()
     changed_1 = MagicMock()
     changed_1_data = MagicMock()
     changed_2 = MagicMock()
@@ -267,13 +269,14 @@ def test_write_back(event_executor, read_database):
         changed_2: MODEL_STATUS.WRITE,
     }
     event_executor.models = models = {
+        deleted_1: deleted_1_data,
+        deleted_2: deleted_2_data,
         changed_1: changed_1_data,
         changed_2: changed_2_data,
     }
     read_database.create_or_update_models = coum = MagicMock()
-    read_database.delete_models = dm = MagicMock()
+    read_database.delete_models = MagicMock()
 
     event_executor.write_back()
 
     coum.assert_called_with(models)
-    dm.assert_called_with([deleted_1, deleted_2])
