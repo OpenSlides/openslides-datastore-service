@@ -8,4 +8,4 @@ from .fixtures import (  # noqa
     reset_di,
     setup_db_connection,
 )
-from .util import ALL_TABLES, assert_error_response  # noqa
+from .util import assert_error_response  # noqa

@@ -53,3 +53,7 @@ class WriterService:
     def reserve_ids(self, collection: str, amount: int) -> List[int]:
         with self.database.get_context():
             return self.database.reserve_next_ids(collection, amount)
+
+    def truncate_db(self) -> None:
+        with self.database.get_context():
+            self.database.truncate_db()

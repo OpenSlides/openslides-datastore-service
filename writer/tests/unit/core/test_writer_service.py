@@ -93,3 +93,9 @@ def test_writer_reserve_ids(writer, database):
     writer.reserve_ids("collection", 4)
     database.get_context.assert_called()
     database.reserve_next_ids.assert_called_with("collection", 4)
+
+
+def test_writer_truncate_db(writer, database):
+    writer.truncate_db()
+    database.get_context.assert_called()
+    database.truncate_db.assert_called()

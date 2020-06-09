@@ -25,3 +25,6 @@ class Database(Protocol):
         Reserves next ids and returns the requested ids as a list.
         May Raises InvalidFormat, is collection is malformed or amount too high
         """
+
+    def truncate_db(self) -> None:
+        """ Truncate all tables. Only for dev purposes! """

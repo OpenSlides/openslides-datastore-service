@@ -16,4 +16,7 @@ For other IDEs there are probably similar solutions. Feel free to add them here 
 
 ## Commands
 
-You can issue commands to the datastore on startup via the docker variable `COMMAND` (has to be given as a build argument to the docker file). The only currently supported command is `create_example_data` for the writer; this will fetch the [OpenSlides 4 example data](https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json) and write it to the datastore.
+You can issue commands to the datastore on startup via the docker variable `COMMAND` (has to be given as a build argument to the docker file). Currently only commands for the writer are supported.
+
+- `create_example_data`: this will fetch the [OpenSlides 4 example data](https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json) and write it to the datastore. If any data is present already, the command will fail.
+- `truncate_db`: truncates the whole database. Useful for testing purposes. **Be careful to not delete any actual data with this!**

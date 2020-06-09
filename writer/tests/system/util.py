@@ -6,13 +6,13 @@ from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_event_types import EVENT_TYPES
 from shared.services import ReadDatabase
-from shared.tests.util import ALL_TABLES
-from shared.util import META_DELETED, META_POSITION, ModelDoesNotExist
+from shared.util import ALL_TABLES, META_DELETED, META_POSITION, ModelDoesNotExist
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 
 
 WRITE_URL = "/internal/datastore/writer/write"
 RESERVE_IDS_URL = "/internal/datastore/writer/reserve_ids"
+TRUNCATE_DB_URL = "/internal/datastore/writer/truncate_db"
 
 
 def assert_model(fqid, model, position):

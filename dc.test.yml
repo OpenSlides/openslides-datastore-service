@@ -8,6 +8,8 @@ services:
             - ./writer/writer:/app/writer
             - ./writer/tests:/app/tests
             - ./cli:/app/cli
+        environment:
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
         depends_on:
             - postgresql
             - redis

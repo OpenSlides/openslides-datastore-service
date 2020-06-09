@@ -9,7 +9,7 @@ from shared.postgresql_backend.pg_connection_handler import (
     ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
 )
 
-from .util import ALL_TABLES
+from ..util import ALL_TABLES
 
 
 def get_env(name):

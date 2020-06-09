@@ -1,6 +1,10 @@
 from flask import request
 
+from shared.di import injector
 from shared.flask_frontend import InvalidRequest, handle_internal_errors, unify_urls
+from shared.services import EnvironmentService
+from shared.services.environment_service import DATASTORE_DEV_MODE_ENVIRONMENT_VAR
+from writer.core import Writer
 
 from .json_handlers import ReserveIdsHandler, WriteHandler
 
@@ -24,6 +28,13 @@ def reserve_ids():
     return {"ids": ids}, 200
 
 
+@handle_internal_errors
+def truncate_db():
+    writer = injector.get(Writer)
+    writer.truncate_db()
+    return "", 200
+
+
 def register_routes(app, url_prefix):
     write_url = unify_urls(url_prefix, "/write")
     app.add_url_rule(write_url, "write", write, methods=["POST"], strict_slashes=False)
@@ -36,3 +47,15 @@ def register_routes(app, url_prefix):
         methods=["POST"],
         strict_slashes=False,
     )
+
+    # if in dev mode, enable truncate_db route
+    env_service = injector.get(EnvironmentService)
+    if env_service.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR):
+        truncate_db_url = unify_urls(url_prefix, "/truncate_db")
+        app.add_url_rule(
+            truncate_db_url,
+            "truncate_db",
+            truncate_db,
+            methods=["POST"],
+            strict_slashes=False,
+        )

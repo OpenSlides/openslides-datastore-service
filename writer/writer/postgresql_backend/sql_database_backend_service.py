@@ -6,6 +6,7 @@ from shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
 from shared.services import ReadDatabase
 from shared.typing import JSON
 from shared.util import (
+    ALL_TABLES,
     BadCodingError,
     InvalidFormat,
     ModelDoesNotExist,
@@ -22,9 +23,6 @@ from writer.core.db_events import (
     DbRestoreEvent,
     DbUpdateEvent,
 )
-
-
-# https://stackoverflow.com/questions/18404055/index-for-finding-an-element-in-a-json-array
 
 
 FQID_MAX_LEN = 48
@@ -58,7 +56,6 @@ class SqlDatabaseBackendService:
                     f"fqid {event.fqid} is too long (max: {FQID_MAX_LEN})"
                 )
             self.insert_event(event, position)
-        # self.update_modified_collectionfields(events, position)
         return position
 
     def create_position(self, information, user_id):
@@ -270,3 +267,9 @@ class SqlDatabaseBackendService:
         self.connection.execute(statement, arguments)
 
         return list(range(low_id, high_id))
+
+    def truncate_db(self) -> None:
+        for table in ALL_TABLES:
+            self.connection.execute(
+                f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE", []
+            )
