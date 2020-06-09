@@ -96,7 +96,8 @@ def test_get_with_position_not_deleted_only_deleted(reader, read_db):
 
 
 def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
-    result = MagicMock()
+    model = MagicMock()
+    result = {"c/1": model}
     read_db.get_many = get_many = MagicMock(return_value=result)
 
     parts = [
@@ -105,7 +106,7 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
     ]
     request = GetManyRequest(parts, ["field"])
 
-    assert reader.get_many(request) == result
+    assert reader.get_many(request) == {"c": {"1": model}}
 
     read_db.get_context.assert_called()
     get_many.assert_called_with(
@@ -118,7 +119,8 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
 def test_get_many_with_position(
     reader: ReaderService, read_db: SqlReadDatabaseBackendService
 ):
-    result = MagicMock()
+    model = MagicMock()
+    result = {"c/1": model}
     deleted_map = {"a/1": False, "b/1": False}
     read_db.get_deleted_status = gds = MagicMock(return_value=deleted_map)
     read_db.build_models_ignore_deleted = bmid = MagicMock(return_value=result)
@@ -130,7 +132,7 @@ def test_get_many_with_position(
     ]
     request = GetManyRequest(parts, ["field"], 42)
 
-    assert reader.get_many(request) == result
+    assert reader.get_many(request) == {"c": {"1": model}}
 
     gds.assert_called_with(["a/1", "b/1"], 42)
     bmid.assert_called_with(["a/1", "b/1"], 42)

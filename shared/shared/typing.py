@@ -20,6 +20,4 @@ Fqid = Union[str, _Fqid]
 Fqfield = Union[str, _Fqfield]
 Position = Union[int, _Position]
 
-# TODO: remove type comments as soon as mypy is fixed
-# (which may be a while, see https://github.com/python/mypy/issues/5354)
-custom_types = [Collection, Field, Id, Fqid, Fqfield, Position]  # type: ignore
+custom_types = [Collection, Field, Id, Fqid, Fqfield, Position]
