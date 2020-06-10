@@ -309,7 +309,7 @@ class TestInsertCreateEvent:
         event = MagicMock()
         event.fqid = "a/1"
         event.field_data = "test_data"
-        event.get_fields = MagicMock(return_value="f")
+        event.get_modified_fields = MagicMock(return_value="f")
         position = MagicMock()
 
         sql_backend.insert_create_event(event, position)
@@ -328,7 +328,7 @@ def test_insert_update_event(sql_backend, connection):
     event = MagicMock()
     event.fqid = "a/1"
     event.field_data = "test_data"
-    event.get_fields = MagicMock(return_value="f")
+    event.get_modified_fields = MagicMock(return_value="f")
     position = MagicMock()
 
     sql_backend.insert_update_event(event, position)
@@ -369,7 +369,7 @@ def test_insert_delete_event(sql_backend, connection):
     event = MagicMock()
     event.fqid = "a/1"
     event.set_modified_fields = MagicMock()
-    event.get_fields = MagicMock(return_value="f")
+    event.get_modified_fields = MagicMock(return_value="f")
     position = MagicMock()
 
     sql_backend.insert_delete_event(event, position)
@@ -425,7 +425,7 @@ def test_insert_restore_event(sql_backend, connection):
     event = MagicMock()
     event.fqid = "a/1"
     event.set_modified_fields = MagicMock()
-    event.get_fields = MagicMock(return_value="f")
+    event.get_modified_fields = MagicMock(return_value="f")
     position = MagicMock()
 
     sql_backend.insert_restore_event(event, position)

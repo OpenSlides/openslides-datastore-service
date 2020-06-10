@@ -74,9 +74,7 @@ def assert_modified_fields(redis_connection, fields_per_fqid, meta_deleted=True)
     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 1
     response = redis_connection.xread({MODIFIED_FIELDS_TOPIC: 0}, count=1)
     data = response[0][1][0][1]  # wtf?
-    redis_modified_fields = set(
-        field.decode("utf-8") for field in data[1::2]
-    )  # skip every second "modified" entry
+    redis_modified_fields = set(fqfield.decode("utf-8") for fqfield in data[::2])
     assert modified_fields == redis_modified_fields
 
 
