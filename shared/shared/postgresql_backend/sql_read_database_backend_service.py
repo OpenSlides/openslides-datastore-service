@@ -36,7 +36,7 @@ class SqlReadDatabaseBackendService:
         self,
         fqid: str,
         mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         models = self.get_many([fqid], {fqid: mapped_fields}, get_deleted_models)
         try:
@@ -48,7 +48,7 @@ class SqlReadDatabaseBackendService:
         self,
         fqids: List[str],
         mapped_fields_per_fqid: Dict[str, List[str]] = {},
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[str, Model]:
         if not fqids:
             return {}
@@ -58,6 +58,7 @@ class SqlReadDatabaseBackendService:
         unique_mapped_fields = self.query_helper.get_unique_mapped_fields(
             mapped_fields_per_fqid
         )
+
         (
             mapped_fields_str,
             mapped_field_args,

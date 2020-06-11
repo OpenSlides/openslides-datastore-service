@@ -43,7 +43,7 @@ class ReadDatabase(Protocol):
         self,
         fqid: str,
         mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         """
         Internally calls `get_many` to retrieve a single model. Raises a
@@ -54,7 +54,7 @@ class ReadDatabase(Protocol):
         self,
         fqids: List[str],
         mapped_fields_per_fqid: Dict[str, List[str]] = {},
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.ALL_MODELS,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[str, Model]:
         """
         Returns all requested models in a lookup-able fashion mapped the
