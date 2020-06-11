@@ -8,18 +8,6 @@ args=-t -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(M
 build-tests:
 	docker build -t openslides-datastore-$(MODULE)-test -f Dockerfile.test . --build-arg MODULE=$(MODULE)
 
-run-integration-unit-tests: | build-tests
-	docker run $(args) openslides-datastore-$(MODULE)-test pytest tests/unit tests/integration
-
-run-coverage-integration-unit: | build-tests
-	docker run $(args) openslides-datastore-$(MODULE)-test pytest tests/integration tests/unit --cov --cov-report html
-
-run-integration-unit-tests-interactive: | build-tests
-	docker run -i -p 5000:5000 $(args) openslides-datastore-$(MODULE)-test bash
-
-run-cleanup: | build-tests
-	docker run -i $(args) openslides-datastore-$(MODULE)-test ./cleanup.sh
-
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose -f dc.test.yml up -d $(MODULE)
@@ -46,6 +34,10 @@ run-travis-no-down: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh ./execute-travis.sh
 
 run-travis: | run-travis-no-down
+	docker-compose -f dc.test.yml down
+
+run-cleanup: | setup-docker-compose
+	docker-compose -f dc.test.yml exec $(MODULE) ./cleanup.sh
 	docker-compose -f dc.test.yml down
 
 # PROD

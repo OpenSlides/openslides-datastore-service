@@ -5,7 +5,6 @@ services:
         ports:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
         environment:
-            - DATASTORE_DATABASE_HOST=postgresql
             - PORT=${OPENSLIDES_DATASTORE_READER_PORT}
         depends_on:
             - postgresql
@@ -16,8 +15,6 @@ services:
         ports:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
         environment:
-            - DATASTORE_DATABASE_HOST=postgresql
-            - MESSAGE_BUS_HOST=redis
             - PORT=${OPENSLIDES_DATASTORE_WRITER_PORT}
         depends_on:
             - postgresql

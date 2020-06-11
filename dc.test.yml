@@ -8,9 +8,6 @@ services:
             - ./writer/writer:/app/writer
             - ./writer/tests:/app/tests
             - ./cli:/app/cli
-        environment:
-            - DATASTORE_DATABASE_HOST=postgresql
-            - MESSAGE_BUS_HOST=redis
         depends_on:
             - postgresql
             - redis
@@ -23,8 +20,6 @@ services:
         volumes:
             - ./shared/shared:/app/shared
             - ./shared/tests:/app/tests
-        environment:
-            - DATASTORE_DATABASE_HOST=postgresql
         depends_on:
             - postgresql
         networks:
@@ -36,8 +31,6 @@ services:
             - ./shared/shared:/app/shared
             - ./reader/reader:/app/reader
             - ./reader/tests:/app/tests
-        environment:
-            - DATASTORE_DATABASE_HOST=postgresql
         depends_on:
             - postgresql
         networks:
