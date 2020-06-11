@@ -31,7 +31,4 @@ All these commands are also avaible inside the modules and only affect the curre
 
 The following commands are only available in the `reader` and `writer`, since `shared` is no real module and has no integration/system tests:
 
-- `make run-integration-unit-tests`: runs only the integration and unit tests. Saves time and resources since no database and message bus has to be started.
 - `make run-system-tests`: runs only the system tests
-- `make run-coverage-integration-unit`: creates a coverage report for only the integration and unit tests
-- `make run-integration-unit-tests-interactive`: opens a bash console in the container, but with no connected database or message bus, so only integration and unit tests can be executed
