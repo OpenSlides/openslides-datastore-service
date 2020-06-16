@@ -4,8 +4,9 @@ def assert_response_code(response, code):
 
 def assert_error_response(response, type):
     assert_response_code(response, 400)
-    assert isinstance(response.json.get("error"), dict)
-    error_type = response.json["error"].get("type")
+    json = response.json() if callable(response.json) else response.json
+    assert isinstance(json.get("error"), dict)
+    error_type = json["error"].get("type")
     assert error_type == type
 
 

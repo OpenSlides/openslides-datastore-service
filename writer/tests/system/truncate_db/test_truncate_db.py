@@ -1,6 +1,11 @@
+import os
+
+from shared.di import injector
+from shared.services import EnvironmentService
+from shared.services.environment_service import DATASTORE_DEV_MODE_ENVIRONMENT_VAR
 from shared.tests.util import assert_response_code
 from shared.util import ALL_TABLES
-from tests.system.util import TRUNCATE_DB_URL
+from writer.flask_frontend.routes import TRUNCATE_DB_URL
 
 
 def test_truncate_db(db_connection, db_cur, json_client):
@@ -24,3 +29,10 @@ def test_truncate_db(db_connection, db_cur, json_client):
         for table in ALL_TABLES:
             cursor.execute(f"select * from {table}")
             assert cursor.fetchone() is None
+
+
+def test_not_found(json_client):
+    del os.environ[DATASTORE_DEV_MODE_ENVIRONMENT_VAR]
+    injector.get(EnvironmentService).cache = {}
+    response = json_client.post(TRUNCATE_DB_URL, {})
+    assert_response_code(response, 404)

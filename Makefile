@@ -122,17 +122,19 @@ run-dev-verbose: | build-dev
 build-full-system-tests:
 	docker build -t openslides-datastore-full-system-tests -f system_tests/Dockerfile .
 
+fst_args=-ti -v `pwd`/system_tests/tests:/app/tests --network="host" --env-file=.env openslides-datastore-full-system-tests
+
 run-full-system-tests: | build-full-system-tests
-	docker run -t -v `pwd`/system_tests/tests:/app/tests --network="host" openslides-datastore-full-system-tests pytest tests
+	docker run $(fst_args) pytest tests
 
 run-full-system-tests-interactive: | build-full-system-tests
-	docker run -ti -v `pwd`/system_tests/tests:/app/tests --network="host" openslides-datastore-full-system-tests bash
+	docker run $(fst_args) bash
 
 run-full-system-tests-cleanup: | build-full-system-tests
-	docker run -ti -v `pwd`/system_tests/tests:/app/tests openslides-datastore-full-system-tests ./cleanup.sh
+	docker run $(fst_args) ./cleanup.sh
 
 run-full-system-tests-check: | build-full-system-tests
-	docker run -ti -v `pwd`/system_tests/tests:/app/tests --network="host" openslides-datastore-full-system-tests ./execute-travis.sh
+	docker run $(fst_args) ./execute-travis.sh
 
 endif
 

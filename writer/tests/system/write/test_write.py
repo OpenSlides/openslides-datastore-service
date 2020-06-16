@@ -11,7 +11,6 @@ from shared.services import ReadDatabase
 from shared.tests.util import assert_error_response, assert_response_code
 from shared.util import DeletedModelsBehaviour
 from tests.system.util import (
-    WRITE_URL,
     assert_model,
     assert_modified_fields,
     assert_no_db_entry,
@@ -19,6 +18,7 @@ from tests.system.util import (
     assert_no_modified_fields,
 )
 from writer.core import Messaging
+from writer.flask_frontend.routes import WRITE_URL
 
 
 @pytest.fixture()

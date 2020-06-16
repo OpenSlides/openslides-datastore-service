@@ -1,4 +1,4 @@
-from tests.system.util import RESERVE_IDS_URL, WRITE_URL
+from writer.flask_frontend.routes import RESERVE_IDS_URL, WRITE_URL
 
 
 def test_wrong_method_write(client):

@@ -10,11 +10,6 @@ from shared.util import ALL_TABLES, META_DELETED, META_POSITION, ModelDoesNotExi
 from writer.redis_backend.redis_messaging_backend_service import MODIFIED_FIELDS_TOPIC
 
 
-WRITE_URL = "/internal/datastore/writer/write"
-RESERVE_IDS_URL = "/internal/datastore/writer/reserve_ids"
-TRUNCATE_DB_URL = "/internal/datastore/writer/truncate_db"
-
-
 def assert_model(fqid, model, position):
     connection_handler = injector.get(ConnectionHandler)
     with connection_handler.get_connection_context():

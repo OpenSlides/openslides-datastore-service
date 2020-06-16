@@ -5,7 +5,8 @@ import pytest
 from shared.flask_frontend import ERROR_CODES
 from shared.tests.util import assert_error_response
 from shared.util import META_FIELD_PREFIX
-from tests.system.util import WRITE_URL, assert_no_db_entry
+from tests.system.util import assert_no_db_entry
+from writer.flask_frontend.routes import WRITE_URL
 
 
 @pytest.fixture()
