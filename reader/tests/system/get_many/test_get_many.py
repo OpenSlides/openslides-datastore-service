@@ -57,6 +57,16 @@ def test_simple(json_client, db_connection, db_cur):
     assert response.json == data
 
 
+def test_list_of_fqfields(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    request = {
+        "requests": ["a/1/field_1", "c/1/f"],
+    }
+    response = json_client.post(Route.GET_MANY.URL, request)
+    assert_success_response(response)
+    assert response.json == {"a": {"1": {"field_1": "data"}}, "c": {}}
+
+
 def test_invalid_fqids(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur)
     request = {
@@ -68,7 +78,7 @@ def test_invalid_fqids(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    assert response.json == data
+    assert response.json == {**data, **{"c": {}}}
 
 
 def test_only_invalid_fqids(json_client, db_connection, db_cur):
@@ -78,14 +88,14 @@ def test_only_invalid_fqids(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    assert response.json == {}
+    assert response.json == {"b": {}, "c": {}}
 
 
 def test_no_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, True)
     response = json_client.post(Route.GET_MANY.URL, default_request)
     assert_success_response(response)
-    assert response.json == {}
+    assert response.json == {"a": {}, "b": {}}
 
 
 def test_deleted(json_client, db_connection, db_cur):
@@ -107,7 +117,7 @@ def test_deleted_not_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    assert response.json == {}
+    assert response.json == {"a": {}, "b": {}}
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):
@@ -323,6 +333,7 @@ def test_position_not_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert response.json == {
+        "a": {},
         "b": {
             "1": {
                 "field_4": "data",

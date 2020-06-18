@@ -103,6 +103,12 @@ class ReaderService:
         for fqid, model in result.items():
             final[collection_from_fqid(fqid)][id_from_fqid(fqid)] = model
 
+        # add back empty collections
+        for fqid in mapped_fields_per_fqid.keys():
+            collection = collection_from_fqid(fqid)
+            if not final[collection]:
+                final[collection] = {}
+
         return final
 
     def get_all(self, request: GetAllRequest) -> Dict[str, Model]:
