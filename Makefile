@@ -46,7 +46,7 @@ run-cleanup: | setup-docker-compose
 build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)
 
 build:
-	docker build -t openslides-datastore-$(MODULE) .  $(build_args)
+	docker build -t openslides-datastore-$(MODULE) . $(build_args)
 
 run:
 	docker-compose up -d $(MODULE)
@@ -56,7 +56,7 @@ run-verbose:
 
 
 build-prod:
-	docker build -t openslides-datastore-$(MODULE) -f Dockerfile.prod .  $(build_args)
+	docker build -t openslides-datastore-$(MODULE) -f Dockerfile.prod . $(build_args)
 
 run-prod: | build-prod
 	docker-compose -f dc.prod.yml up -d $(MODULE)
@@ -116,9 +116,25 @@ run-verbose:
 run-prod-verbose: | build-prod
 	docker-compose -f dc.prod.yml up
 
-run-dev-verbose:
+run-dev-verbose: | build-dev
 	docker-compose -f dc.dev.yml up
 
+build-full-system-tests:
+	docker build -t openslides-datastore-full-system-tests -f system_tests/Dockerfile .
+
+fst_args=-ti -v `pwd`/system_tests/tests:/app/tests --network="host" --env-file=.env openslides-datastore-full-system-tests
+
+run-full-system-tests: | build-full-system-tests
+	docker run $(fst_args) pytest tests
+
+run-full-system-tests-interactive: | build-full-system-tests
+	docker run $(fst_args) bash
+
+run-full-system-tests-cleanup: | build-full-system-tests
+	docker run $(fst_args) ./cleanup.sh
+
+run-full-system-tests-check: | build-full-system-tests
+	docker run $(fst_args) ./execute-travis.sh
 
 endif
 

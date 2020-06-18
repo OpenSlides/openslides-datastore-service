@@ -41,6 +41,17 @@ from .key_types import (  # noqa
 from .self_validating_dataclass import SelfValidatingDataclass  # noqa
 
 
+ALL_TABLES = (
+    "positions",
+    "events",
+    "models_lookup",
+    "id_sequences",
+    "collectionfields",
+    "events_to_collectionfields",
+    "models",
+)
+
+
 def get_exception_for_deleted_models_behaviour(
     fqid: str, get_deleted_models: DeletedModelsBehaviour
 ) -> DatastoreException:

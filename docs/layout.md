@@ -1,21 +1,27 @@
 # Basic repository layout
 
-- /reader: the reader module
-- /writer: the writer module
-- /shared: the shared module. Contains classes and constants used by both the reader and the writer
-- /scripts: useful scripts
-- /requirements: the requirements for testing and in general
+- `/reader`: the reader module
+- `/writer`: the writer module
+- `/shared`: the shared module. Contains classes and constants used by both the reader and the writer
+- `/scripts`: useful scripts
+- `/requirements`: the requirements for testing and in general
+- `/system_tests`: tests for reader and writer in conjunction. Since these don't belong to any module or docker container, they cannot import anything from the other modules. They run in their own docker container and send requests to the host machine to test the full stack.
 
 # Makefile setup
 Since reader, writer and shared mostly need the same commands, the main Makefile contains those. If you issue commands in a subfolder, they are forwarded to the root Makefile. The following commands are available from the root directory:
 
 The following commands are available from the root directory:
 
+Full system tests:
+- `make run-full-system-tests`: starts the local productive setup and executes the full system tests. These test the reader and writer in conjunction. Requires that the dev environment is up and running and listening on the default ports. Prod environment does not work since the `truncate_db` route is not available there.
+- `make run-full-system-tests-interactive`: start a bash inside the full system test docker container for repeated usage.
+- `make run-full-system-tests-cleanup`: cleans up the full system tests.
+- `make run-full-system-tests-check`: runs the travis utilities for the full system tests.
+
 Utility:
 - `make run-cleanup`: runs the cleanup script in all modules
 - `make run-travis`: runs the travis script in all modules
 - `make run-tests`: runs the tests of all modules
-
 
 Development environment:
 - `make build-dev`: builds all development images

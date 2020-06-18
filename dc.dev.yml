@@ -21,6 +21,8 @@ services:
             - ./cli:/app/cli
         ports:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
+        environment:
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
         depends_on:
             - postgresql
             - redis

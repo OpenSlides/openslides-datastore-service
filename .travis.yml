@@ -15,4 +15,7 @@ jobs:
         - sleep 10
         - curl http://localhost:9010/
         - curl http://localhost:9011/
-
+    - name: "Full system tests"
+      script: 
+        - make run-dev
+        - make run-full-system-tests-check

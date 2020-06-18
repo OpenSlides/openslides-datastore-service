@@ -4,6 +4,9 @@ from typing import Dict, Optional, cast
 from shared.di import service_as_singleton
 
 
+DATASTORE_DEV_MODE_ENVIRONMENT_VAR = "DATASTORE_ENABLE_DEV_ENVIRONMENT"
+
+
 class EnvironmentVariableMissing(Exception):
     def __init__(self, name: str):
         self.name = name

@@ -7,6 +7,7 @@ from shared.postgresql_backend import ConnectionHandler
 from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
 from shared.util import (
+    ALL_TABLES,
     BadCodingError,
     InvalidFormat,
     ModelDoesNotExist,
@@ -489,3 +490,10 @@ class TestReserveNextIds:
         ex.assert_called_once()
         args = ex.call_args.args[1]
         assert args == ["my_collection", 7]
+
+
+def test_truncate_db(sql_backend, connection):
+    connection.execute = ex = MagicMock()
+    sql_backend.truncate_db()
+    assert ex.call_count == len(ALL_TABLES)
+    assert all("TRUNCATE" in call.args[0] for call in ex.call_args_list)
