@@ -106,7 +106,7 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
     ]
     request = GetManyRequest(parts, ["field"])
 
-    assert reader.get_many(request) == {"c": {"1": model}}
+    assert reader.get_many(request) == {"a": {}, "b": {}, "c": {"1": model}}
 
     read_db.get_context.assert_called()
     get_many.assert_called_with(
@@ -132,7 +132,7 @@ def test_get_many_with_position(
     ]
     request = GetManyRequest(parts, ["field"], 42)
 
-    assert reader.get_many(request) == {"c": {"1": model}}
+    assert reader.get_many(request) == {"a": {}, "b": {}, "c": {"1": model}}
 
     gds.assert_called_with(["a/1", "b/1"], 42)
     bmid.assert_called_with(["a/1", "b/1"], 42)
