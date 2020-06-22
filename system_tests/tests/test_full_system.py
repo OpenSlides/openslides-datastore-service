@@ -30,7 +30,7 @@ GET_URL = READER_HOST + Route.GET.URL
 @pytest.fixture(autouse=True)
 def truncate_db():
     response = requests.post(TRUNCATE_DB_URL)
-    assert response.status_code == 200
+    assert response.status_code == 204
     yield
 
 

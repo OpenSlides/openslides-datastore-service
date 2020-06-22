@@ -23,7 +23,7 @@ def test_truncate_db(db_connection, db_cur, json_client):
     db_connection.commit()
 
     response = json_client.post(TRUNCATE_DB_URL, {})
-    assert_response_code(response, 200)
+    assert_response_code(response, 204)
 
     with db_connection.cursor() as cursor:
         for table in ALL_TABLES:

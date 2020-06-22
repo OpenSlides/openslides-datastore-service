@@ -105,10 +105,17 @@ run-cleanup:
 	@$(MAKE) -C writer $@
 
 # no-down mode speeds up the process by up to 50%
-run-tests run-travis:
-	@$(MAKE) -C shared $@-no-down
-	@$(MAKE) -C reader $@-no-down
-	@$(MAKE) -C writer $@
+run-travis:
+	@$(MAKE) -C shared run-travis-no-down
+	@$(MAKE) -C reader run-travis-no-down
+	@$(MAKE) -C writer run-travis
+
+run-tests:
+	@$(MAKE) -C shared run-tests-no-down
+	@$(MAKE) -C reader run-tests-no-down
+	@$(MAKE) -C writer run-tests
+	@$(MAKE) run-dev
+	@$(MAKE) run-full-system-tests
 
 run-verbose:
 	docker-compose up
