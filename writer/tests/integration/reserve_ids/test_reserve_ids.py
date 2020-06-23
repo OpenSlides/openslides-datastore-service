@@ -1,3 +1,4 @@
+from collections import defaultdict
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,19 +19,16 @@ class FakeConnectionHandler:
     # We do just need the following three methods from the connection handler
 
     def __init__(self):
-        self.storage = {}
+        self.storage = defaultdict(lambda: 1)
 
     def get_connection_context(self):
         return MagicMock()
 
-    def execute(self, statement, arguments):
-        collection = arguments[0]
-        id = arguments[1]
-        self.storage[collection] = id
-
     def query_single_value(self, query, arguments):
         collection = arguments[0]
-        return self.storage.get(collection)
+        amount = arguments[1]
+        self.storage[collection] += amount - 1
+        return self.storage[collection]
 
 
 @pytest.fixture(autouse=True)

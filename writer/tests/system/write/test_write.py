@@ -45,6 +45,26 @@ def test_create_simple(json_client, data, redis_connection, reset_redis_data):
     create_model(json_client, data, redis_connection, reset_redis_data)
 
 
+def test_assert_increased_id_sequence(
+    json_client, data, redis_connection, reset_redis_data, db_cur
+):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+    db_cur.execute("select id from id_sequences where collection = %s", ["a"])
+    id = db_cur.fetchone()[0]
+    assert id == 2
+
+
+def test_create_double_assert_increased_id_sequence(
+    json_client, data, redis_connection, reset_redis_data, db_cur
+):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+    data["events"][0]["fqid"] = "a/3"
+    json_client.post(WRITE_URL, data)
+    db_cur.execute("select id from id_sequences where collection = %s", ["a"])
+    id = db_cur.fetchone()[0]
+    assert id == 4
+
+
 def test_create_empty_field(json_client, data, redis_connection):
     data["events"][0]["fields"]["empty"] = None
     response = json_client.post(WRITE_URL, data)
