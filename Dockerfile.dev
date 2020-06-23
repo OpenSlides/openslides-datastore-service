@@ -20,8 +20,6 @@ ENV FLASK_ENV=development
 ARG COMMAND
 ENV COMMAND=$COMMAND
 
-ENTRYPOINT ["./entrypoint.sh"]
-
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)
 ENV PORT=$PORT
