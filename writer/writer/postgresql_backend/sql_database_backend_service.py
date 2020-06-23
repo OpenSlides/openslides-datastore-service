@@ -27,9 +27,14 @@ from writer.core.db_events import (
 )
 
 
-FQID_MAX_LEN = 48
+# Max lengths (??) of the important key parts:
+# collection: 32
+# id: 16
+# field: 207
+# -> collection + id + field = 255
 COLLECTION_MAX_LEN = 32
-COLLECTIONFIELD_MAX_LEN = 255
+FQID_MAX_LEN = 48  # collection + id
+COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
 
 @service_as_singleton

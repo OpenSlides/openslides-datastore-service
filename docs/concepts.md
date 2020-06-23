@@ -37,3 +37,13 @@ The keys of the `locked_fields` object can be fqfields, fqids or whole collectio
 ## Null values
 
 To simplify communication, the datastore assumes `null === undefined`. This means that writing `null` to any field or model equals the deletion of it. As a consequence, the datastore will never return `null` values on any `read` request.
+
+## PostgreSQL backend limitations
+
+The current implementation of the datastore uses a PostgreSQL backend as its database. For better indexing purposes, the keys (collections, ids and fields) are stored with a fixed length instead of a variable one. The following maximum length restrictions apply when using the PostgreSQL backend:
+
+    collection: 32
+    id: 16
+    field: 207
+
+Longer keys will be rejected with an `InvalidFormat` error.

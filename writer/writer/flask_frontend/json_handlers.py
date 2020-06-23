@@ -1,11 +1,12 @@
+from dataclasses import dataclass
 from typing import Any, Dict, List, TypedDict, cast
 
 import fastjsonschema
 
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
-from shared.typing import JSON
-from shared.util import BadCodingError
+from shared.typing import JSON, Collection
+from shared.util import BadCodingError, SelfValidatingDataclass
 from writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
@@ -119,17 +120,18 @@ reserve_ids_schema = fastjsonschema.compile(
 )
 
 
-class ReserveIdsRequestJSON(TypedDict):
-    collection: str
+@dataclass
+class ReserveIdsRequestJSON(SelfValidatingDataclass):
+    collection: Collection
     amount: int
 
 
 class ReserveIdsHandler:
     def reserve_ids(self, data: JSON) -> List[int]:
         try:
-            parsed_data = cast(ReserveIdsRequestJSON, reserve_ids_schema(data))
+            parsed_data = ReserveIdsRequestJSON(**reserve_ids_schema(data))
         except fastjsonschema.JsonSchemaException as e:
             raise InvalidRequest(e.message)
 
         writer = injector.get(Writer)
-        return writer.reserve_ids(parsed_data["collection"], parsed_data["amount"])
+        return writer.reserve_ids(parsed_data.collection, parsed_data.amount)
