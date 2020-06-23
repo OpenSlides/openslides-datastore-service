@@ -2,6 +2,7 @@ from textwrap import dedent
 
 from werkzeug.exceptions import default_exceptions
 
+from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.util import (
     InvalidFormat,
     ModelDoesNotExist,
@@ -9,6 +10,8 @@ from shared.util import (
     ModelLocked,
     ModelNotDeleted,
 )
+
+from .json_response import JsonResponse
 
 
 # internal errors
@@ -28,6 +31,8 @@ def handle_internal_errors(fn):
         error_dict = None
         try:
             return fn(*args, **kwargs)
+        except DatabaseError as e:
+            return JsonResponse({"error": e.msg}), 500
         except InvalidFormat as e:
             error_dict = {
                 "type": ERROR_CODES.INVALID_FORMAT,
