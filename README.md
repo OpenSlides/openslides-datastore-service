@@ -20,9 +20,9 @@ While the local environment runs directly on the local files, this is not the ty
 - `make run-verbose` same as `run-prod`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C
 - `make stop-prod`: stops all prod containers
 
-## Example data
+## Initial data
 
-To load [example data](https://github.com/OpenSlides/OpenSlides/blob/openslides4-dev/docs/example-data.json) into the container the environment variable `COMMAND` must be set to `create_example_data` inside the writer container.
+To create initial data, see [development documentation](docs/development.md#Commands).
 
 ## Productive environment
 
