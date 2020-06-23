@@ -1,7 +1,7 @@
 from flask import abort, request
 
 from shared.di import injector
-from shared.flask_frontend import InvalidRequest, handle_internal_errors
+from shared.flask_frontend import InvalidRequest, JsonResponse, handle_internal_errors
 from shared.services import EnvironmentService
 from shared.services.environment_service import DATASTORE_DEV_MODE_ENVIRONMENT_VAR
 from writer.core import Writer
@@ -27,7 +27,7 @@ def reserve_ids():
 
     reserve_ids_handler = ReserveIdsHandler()
     ids = reserve_ids_handler.reserve_ids(request.get_json())
-    return {"ids": ids}, 200
+    return JsonResponse({"ids": ids})
 
 
 @handle_internal_errors
@@ -39,7 +39,7 @@ def truncate_db():
 
     writer = injector.get(Writer)
     writer.truncate_db()
-    return "", 200
+    return "", 204
 
 
 def register_routes(app, url_prefix):

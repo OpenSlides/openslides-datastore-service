@@ -11,4 +11,9 @@ def assert_error_response(response, type):
 
 
 def assert_success_response(response):
+    assert_no_newline_in_json(response)
     assert_response_code(response, 200)
+
+
+def assert_no_newline_in_json(response):
+    assert "\n" not in response.get_data(as_text=True)

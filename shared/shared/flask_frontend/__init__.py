@@ -4,6 +4,7 @@ from .errors import (  # noqa
     handle_internal_errors,
     register_error_handlers,
 )
+from .json_response import JsonResponse  # noqa
 
 
 def unify_urls(*parts):
