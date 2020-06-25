@@ -16,6 +16,7 @@ from shared.util import (
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
     id_from_fqid,
+    logger,
 )
 from writer.core import BaseDbEvent
 from writer.core.db_events import (
@@ -75,6 +76,7 @@ class SqlDatabaseBackendService:
         self.connection.execute(statement, arguments)
         query = "select max(position) from positions"
         position = self.connection.query_single_value(query, [])
+        logger.info(f"Created position {position}")
         return position
 
     def insert_event(self, event, position: int):

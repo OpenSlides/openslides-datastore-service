@@ -62,6 +62,6 @@ def test_collection_from_fqid():
 
 def test_build_fqid():
     collection = "collection"
-    id = 1
+    id = "1"
 
     assert build_fqid(collection, id) == "collection/1"

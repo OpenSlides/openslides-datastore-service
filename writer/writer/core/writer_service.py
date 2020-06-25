@@ -1,7 +1,9 @@
 import threading
-from typing import List
+from collections import defaultdict
+from typing import Dict, List
 
 from shared.di import service_as_factory
+from shared.util import logger
 
 from .database import Database
 from .event_executor import EventExecutor
@@ -31,6 +33,18 @@ class WriterService:
             with self.database.get_context():
                 self.write_with_database_context()
 
+            stats: Dict[str, int] = defaultdict(int)
+            for event in write_request.events:
+                log_name = (
+                    type(event)
+                    .__name__.replace("Request", "")
+                    .replace("Event", "")
+                    .upper()
+                )
+                stats[log_name] += 1
+            stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
+            logger.info(f"Events executed ({stats_string})")
+
             # Only propagate updates to redis after the transaction has finished
             self.messaging.handle_events(self.db_events, self.position)
 
@@ -56,8 +70,11 @@ class WriterService:
 
     def reserve_ids(self, collection: str, amount: int) -> List[int]:
         with self.database.get_context():
-            return self.database.reserve_next_ids(collection, amount)
+            ids = self.database.reserve_next_ids(collection, amount)
+            logger.info(f"{len(ids)} ids reserved")
+            return ids
 
     def truncate_db(self) -> None:
         with self.database.get_context():
             self.database.truncate_db()
+            logger.info("Database truncated")
