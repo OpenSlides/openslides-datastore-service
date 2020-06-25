@@ -71,7 +71,9 @@ class PgConnectionHandlerService:
                 self.connection = psycopg2.connect(**self.get_connection_params())
                 self.connection.autocommit = False
             except psycopg2.Error as e:
-                self.raise_error(f"Database connection error {e.pgcode}: {e.pgerror}")
+                self.raise_error(
+                    f"Database connection error ({type(e).__name__}) {e.pgcode}: {e.pgerror}"  # noqa
+                )
         else:
             # TODO: check if alive
             pass

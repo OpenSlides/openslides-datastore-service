@@ -2,7 +2,7 @@
 
 source export-database-variables.sh
 
-wait-for-it --timeout=15 "$DATASTORE_DATABASE_HOST:$DATASTORE_DATABASE_PORT"
+wait-for-it -t 0 "$DATASTORE_DATABASE_HOST:$DATASTORE_DATABASE_PORT"
 
 # Create schema in postgresql
 export PGPASSWORD="$DATASTORE_DATABASE_PASSWORD"
