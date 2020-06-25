@@ -12,8 +12,10 @@ from shared.util import (
     ModelDoesNotExist,
     ModelExists,
     ModelNotDeleted,
+    collection_from_fqid,
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
+    id_from_fqid,
 )
 from writer.core import BaseDbEvent
 from writer.core.db_events import (
@@ -85,6 +87,19 @@ class SqlDatabaseBackendService:
     def insert_create_event(self, create_event, position: int) -> None:
         if self.exists_query("models_lookup", "fqid=%s", [create_event.fqid]):
             raise ModelExists(create_event.fqid)
+
+        # update max collection id if neccessary
+        statement = dedent(
+            """\
+            insert into id_sequences (collection, id) values (%s, %s)
+            on conflict(collection) do update
+            set id=greatest(id_sequences.id, excluded.id);"""
+        )
+        arguments: List[Any] = [
+            collection_from_fqid(create_event.fqid),
+            int(id_from_fqid(create_event.fqid)) + 1,
+        ]
+        self.connection.execute(statement, arguments)
 
         arguments = [
             position,
@@ -250,23 +265,16 @@ class SqlDatabaseBackendService:
                 f"collection length must be between 1 and {COLLECTION_MAX_LEN}"
             )
 
-        query = "select id from id_sequences where collection=%s"
-        arguments = [collection]
-        low_id = self.connection.query_single_value(query, arguments)
-        if low_id is None:
-            low_id = 1
-        high_id = low_id + amount  # high id not included in the result
-
-        statement = "update id_sequences set id=%s where collection=%s"
         statement = dedent(
             """\
             insert into id_sequences (collection, id) values (%s, %s)
-            on conflict(collection) do update set id=excluded.id;"""
+            on conflict(collection) do update
+            set id=id_sequences.id + excluded.id - 1 returning id;"""
         )
-        arguments = [collection, high_id]
-        self.connection.execute(statement, arguments)
+        arguments = [collection, amount + 1]
+        new_max_id = self.connection.query_single_value(statement, arguments)
 
-        return list(range(low_id, high_id))
+        return list(range(new_max_id - amount, new_max_id))
 
     def truncate_db(self) -> None:
         for table in ALL_TABLES:

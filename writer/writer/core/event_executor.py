@@ -117,7 +117,6 @@ class EventExecutorService:
             model[META_POSITION] = self.position
 
     def write_back(self):
-        print(self.models)
         write_models = {
             fqid: self.models[fqid]
             for fqid, status in self.model_status.items()

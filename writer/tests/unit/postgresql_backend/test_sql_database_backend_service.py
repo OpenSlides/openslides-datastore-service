@@ -315,7 +315,7 @@ class TestInsertCreateEvent:
 
         sql_backend.insert_create_event(event, position)
 
-        ex.assert_called_once()
+        ex.assert_called()
         ide.assert_called_with(
             event, [position, event.fqid, EVENT_TYPES.CREATE, "test_data"], position
         )
@@ -470,26 +470,22 @@ class TestReserveNextIds:
             sql_backend.reserve_next_ids("x" * (COLLECTION_MAX_LEN + 1), 1)
 
     def test_initial_collection_query(self, sql_backend, connection):
-        connection.query_single_value = MagicMock(return_value=None)
-        connection.execute = ex = MagicMock()
+        connection.query_single_value = qsv = MagicMock(return_value=4)
 
         result = sql_backend.reserve_next_ids("my_collection", 3)
 
         assert result == [1, 2, 3]
-        ex.assert_called_once()
-        args = ex.call_args.args[1]
+        args = qsv.call_args.args[1]
         assert args == ["my_collection", 4]
 
     def test_collection_query(self, sql_backend, connection):
-        connection.query_single_value = MagicMock(return_value=4)
-        connection.execute = ex = MagicMock()
+        connection.query_single_value = qsv = MagicMock(return_value=7)
 
         result = sql_backend.reserve_next_ids("my_collection", 3)
 
         assert result == [4, 5, 6]
-        ex.assert_called_once()
-        args = ex.call_args.args[1]
-        assert args == ["my_collection", 7]
+        args = qsv.call_args.args[1]
+        assert args == ["my_collection", 4]
 
 
 def test_truncate_db(sql_backend, connection):
