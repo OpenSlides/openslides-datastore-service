@@ -1,3 +1,4 @@
+import threading
 from typing import List
 
 from shared.di import service_as_factory
@@ -13,6 +14,8 @@ from .write_request import WriteRequest
 @service_as_factory
 class WriterService:
 
+    _lock = threading.Lock()
+
     database: Database
     occ_locker: OccLocker
     event_translator: EventTranslator
@@ -20,15 +23,16 @@ class WriterService:
     messaging: Messaging
 
     def write(self, write_request: WriteRequest) -> None:
-        self.write_request = write_request
-        # Convert request events to db events
-        self.db_events = self.event_translator.translate(write_request.events)
+        with self._lock:
+            self.write_request = write_request
+            # Convert request events to db events
+            self.db_events = self.event_translator.translate(write_request.events)
 
-        with self.database.get_context():
-            self.write_with_database_context()
+            with self.database.get_context():
+                self.write_with_database_context()
 
-        # Only propagate updates to redis after the transaction has finished
-        self.messaging.handle_events(self.db_events, self.position)
+            # Only propagate updates to redis after the transaction has finished
+            self.messaging.handle_events(self.db_events, self.position)
 
     def write_with_database_context(self) -> None:
         # Check locked_fields -> Possible LockedError

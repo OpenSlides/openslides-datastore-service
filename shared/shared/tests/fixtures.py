@@ -6,7 +6,7 @@ import pytest
 
 from shared.di import injector
 from shared.postgresql_backend.pg_connection_handler import (
-    ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
+    DATABASE_ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
 )
 
 from ..util import ALL_TABLES

@@ -1,3 +1,5 @@
+import threading
+from threading import Thread
 from unittest.mock import MagicMock
 
 import pytest
@@ -99,3 +101,38 @@ def test_writer_truncate_db(writer, database):
     writer.truncate_db()
     database.get_context.assert_called()
     database.truncate_db.assert_called()
+
+
+def test_writer_single_thread(writer):
+    writer.locks = [threading.Lock(), threading.Lock()]
+    writer.locks[0].acquire()
+    writer.current_lock = 0
+    writer.position = 0
+
+    def wait_for_lock():
+        lock = writer.locks[writer.current_lock]
+        writer.current_lock += 1
+        lock.acquire()
+        lock.release()
+
+    writer.event_translator = MagicMock()
+    writer.messaging = MagicMock()
+    writer.write_with_database_context = MagicMock(side_effect=wait_for_lock)
+
+    thread1 = Thread(target=writer.write, args=[MagicMock()])
+    thread1.start()
+    thread2 = Thread(target=writer.write, args=[MagicMock()])
+    thread2.start()
+
+    thread1.join(0.5)
+    assert thread1.is_alive()
+    assert thread2.is_alive()
+
+    assert writer.locks[0].locked()
+    assert not writer.locks[1].locked()
+
+    writer.locks[0].release()
+    thread1.join(0.05)
+    thread2.join(0.05)
+    assert not thread1.is_alive()
+    assert not thread2.is_alive()
