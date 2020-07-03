@@ -52,12 +52,10 @@ def connection_handler():
 
 
 def test_simple(reserve_ids_handler, connection_handler):
-    ids = reserve_ids_handler.reserve_ids(
-        {"amount": 1, "collection": "test_collection"}
-    )
+    ids = reserve_ids_handler.reserve_ids({"amount": 1, "collection": "a"})
 
     assert ids == [1]
-    assert connection_handler.storage.get("test_collection") == 2
+    assert connection_handler.storage.get("a") == 2
 
 
 def test_wrong_format(reserve_ids_handler):
@@ -67,7 +65,7 @@ def test_wrong_format(reserve_ids_handler):
 
 def test_negative_amount(reserve_ids_handler, connection_handler):
     with pytest.raises(InvalidFormat):
-        reserve_ids_handler.reserve_ids({"amount": -1, "collection": "test_collection"})
+        reserve_ids_handler.reserve_ids({"amount": -1, "collection": "a"})
 
 
 def test_too_long_collection(reserve_ids_handler, connection_handler):
@@ -78,29 +76,23 @@ def test_too_long_collection(reserve_ids_handler, connection_handler):
 
 
 def test_multiple_ids(reserve_ids_handler, connection_handler):
-    ids = reserve_ids_handler.reserve_ids(
-        {"amount": 4, "collection": "test_collection"}
-    )
+    ids = reserve_ids_handler.reserve_ids({"amount": 4, "collection": "a"})
 
     assert ids == [1, 2, 3, 4]
-    assert connection_handler.storage.get("test_collection") == 5
+    assert connection_handler.storage.get("a") == 5
 
 
 def test_successive_collections(reserve_ids_handler, connection_handler):
-    reserve_ids_handler.reserve_ids({"amount": 2, "collection": "test_collection1"})
-    ids = reserve_ids_handler.reserve_ids(
-        {"amount": 3, "collection": "test_collection2"}
-    )
+    reserve_ids_handler.reserve_ids({"amount": 2, "collection": "a"})
+    ids = reserve_ids_handler.reserve_ids({"amount": 3, "collection": "b"})
 
     assert ids == [1, 2, 3]
-    assert connection_handler.storage.get("test_collection2") == 4
+    assert connection_handler.storage.get("b") == 4
 
 
 def test_successive_ids(reserve_ids_handler, connection_handler):
-    reserve_ids_handler.reserve_ids({"amount": 2, "collection": "test_collection"})
-    ids = reserve_ids_handler.reserve_ids(
-        {"amount": 3, "collection": "test_collection"}
-    )
+    reserve_ids_handler.reserve_ids({"amount": 2, "collection": "a"})
+    ids = reserve_ids_handler.reserve_ids({"amount": 3, "collection": "a"})
 
     assert ids == [3, 4, 5]
-    assert connection_handler.storage.get("test_collection") == 6
+    assert connection_handler.storage.get("a") == 6
