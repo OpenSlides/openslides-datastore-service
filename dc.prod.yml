@@ -6,6 +6,7 @@ services:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
         environment:
             - PORT=${OPENSLIDES_DATASTORE_READER_PORT}
+            - NUM_WORKERS=8
         depends_on:
             - postgresql
         networks:

@@ -27,7 +27,6 @@ Development environment:
 - `make build-dev`: builds all development images
 - `make run-dev`: runs the development environment
 - `make run-dev-verbose`: same as `make run-dev`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C.
-- `make run-dev-manually`: starts the development environment without any services like postgres or redis. These have to be running for this command to succeed.
 - `make stop-dev`: stops all dev containers
 
 All these commands are also avaible inside the modules and only affect the current module there. Additional commands available inside the modules (primarily for testing purposes):

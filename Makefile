@@ -80,15 +80,6 @@ run-dev: | build-dev
 run-dev-verbose: | build-dev
 	docker-compose -f dc.dev.yml up $(MODULE)
 
-
-# postgres and redis (if needed) must be running for this
-run-dev-manually: | build-dev
-	docker run -t \
-			   -v `pwd`/shared/shared:/app/shared \
-			   -v `pwd`/$(MODULE)/$(MODULE):/app/$(MODULE) \
-			   -p 127.0.0.1:$(PORT):$(PORT)/tcp \
-			   openslides-datastore-$(MODULE)-dev
-
 endif
 
 
@@ -98,7 +89,7 @@ ifndef MODULE
 
 
 # shared has no dev or prod image
-run build build-dev run-dev run-dev-manually build-prod run-prod:
+run build build-dev run-dev build-prod run-prod:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
 
