@@ -8,7 +8,7 @@ set -v
 dirs=$(ls -d */)
 
 black --check --diff --target-version py38 $dirs
-isort --check-only --diff --recursive $dirs
+isort --check-only --diff $dirs
 flake8 $dirs
 mypy $dirs
 pytest --cov

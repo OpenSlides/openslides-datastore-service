@@ -3,6 +3,7 @@ from .redis_messaging_backend_service import RedisMessagingBackendService  # noq
 
 def setup_di():
     from shared.di import injector
+
     from .connection_handler import ConnectionHandler
     from .redis_connection_handler import RedisConnectionHandlerService
 

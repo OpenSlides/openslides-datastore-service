@@ -22,9 +22,10 @@ from .writer import Writer  # noqa
 
 def setup_di():
     from shared.di import injector
-    from .writer_service import WriterService
+
     from .event_executor import EventExecutor, EventExecutorService
     from .event_translator import EventTranslator, EventTranslatorService
+    from .writer_service import WriterService
 
     injector.register(EventTranslator, EventTranslatorService)
     injector.register(EventExecutor, EventExecutorService)

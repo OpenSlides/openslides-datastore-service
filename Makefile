@@ -40,6 +40,10 @@ run-cleanup: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./cleanup.sh
 	docker-compose -f dc.test.yml down
 
+run-cleanup-with-update: | setup-docker-compose
+	docker-compose -f dc.test.yml exec $(MODULE) pip install -U -r requirements-testing.txt
+	docker-compose -f dc.test.yml exec $(MODULE) ./cleanup.sh
+
 # PROD
 
 # pass env variables to container
@@ -99,7 +103,7 @@ run build build-dev run-dev run-dev-manually build-prod run-prod:
 	@$(MAKE) -C writer $@
 
 # execute the target for all modules
-run-cleanup:
+run-cleanup run-cleanup-with-update:
 	@$(MAKE) -C shared $@
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
