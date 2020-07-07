@@ -38,6 +38,7 @@ from .key_types import (  # noqa
     assert_string,
     get_key_type,
 )
+from .logging import logger  # noqa
 from .self_validating_dataclass import SelfValidatingDataclass  # noqa
 
 

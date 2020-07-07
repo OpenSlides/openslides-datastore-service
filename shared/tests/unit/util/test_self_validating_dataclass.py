@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -87,7 +87,7 @@ class C(SelfValidatingDataclass):
 
 
 def test_union_of_lists_with_fqid_success():
-    fqid = MagicMock(name="fqid")
+    fqid: Any = MagicMock(name="fqid")
 
     with patch(
         "shared.util.self_validating_dataclass.assert_is_fqid"
@@ -97,7 +97,7 @@ def test_union_of_lists_with_fqid_success():
 
 
 def test_union_of_lists_with_fqid_fail():
-    fqid = MagicMock(name="fqid")
+    fqid: Any = MagicMock(name="fqid")
 
     with patch(
         "shared.util.self_validating_dataclass.assert_is_fqid"
@@ -179,7 +179,7 @@ class E(SelfValidatingDataclass):
 
 
 def test_union_of_lists_invalid_data():
-    data = MagicMock()
+    data: Any = MagicMock()
 
     with pytest.raises(BadCodingError):
         E([data])
