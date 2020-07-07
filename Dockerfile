@@ -30,8 +30,5 @@ ENV PORT=$PORT
 EXPOSE $PORT
 ENV PYTHONPATH /app/
 
-ARG COMMAND
-ENV COMMAND=$COMMAND
-
 ENTRYPOINT ["./entrypoint.sh"]
 CMD gunicorn -w 1 -b 0.0.0.0:$PORT $MODULE.app:application

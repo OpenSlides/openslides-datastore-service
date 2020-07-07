@@ -21,14 +21,13 @@ COPY shared/shared shared
 COPY $MODULE/$MODULE $MODULE
 COPY $MODULE/entrypoint.sh scripts/system/* ./
 
-ARG COMMAND
-ENV COMMAND=$COMMAND
-
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)
 ENV PORT=$PORT
 
 EXPOSE $PORT
 
+ENV NUM_WORKERS=1
+
 ENTRYPOINT ["./entrypoint.sh"]
-CMD gunicorn -w 8 -b 0.0.0.0:$PORT $MODULE.app:application
+CMD gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT $MODULE.app:application

@@ -17,12 +17,11 @@ ENV PYTHONPATH /app/
 ENV FLASK_APP=$MODULE.app
 ENV FLASK_ENV=development
 
-ARG COMMAND
-ENV COMMAND=$COMMAND
-
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)
 ENV PORT=$PORT
+
+EXPOSE $PORT
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD flask run --host 0.0.0.0 --port $PORT
