@@ -1,31 +1,23 @@
-version: '3'
+version: '3.7'
 services:
     reader:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
-            args:
-                REPOSITORY_URL: "https://github.com/OpenSlides/openslides-datastore-service.git"
-                GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_GIT_CHECKOUT}"
-                MODULE: "reader"
-                PORT: "${OPENSLIDES_DATASTORE_READER_PORT}"
-        image: openslides-datastore-reader
+            context: .
+            target: reader
         ports:
-            - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
+            - 9010:9010
+        environment:
+            - NUM_WORKERS=8
         depends_on:
             - postgresql
         networks:
             - postgresql
     writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
-            args:
-                REPOSITORY_URL: "https://github.com/OpenSlides/openslides-datastore-service.git"
-                GIT_CHECKOUT: "${OPENSLIDES_DATASTORE_SERVICE_GIT_CHECKOUT}"
-                MODULE: "writer"
-                PORT: "${OPENSLIDES_DATASTORE_WRITER_PORT}"
-        image: openslides-datastore-writer
+            context: .
+            target: writer
         ports:
-            - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
+            - 9011:9011
         depends_on:
             - postgresql
             - redis
@@ -42,7 +34,7 @@ services:
     redis:
         image: redis:alpine
         ports:
-            - "${MESSAGE_BUS_PORT}:${MESSAGE_BUS_PORT}"
+            - "6379:6379"
         networks:
             - redis
 networks:
