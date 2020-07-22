@@ -33,9 +33,7 @@ services:
             - postgresql
             - redis
     postgresql:
-        image: sameersbn/postgresql:10
-        labels:
-            org.openslides.role: "postgres"
+        image: postgres:11
         env_file: database.env
         networks:
             - postgresql

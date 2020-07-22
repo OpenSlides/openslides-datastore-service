@@ -2,7 +2,10 @@
 
 source export-database-variables.sh
 
-wait-for-it -t 0 "$DATASTORE_DATABASE_HOST:$DATASTORE_DATABASE_PORT"
+until pg_isready -h "$DATASTORE_DATABASE_HOST" -p "$DATASTORE_DATABASE_PORT"; do
+  echo "Waiting for Postgres server '$DATASTORE_DATABASE_HOST' to become available..."
+  sleep 3
+done
 
 # Create schema in postgresql
 export PGPASSWORD="$DATASTORE_DATABASE_PASSWORD"
