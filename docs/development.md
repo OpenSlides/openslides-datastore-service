@@ -4,6 +4,10 @@
 
 See [basic repository layout](docs/layout.md).
 
+## Using the Datastore in other services
+
+If you want to do system tests in your service and need the datastore, use the `dc.external.yml`. It is completely independent from the local code. Just merge it with your service's docker-compose file and you can test everything in conjunction. It uses the productive setup, so no hot reload or similar is used, but runs the datastore in dev mode, so dev utils like `truncate_db` (see below) are available. You have to add the reader/writer as a dependency to your service(s) and add them to the `datastore` network.
+
 ## Initial data creation
 
 You can issue commands to the datastore on startup via the docker variable `COMMAND` (has to be given as a build argument to the docker file). Currently only commands for the writer are supported.
