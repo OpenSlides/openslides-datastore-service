@@ -11,7 +11,7 @@ The following commands are available from the root directory:
 - `make build-prod`: builds all productive images from the local files
 - `make run-prod`: runs the productive environment. See below for details
 - `make run-prod-verbose` same as `run-prod`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C
-- `make stop-prod`: stops all prod containers, if they were stared in detached mode
+- `make stop-prod`: stops all prod containers, if they were started in detached mode
 
 "Real" productive environment:
 While the local environment runs directly on the local files, this is not the typical use case; by default, we want to use the files of a specific git commit, tag or branch because that's tested in combination with all other services. The commands with a suffix like `-dev` or `-prod` are specifically for this: They ignore all local files and pull the code directly from the given repository.
@@ -26,17 +26,17 @@ To create initial data, see [development documentation](docs/development.md#Comm
 
 ## Productive environment
 
-`make run[-prod]` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 9011 and the reader on 9010, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port via `OPENSLIDES_DATASTORE_%SERVICE%_PORT` (`%SERVICE%` \in {`READER`, `WRITER`}). 
+`make run[-prod]` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 9011 and the reader on 9010, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port via `OPENSLIDES_DATASTORE_%SERVICE%_PORT` (`%SERVICE%` ∈ {`READER`, `WRITER`}). 
 
 ### Curl example
 
 After you started the productive environment, you can issue requests e.g. via curl. First, create a model:
 
-    curl --header "Content-Type: application/json" -d '{"user_id": 1, "information": {}, "locked_fields": {}, "events": [{"type": "create", "fqid": "a/1", "fields": {"f": 1}}]}' http://localhost:9011/internal/datastore/writer/write
+    curl http://localhost:9011/internal/datastore/writer/write -H "Content-Type: application/json" -d '{"user_id": 1, "information": {}, "locked_fields": {}, "events": [{"type": "create", "fqid": "a/1", "fields": {"f": 1}}]}' 
 
 Then you can get that model with:
 
-    curl --header "Content-Type: application/json" -d '{"fqid": "a/1"}' http://localhost:9010/internal/datastore/reader/get
+    curl http://localhost:9010/internal/datastore/reader/get -H "Content-Type: application/json" -d '{"fqid": "a/1"}' 
 
 All other commands work analogous to this.
 
