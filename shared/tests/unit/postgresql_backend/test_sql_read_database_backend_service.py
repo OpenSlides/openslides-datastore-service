@@ -89,7 +89,7 @@ def test_get_many(
     q_fqid2 = MagicMock()
     models = read_database.get_many([q_fqid1, q_fqid2])
 
-    assert q.call_args.args[1] == [(q_fqid1, q_fqid2,)]
+    assert q.call_args.args[1] == [(q_fqid1, q_fqid2)]
     assert models == {fqid1: model1, fqid2: model2}
 
 

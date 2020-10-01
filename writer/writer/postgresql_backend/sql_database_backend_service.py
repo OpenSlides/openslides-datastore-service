@@ -234,7 +234,12 @@ class SqlDatabaseBackendService:
                     f"Collection field {collectionfield} is too long "
                     + "(max: {COLLECTIONFIELD_MAX_LEN})"
                 )
-            arguments.extend((collectionfield, position,))
+            arguments.extend(
+                (
+                    collectionfield,
+                    position,
+                )
+            )
             value_placeholders.append("(%s, %s)")
 
         values = ",".join(value_placeholders)
@@ -251,7 +256,12 @@ class SqlDatabaseBackendService:
         value_placeholders = []
         arguments: List[Any] = []
         for collectionfield_id in collectionfield_ids:
-            arguments.extend((event_id, collectionfield_id,))
+            arguments.extend(
+                (
+                    event_id,
+                    collectionfield_id,
+                )
+            )
             value_placeholders.append("(%s, %s)")
 
         values = ",".join(value_placeholders)

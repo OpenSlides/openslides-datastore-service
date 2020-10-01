@@ -95,7 +95,9 @@ class ReaderService:
                 result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
             else:
                 result = self.database.get_many(
-                    fqids, mapped_fields_per_fqid, request.get_deleted_models,
+                    fqids,
+                    mapped_fields_per_fqid,
+                    request.get_deleted_models,
                 )
 
         # change mapping fqid->model to collection->id->model
@@ -185,7 +187,9 @@ class ReaderService:
         }
 
     def apply_mapped_fields_multi(
-        self, models: Dict[str, Model], mapped_fields_per_fqid: Dict[str, List[str]],
+        self,
+        models: Dict[str, Model],
+        mapped_fields_per_fqid: Dict[str, List[str]],
     ) -> Dict[str, Model]:
         if not mapped_fields_per_fqid or not len(mapped_fields_per_fqid):
             return models

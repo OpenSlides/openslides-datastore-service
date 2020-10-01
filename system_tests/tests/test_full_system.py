@@ -47,7 +47,10 @@ def data():
 
 
 def test_create_get(data):
-    response = requests.post(WRITE_URL, json=data,)
+    response = requests.post(
+        WRITE_URL,
+        json=data,
+    )
     assert_response_code(response, 201)
 
     response = requests.post(GET_URL, json={"fqid": "a/1"})
@@ -60,7 +63,10 @@ def test_create_get(data):
 
 def test_create_delete_get(data):
     data["events"].append({"type": "delete", "fqid": "a/1"})
-    response = requests.post(WRITE_URL, json=data,)
+    response = requests.post(
+        WRITE_URL,
+        json=data,
+    )
     assert_response_code(response, 201)
 
     response = requests.post(GET_URL, json={"fqid": "a/1"})

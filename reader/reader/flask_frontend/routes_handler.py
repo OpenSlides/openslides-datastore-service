@@ -28,5 +28,9 @@ def register_routes(app, url_prefix):
     for route in list(Route):
         url = unify_urls(url_prefix, route)
         app.add_url_rule(
-            url, route, get_route(route), methods=["POST"], strict_slashes=False,
+            url,
+            route,
+            get_route(route),
+            methods=["POST"],
+            strict_slashes=False,
         )

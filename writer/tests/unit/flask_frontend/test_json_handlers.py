@@ -88,7 +88,7 @@ class TestWriteHandler:
         with patch("writer.flask_frontend.json_handlers.RequestCreateEvent") as rce:
             rce.return_value = request_event = MagicMock()
             assert write_handler.create_event(event) == request_event
-            assert rce.call_args.args == (fqid, fields,)
+            assert rce.call_args.args == (fqid, fields)
 
     def test_create_update_event(self, write_handler):
         fqid = MagicMock()
@@ -97,7 +97,7 @@ class TestWriteHandler:
         with patch("writer.flask_frontend.json_handlers.RequestUpdateEvent") as rue:
             rue.return_value = request_event = MagicMock()
             assert write_handler.create_event(event) == request_event
-            assert rue.call_args.args == (fqid, fields,)
+            assert rue.call_args.args == (fqid, fields)
 
     def test_create_delete_event(self, write_handler):
         fqid = MagicMock()
@@ -131,4 +131,7 @@ class TestReserveIdsHandler:
         data = {"collection": "my_collection", "amount": -3}
         reserve_ids_handler.reserve_ids(data)
         gi.assert_called_once()
-        assert gi.call_args.args == ("my_collection", -3,)
+        assert gi.call_args.args == (
+            "my_collection",
+            -3,
+        )
