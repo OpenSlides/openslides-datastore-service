@@ -45,34 +45,15 @@ run-cleanup-with-update: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./cleanup.sh
 
 # PROD
-
-# pass env variables to container
 build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)
 
 build:
-	docker build -t openslides-datastore-$(MODULE) . $(build_args)
-
-run: | build
-	docker-compose up -d $(MODULE)
-
-run-verbose: | build
-	docker-compose up $(MODULE)
-
-
-build-prod:
-	docker build -t openslides-datastore-$(MODULE) -f Dockerfile.prod . $(build_args)
-
-run-prod: | build-prod
-	docker-compose -f dc.prod.yml up -d $(MODULE)
-
-run-prod-verbose: | build-prod
-	docker-compose -f dc.prod.yml up $(MODULE)
+	docker build -t openslides-datastore-$(MODULE) $(build_args) .
 
 
 # DEVELOPMENT SERVER
-
 build-dev:
-	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev . $(build_args)
+	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
 
 run-dev: | build-dev
 	docker-compose -f dc.dev.yml up -d $(MODULE)
@@ -84,14 +65,18 @@ endif
 
 
 # the available targets without a MODULE:
-
 ifndef MODULE
 
 
 # shared has no dev or prod image
-run build build-dev run-dev build-prod run-prod:
+build build-dev:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
+
+run:
+	docker-compose up -d
+run-verbose:
+	docker-compose up
 
 # execute the target for all modules
 run-cleanup run-cleanup-with-update:
@@ -112,11 +97,8 @@ run-tests:
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
 
-run-verbose:
-	docker-compose up
-
-run-prod-verbose: | build-prod
-	docker-compose -f dc.prod.yml up
+run-dev: | build-dev
+	docker-compose -f dc.dev.yml up -d
 
 run-dev-verbose: | build-dev
 	docker-compose -f dc.dev.yml up
@@ -145,9 +127,6 @@ endif
 
 stop:
 	docker-compose down
-
-stop-prod:
-	docker-compose -f dc.prod.yml down
 
 stop-dev:
 	docker-compose -f dc.dev.yml down

@@ -11,7 +11,8 @@ jobs:
       script: make -C writer run-travis
     - name: "Test: Productive start"
       script: 
-        - make run-prod
+        - make build
+        - make run
         - sleep 10
         - curl http://localhost:9010/
         - curl http://localhost:9011/
