@@ -172,7 +172,7 @@ class SqlReadDatabaseBackendService:
         arguments: List[Any] = []
         value_placeholders = []
         for fqid, model in models.items():
-            arguments.extend((fqid, self.json(model),))
+            arguments.extend((fqid, self.json(model)))
             value_placeholders.append("(%s, %s)")
         values = ",".join(value_placeholders)
 

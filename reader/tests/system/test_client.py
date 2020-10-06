@@ -194,7 +194,7 @@ class TestConcurrentRequests:
         return patch.object(
             self.database,
             route,
-            MagicMock(return_value={}, side_effect=wait_for_lock_wrapper(route),),
+            MagicMock(return_value={}, side_effect=wait_for_lock_wrapper(route)),
         )
 
     def start_locked_thread(self, route, payload):
@@ -203,7 +203,9 @@ class TestConcurrentRequests:
 
     def start_thread(self, route, payload):
         thread = Thread(
-            name=route, target=self.json_client.post, args=[route.URL, payload],
+            name=route,
+            target=self.json_client.post,
+            args=[route.URL, payload],
         )
         thread.start()
         return thread

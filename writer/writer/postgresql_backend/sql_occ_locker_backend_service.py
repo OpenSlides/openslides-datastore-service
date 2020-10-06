@@ -25,7 +25,12 @@ class SqlOccLockerBackendService:
         query_arguments: List[Any] = []
         filter_parts = []
         for fqid, position in fqids.items():
-            query_arguments.extend((fqid, position,))
+            query_arguments.extend(
+                (
+                    fqid,
+                    position,
+                )
+            )
             filter_parts.append("(fqid=%s and position>%s)")
         query = (
             "select fqid from events where " + " or ".join(filter_parts) + " limit 1"
@@ -45,13 +50,23 @@ class SqlOccLockerBackendService:
         for fqfield, position in fqfields.items():
             collectionfield, fqid = collectionfield_and_fqid_from_fqfield(fqfield)
 
-            event_query_arguments.extend((fqid, position,))
+            event_query_arguments.extend(
+                (
+                    fqid,
+                    position,
+                )
+            )
             event_filter_parts.append("(fqid=%s and position>%s)")
 
             collectionfield = collectionfield.replace("_", r"\_")
             collectionfield = collectionfield.replace("$", "_%")
 
-            collectionfield_query_arguments.extend((fqid, collectionfield,))
+            collectionfield_query_arguments.extend(
+                (
+                    fqid,
+                    collectionfield,
+                )
+            )
             collectionfield_filter_parts.append(
                 "(e.fqid=%s and cf.collectionfield LIKE %s)"
             )
@@ -80,7 +95,12 @@ class SqlOccLockerBackendService:
         query_arguments: List[Any] = []
         filter_parts = []
         for collectionfield, position in collectionfields.items():
-            query_arguments.extend((collectionfield, position,))
+            query_arguments.extend(
+                (
+                    collectionfield,
+                    position,
+                )
+            )
             filter_parts.append("(collectionfield=%s and position>%s)")
         query = (
             "select collectionfield from collectionfields where "

@@ -52,10 +52,10 @@ build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)
 build:
 	docker build -t openslides-datastore-$(MODULE) . $(build_args)
 
-run:
+run: | build
 	docker-compose up -d $(MODULE)
 
-run-verbose:
+run-verbose: | build
 	docker-compose up $(MODULE)
 
 

@@ -39,7 +39,8 @@ class ConnectionHandler(Protocol):
         """
 
     def query_list_of_single_values(self, query, arguments, sql_parameters=[]):
-        """ Returns a list fo values of earch row. It is expected, that each
-        row returns exactly one value. An empty list will be returned, if
+        """
+        Returns a list of values of each row. It is expected that each
+        row returns exactly one value. An empty list will be returned if
         no rows were returned from the db.
         """
