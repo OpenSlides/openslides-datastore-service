@@ -5,28 +5,22 @@ Service for OpenSlides which wraps the database, which includes reader and write
 ## Usage
 A Makefile is used to encapsulate all docker related commands. It is recommended to use the docker setup to run the datastore, so you need `make`, `docker` and `docker-compose` installed on your system as the only requirements.
 
-The following commands are available from the root directory:
+For the productive mode two images `openslides-datastore-reader` and `openslides-datastore-writer` must be build via Make:
 
-(Local) Productive environment:
-- `make build-prod`: builds all productive images from the local files
-- `make run-prod`: runs the productive environment. See below for details
-- `make run-prod-verbose` same as `run-prod`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C
-- `make stop-prod`: stops all prod containers, if they were started in detached mode
+    make build
 
-"Real" productive environment:
-While the local environment runs directly on the local files, this is not the typical use case; by default, we want to use the files of a specific git commit, tag or branch because that's tested in combination with all other services. The commands with a suffix like `-dev` or `-prod` are specifically for this: They ignore all local files and pull the code directly from the given repository.
-- `make build`: builds all productive images from the remote files
-- `make run`: runs the productive environment. See below for details
-- `make run-verbose` same as `run-prod`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C
-- `make stop-prod`: stops all prod containers
+You can run the datastore (with or without logs) and stop it:
+
+    make run
+    make stop
+    # with logs:
+    make run-verbose  # Ctrl+C to quit
+
+If you want to include the Datastore in other projects (e.g. as a dependency for testing), refer to the [development documentation](docs/development.md).
 
 ## Initial data
 
 To create initial data, see [development documentation](docs/development.md#Commands).
-
-## Productive environment
-
-`make run[-prod]` starts the reader and writer together with postgres and redis so that the datastore can be used in conjunction with other services. By default the writer listens on port 9011 and the reader on 9010, postgres on port 5432 and redis on 6379. Postgres and redis port can be configured via the environment variables `DATASTORE_DATABASE_PORT` and `MESSAGE_BUS_PORT`, reader and writer port via `OPENSLIDES_DATASTORE_%SERVICE%_PORT` (`%SERVICE%` ∈ {`READER`, `WRITER`}). 
 
 ### Curl example
 

@@ -2,6 +2,7 @@ import json
 import sys
 from typing import List
 from urllib import request
+from urllib.error import URLError
 
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
@@ -28,13 +29,19 @@ with connection.get_connection_context():
             sys.exit(1)
 
 path = env_service.get("DATASTORE_INITIAL_DATA_FILE")
-
+print(f"Loading data: {path}")
 if path.startswith("http://") or path.startswith("https://"):
-    file = request.urlopen(path)
+    try:
+        file = request.urlopen(path, timeout=20)
+    except URLError:
+        print(f"Timeout while fetching {path}")
+        sys.exit(1)
 else:
     file = open(path)
 
 data = json.loads(file.read())
+
+print("Create events")
 
 events: List[BaseRequestEvent] = []
 for collection, models in data.items():
@@ -44,6 +51,8 @@ for collection, models in data.items():
         events.append(event)
 
 write_request = WriteRequest(events, None, 0, {})
+
+print("Write events")
 writer.write(write_request)
 
 print(f"Wrote {len(events)} events to the datastore.")
