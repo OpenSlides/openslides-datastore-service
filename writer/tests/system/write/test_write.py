@@ -275,7 +275,7 @@ def test_read_db_is_updated_before_redis_fires(json_client, data):
     messaging = injector.get(Messaging)
     connection_handler = injector.get(ConnectionHandler)
 
-    def assert_read_db_data(_, __):
+    def assert_read_db_data(*args, **kwargs):
         connection = psycopg2.connect(**connection_handler.get_connection_params())
         with connection.cursor() as cursor:
             cursor.execute("select * from models where fqid = 'a/1'")
