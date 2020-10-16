@@ -9,6 +9,7 @@ from reader.core.requests import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
+    GetEverythingRequest,
     GetManyRequest,
     GetRequest,
     MinMaxRequest,
@@ -94,6 +95,19 @@ get_all_schema = fastjsonschema.compile(
             },
         },
         "required": ["collection"],
+    }
+)
+
+get_everything_schema = fastjsonschema.compile(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "get_deleted_models": {
+                "type": "integer",
+                "enum": deleted_models_behaviour_list,
+            },
+        },
     }
 )
 
@@ -198,6 +212,10 @@ request_map: Dict[Route, RequestMapEntry] = {
     Route.GET: {"schema": get_schema, "request_class": GetRequest},
     Route.GET_MANY: {"schema": get_many_schema, "request_class": GetManyRequest},
     Route.GET_ALL: {"schema": get_all_schema, "request_class": GetAllRequest},
+    Route.GET_EVERYTHING: {
+        "schema": get_everything_schema,
+        "request_class": GetEverythingRequest,
+    },
     Route.FILTER: {"schema": filter_schema, "request_class": FilterRequest},
     Route.EXISTS: {"schema": aggregate_schema, "request_class": AggregateRequest},
     Route.COUNT: {"schema": aggregate_schema, "request_class": AggregateRequest},

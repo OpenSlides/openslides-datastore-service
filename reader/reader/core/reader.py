@@ -1,4 +1,4 @@
-from typing import Dict, Protocol, TypedDict
+from typing import Dict, List, Protocol, TypedDict
 
 from shared.typing import Model
 
@@ -6,6 +6,7 @@ from .requests import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
+    GetEverythingRequest,
     GetManyRequest,
     GetRequest,
     MinMaxRequest,
@@ -38,13 +39,19 @@ class Reader(Protocol):
     def get(self, request: GetRequest) -> Model:
         """ Gets the specified model. """
 
-    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[str, Model]]:
+    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
         """ Gets multiple models. """
 
-    def get_all(self, request: GetAllRequest) -> Dict[str, Model]:
+    def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.
+        """
+
+    def get_everything(self, request: GetEverythingRequest) -> Dict[str, List[Model]]:
+        """
+        Returns all models In the form of the example data: Collections mapped to
+        lists of models.
         """
 
     def filter(self, request: FilterRequest) -> Dict[str, Model]:

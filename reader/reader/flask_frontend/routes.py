@@ -10,6 +10,7 @@ class Route(str, Enum):
     GET = "get"
     GET_MANY = "get_many"
     GET_ALL = "get_all"
+    GET_EVERYTHING = "get_everything"
     FILTER = "filter"
     EXISTS = "exists"
     COUNT = "count"

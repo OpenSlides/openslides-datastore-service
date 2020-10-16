@@ -37,6 +37,11 @@ class GetAllRequest(SelfValidatingDataclass):
 
 
 @dataclass
+class GetEverythingRequest(SelfValidatingDataclass):
+    get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED
+
+
+@dataclass
 class FilterRequest(SelfValidatingDataclass):
     collection: Collection
     filter: Filter

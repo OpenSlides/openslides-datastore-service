@@ -20,15 +20,16 @@ from shared.util import (
     get_exception_for_deleted_models_behaviour,
 )
 from shared.util.key_transforms import (
+    collection_and_id_from_fqid,
     field_from_fqfield,
     fqid_from_fqfield,
-    id_from_fqid,
 )
 
 from .requests import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
+    GetEverythingRequest,
     GetManyRequest,
     GetRequest,
     MinMaxRequest,
@@ -64,7 +65,7 @@ class ReaderService:
                 )
         return model
 
-    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[str, Model]]:
+    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
         with self.database.get_context():
             mapped_fields_per_fqid: Dict[str, List[str]] = {}
             if isinstance(request.requests[0], GetManyRequestPart):
@@ -101,9 +102,10 @@ class ReaderService:
                 )
 
         # change mapping fqid->model to collection->id->model
-        final: Dict[str, Dict[str, Model]] = defaultdict(dict)
+        final: Dict[str, Dict[int, Model]] = defaultdict(dict)
         for fqid, model in result.items():
-            final[collection_from_fqid(fqid)][id_from_fqid(fqid)] = model
+            collection, id = collection_and_id_from_fqid(fqid)
+            final[collection][id] = model
 
         # add back empty collections
         for fqid in mapped_fields_per_fqid.keys():
@@ -113,19 +115,21 @@ class ReaderService:
 
         return final
 
-    def get_all(self, request: GetAllRequest) -> Dict[str, Model]:
+    def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
         with self.database.get_context():
-            result = self.database.get_all(
+            return self.database.get_all(
                 request.collection, request.mapped_fields, request.get_deleted_models
             )
-        return result
+
+    def get_everything(self, request: GetEverythingRequest) -> Dict[str, List[Model]]:
+        with self.database.get_context():
+            return self.database.get_everything(request.get_deleted_models)
 
     def filter(self, request: FilterRequest) -> Dict[str, Model]:
         with self.database.get_context():
-            result = self.database.filter(
+            return self.database.filter(
                 request.collection, request.filter, request.mapped_fields
             )
-        return result
 
     def exists(self, request: AggregateRequest) -> ExistsResult:
         count = self.count(request)

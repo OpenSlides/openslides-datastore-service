@@ -69,6 +69,9 @@ def handle_internal_errors(fn):
                 "key": e.key,
                 "type_verbose": "MODEL_LOCKED",
             }
+        except Exception as e:
+            print(e, type(e))
+            raise e
         return {"error": error_dict}, 400
 
     return wrapper

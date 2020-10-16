@@ -1,3 +1,4 @@
+from collections import defaultdict
 from textwrap import dedent
 from typing import Any, ContextManager, Dict, List, Optional
 
@@ -15,6 +16,7 @@ from shared.util import (
     Filter,
     ModelDoesNotExist,
     build_fqid,
+    collection_and_id_from_fqid,
     get_exception_for_deleted_models_behaviour,
     id_from_fqid,
 )
@@ -82,7 +84,7 @@ class SqlReadDatabaseBackendService:
         collection: str,
         mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[str, Model]:
+    ) -> Dict[int, Model]:
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
         (
             mapped_fields_str,
@@ -100,9 +102,33 @@ class SqlReadDatabaseBackendService:
         )
         return models
 
+    def get_everything(
+        self,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+    ) -> Dict[str, List[Model]]:
+        del_cond = self.query_helper.get_deleted_condition(
+            get_deleted_models, prepend_and=False
+        )
+        query = f"""
+            select fqid as __fqid__, data from models
+            {"natural join models_lookup where " + del_cond if del_cond else ""}"""
+
+        result = self.connection.query(query, [], [])
+        unsorted_data = defaultdict(list)
+        for row in result:
+            collection, id = collection_and_id_from_fqid(row["__fqid__"])
+            model = row["data"]
+            model["id"] = id
+            unsorted_data[collection].append(model)
+
+        data = {}
+        for collection, models in unsorted_data.items():
+            data[collection] = sorted(models, key=lambda model: model["id"])
+        return data
+
     def filter(
         self, collection: str, filter: Filter, mapped_fields: List[str]
-    ) -> Dict[str, Model]:
+    ) -> Dict[int, Model]:
         fields_params = MappedFieldsFilterQueryFieldsParameters(mapped_fields)
         query, arguments, sql_params = self.query_helper.build_filter_query(
             collection, filter, fields_params, select_fqid=True
@@ -128,7 +154,8 @@ class SqlReadDatabaseBackendService:
         arguments: List[str],
         sql_parameters: List[str],
         mapped_fields: List[str],
-    ) -> Dict[str, Model]:
+    ) -> Dict[int, Model]:
+        """ Fetched models for one collection """
         result = self.connection.query(query, arguments, sql_parameters)
         models = {}
         for row in result:

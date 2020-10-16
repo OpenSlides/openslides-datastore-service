@@ -47,11 +47,16 @@ class SqlQueryHelper:
             len(fields) == 0 for fields in mapped_fields_per_fqid.values()
         )
 
-    def get_deleted_condition(self, flag: DeletedModelsBehaviour) -> str:
+    def get_deleted_condition(
+        self, flag: DeletedModelsBehaviour, prepend_and: bool = True
+    ) -> str:
+        if flag == DeletedModelsBehaviour.ALL_MODELS:
+            return ""
+
         return (
-            ""
-            if flag == DeletedModelsBehaviour.ALL_MODELS
-            else "and deleted = " + str(flag == DeletedModelsBehaviour.ONLY_DELETED)
+            ("and " if prepend_and else "")
+            + "deleted = "
+            + str(flag == DeletedModelsBehaviour.ONLY_DELETED)
         )
 
     def build_select_from_mapped_fields(

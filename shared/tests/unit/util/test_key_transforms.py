@@ -45,7 +45,7 @@ def test_field_from_collectionfield():
 def test_id_from_fqid():
     fqid = "a/1"
 
-    assert id_from_fqid(fqid) == "1"
+    assert id_from_fqid(fqid) == 1
 
 
 def test_collectionfield_and_fqid_from_fqfield():
@@ -58,6 +58,11 @@ def test_collection_from_fqid():
     fqid = "a/1"
 
     assert collection_from_fqid(fqid) == "a"
+
+def test_collection_and_id_from_fqid():
+    fqid = "a/1"
+
+    assert collection_from_fqid(fqid) == ("a", 1)
 
 
 def test_build_fqid():
