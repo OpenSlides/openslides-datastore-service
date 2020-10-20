@@ -1,6 +1,6 @@
 import threading
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from shared.di import service_as_factory
 from shared.util import logger
@@ -10,7 +10,7 @@ from .event_executor import EventExecutor
 from .event_translator import EventTranslator
 from .messaging import Messaging
 from .occ_locker import OccLocker
-from .write_request import WriteRequest
+from .write_request import BaseRequestEvent, WriteRequest
 
 
 @service_as_factory
@@ -24,7 +24,9 @@ class WriterService:
     event_executor: EventExecutor
     messaging: Messaging
 
-    def write(self, write_request: WriteRequest) -> None:
+    def write(
+        self, write_request: WriteRequest, log_all_modified_fields: bool = True
+    ) -> None:
         with self._lock:
             self.write_request = write_request
             # Convert request events to db events
@@ -33,20 +35,35 @@ class WriterService:
             with self.database.get_context():
                 self.write_with_database_context()
 
-            stats: Dict[str, int] = defaultdict(int)
-            for event in write_request.events:
-                log_name = (
-                    type(event)
-                    .__name__.replace("Request", "")
-                    .replace("Event", "")
-                    .upper()
-                )
-                stats[log_name] += 1
-            stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
-            logger.info(f"Events executed ({stats_string})")
-
             # Only propagate updates to redis after the transaction has finished
-            self.messaging.handle_events(self.db_events, self.position)
+            self.messaging.handle_events(
+                self.db_events,
+                self.position,
+                log_all_modified_fields=log_all_modified_fields,
+            )
+
+            self.print_stats()
+            self.print_summary()
+
+    def print_stats(self) -> None:
+        stats: Dict[str, int] = defaultdict(int)
+        for event in self.write_request.events:
+            stats[self.getRequestName(event)] += 1
+        stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
+        logger.info(f"Events executed ({stats_string})")
+
+    def print_summary(self) -> None:
+        summary: Dict[str, Set[str]] = defaultdict(set)  # event type <-> set[fqid]
+        for event in self.write_request.events:
+            summary[self.getRequestName(event)].add(event.fqid)
+        logger.info(
+            "\n".join(
+                f"{eventType}: {list(fqids)}" for eventType, fqids in summary.items()
+            )
+        )
+
+    def getRequestName(self, event: BaseRequestEvent) -> str:
+        return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
     def write_with_database_context(self) -> None:
         # Check locked_fields -> Possible LockedError
