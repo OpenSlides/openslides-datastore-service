@@ -1,7 +1,10 @@
 import json
 
 from reader.flask_frontend.routes import Route
-from shared.tests.util import assert_success_response
+from shared.di import injector
+from shared.services import EnvironmentService
+from shared.services.environment_service import DATASTORE_DEV_MODE_ENVIRONMENT_VAR
+from shared.tests.util import assert_response_code, assert_success_response
 from shared.util import DeletedModelsBehaviour, id_from_fqid
 
 
@@ -74,3 +77,9 @@ def test_deleted_all_models(json_client, db_connection, db_cur):
         "a": [get_data_with_id("a/1"), get_data_with_id("a/2")],
         "b": [get_data_with_id("b/1")],
     }
+
+
+def test_not_found_in_non_dev(json_client):
+    injector.get(EnvironmentService).set(DATASTORE_DEV_MODE_ENVIRONMENT_VAR, "0")
+    response = json_client.post(Route.GET_EVERYTHING.URL, {})
+    assert_response_code(response, 404)

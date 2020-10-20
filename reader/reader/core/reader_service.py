@@ -125,7 +125,7 @@ class ReaderService:
         with self.database.get_context():
             return self.database.get_everything(request.get_deleted_models)
 
-    def filter(self, request: FilterRequest) -> Dict[str, Model]:
+    def filter(self, request: FilterRequest) -> Dict[int, Model]:
         with self.database.get_context():
             return self.database.filter(
                 request.collection, request.filter, request.mapped_fields

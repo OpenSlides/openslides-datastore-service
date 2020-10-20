@@ -1,6 +1,7 @@
 from flask import request
 from werkzeug.exceptions import BadRequest
 
+from .dev_only_route import dev_only_route  # noqa
 from .errors import (  # noqa
     ERROR_CODES,
     InvalidRequest,

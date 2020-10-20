@@ -8,6 +8,8 @@ services:
             - ./reader/tests:/app/tests
         ports:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
+        environment:
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
         depends_on:
             - postgresql
         networks:

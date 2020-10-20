@@ -11,6 +11,7 @@ build-tests:
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose -f dc.test.yml up -d $(MODULE)
+	docker-compose -f dc.test.yml exec $(MODULE) bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
 run-tests-no-down: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh pytest
@@ -19,7 +20,7 @@ run-tests: | run-tests-no-down
 	docker-compose -f dc.test.yml down
 
 run-tests-interactive run-bash: | setup-docker-compose
-	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh bash
+	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) $(MODULE) ./entrypoint.sh bash
 	docker-compose -f dc.test.yml down
 
 run-system-tests: | setup-docker-compose
@@ -37,12 +38,12 @@ run-travis: | run-travis-no-down
 	docker-compose -f dc.test.yml down
 
 run-cleanup: | setup-docker-compose
-	docker-compose -f dc.test.yml exec $(MODULE) ./cleanup.sh
+	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) $(MODULE) ./cleanup.sh
 	docker-compose -f dc.test.yml down
 
 run-cleanup-with-update: | setup-docker-compose
-	docker-compose -f dc.test.yml exec $(MODULE) pip install -U -r requirements-testing.txt
-	docker-compose -f dc.test.yml exec $(MODULE) ./cleanup.sh
+	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) $(MODULE) pip install -U -r requirements-testing.txt
+	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) $(MODULE) ./cleanup.sh
 
 # PROD
 build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)

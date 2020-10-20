@@ -54,7 +54,7 @@ class Reader(Protocol):
         lists of models.
         """
 
-    def filter(self, request: FilterRequest) -> Dict[str, Model]:
+    def filter(self, request: FilterRequest) -> Dict[int, Model]:
         """ Returns all models that satisfy the filter condition. """
 
     def exists(self, request: AggregateRequest) -> ExistsResult:
