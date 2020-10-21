@@ -4,6 +4,7 @@ import pytest
 
 from shared.di import injector
 from shared.services import EnvironmentService, EnvironmentVariableMissing
+from shared.services.environment_service import DATASTORE_DEV_MODE_ENVIRONMENT_VAR
 from shared.tests import reset_di  # noqa
 
 
@@ -84,3 +85,25 @@ def test_set(environment_service):
     environment_service.set(key, value)
 
     assert environment_service.cache[key] == value
+
+
+def test_set_get(environment_service):
+    key = MagicMock()
+    value = MagicMock()
+
+    environment_service.set(key, value)
+
+    assert environment_service.get(key) == value
+
+
+def test_is_dev_mode_not_set(environment_service):
+    environment_service.cache = {}
+
+    assert environment_service.is_dev_mode() is False
+
+
+def test_is_dev_mode(environment_service):
+    for value in ("1", "true", "True", "TRUE", "on", "On", "ON", "yes", "Yes", "YES"):
+        environment_service.cache = {DATASTORE_DEV_MODE_ENVIRONMENT_VAR: value}
+
+        assert environment_service.is_dev_mode()

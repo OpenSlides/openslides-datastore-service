@@ -11,7 +11,13 @@ from shared.postgresql_backend.sql_read_database_backend_service import (
 )
 from shared.services.read_database import CountFilterQueryFieldsParameters, ReadDatabase
 from shared.tests import reset_di  # noqa
-from shared.util import META_POSITION, BadCodingError, FilterOperator, ModelDoesNotExist
+from shared.util import (
+    META_POSITION,
+    BadCodingError,
+    DeletedModelsBehaviour,
+    FilterOperator,
+    ModelDoesNotExist,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -93,7 +99,7 @@ def test_get_many(
     assert models == {fqid1: model1, fqid2: model2}
 
 
-def test_get_many_no_fqids(read_database: ReadDatabase):
+def test_get_many_no_fqids(read_database: ReadDatabase, connection: ConnectionHandler):
     connection.query = q = MagicMock()
 
     assert read_database.get_many([], {}) == {}
@@ -109,6 +115,18 @@ def test_get_all(read_database: ReadDatabase):
 
     f.assert_called()
     assert models == res
+
+
+def test_get_everything(read_database: ReadDatabase, connection: ConnectionHandler):
+    res = [{"__fqid__": "a/2", "data": {}}, {"__fqid__": "a/1", "data": {}}]
+    connection.query = f = MagicMock(return_value=res)
+
+    models = read_database.get_everything(
+        get_deleted_models=DeletedModelsBehaviour.ALL_MODELS
+    )
+
+    f.assert_called()
+    assert models == {"a": [{"id": 1}, {"id": 2}]}
 
 
 def test_filter(read_database: ReadDatabase):
