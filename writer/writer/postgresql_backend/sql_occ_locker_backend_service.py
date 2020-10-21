@@ -58,8 +58,16 @@ class SqlOccLockerBackendService:
             )
             event_filter_parts.append("(fqid=%s and position>%s)")
 
+            # % matches zero or more chars: this is correct since the template field
+            # itself may also be locked
+            # only replace template fields, not structured fields
+            collectionfield = collectionfield.replace("$_", "$%_")
+            if collectionfield.endswith("$"):
+                # also add % if the placeholder is at the end of the collectionfield
+                collectionfield += "%"
+            # _ is the postgres wild card for a single character so we have to escape
+            # all underscores
             collectionfield = collectionfield.replace("_", r"\_")
-            collectionfield = collectionfield.replace("$", "_%")
 
             collectionfield_query_arguments.extend(
                 (
