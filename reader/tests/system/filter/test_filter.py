@@ -7,11 +7,22 @@ from shared.tests.util import assert_success_response
 
 
 data = {
-    "a/1": {"field_1": "data", "field_2": 42, "field_3": True, "meta_position": 1},
+    "a/1": {
+        "field_1": "data",
+        "field_2": 42,
+        "field_3": True,
+        "field_not_none": 1,
+        "meta_position": 1,
+    },
     "a/2": {"field_1": "test", "field_2": 21, "field_3": False, "meta_position": 2},
 }
 other_models = {
-    "b/1": {"field_4": "data", "field_5": 42, "field_6": True, "meta_position": 3}
+    "b/1": {
+        "field_4": "data",
+        "field_5": 42,
+        "field_6": True,
+        "meta_position": 3,
+    }
 }
 
 
@@ -169,6 +180,32 @@ def test_complex(json_client, db_connection, db_cur):
     )
     assert_success_response(response)
     assert response.json == {"1": data["a/1"], "2": data["a/2"]}
+
+
+def test_eq_none(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_not_none", "operator": "=", "value": None},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {"2": data["a/2"]}
+
+
+def test_neq_none(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_not_none", "operator": "!=", "value": None},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {"1": data["a/1"]}
 
 
 def test_empty_field(json_client, db_connection, db_cur):
