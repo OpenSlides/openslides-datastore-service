@@ -14,6 +14,7 @@ from shared.util import (
     DeletedModelsBehaviour,
     Filter,
     FilterOperator,
+    InvalidFormat,
     Not,
     Or,
 )
@@ -140,8 +141,15 @@ class SqlQueryHelper:
                 for part in filter.and_filter
             )
         elif isinstance(filter, FilterOperator):
-            condition = f"data->>%s {filter.operator} %s::text"
-            arguments += [filter.field, filter.value]
+            if filter.value is None:
+                if filter.operator not in ("=", "!="):
+                    raise InvalidFormat("You can only compare to None with = or !=")
+                operator = filter.operator[::-1].replace("=", "IS").replace("!", " NOT")
+                condition = f"data->>%s {operator} NULL"
+                arguments += [filter.field]
+            else:
+                condition = f"data->>%s {filter.operator} %s::text"
+                arguments += [filter.field, filter.value]
             return condition
         else:
             raise BadCodingError("Invalid filter type")

@@ -10,7 +10,7 @@ from shared.services.read_database import (
     MappedFieldsFilterQueryFieldsParameters,
 )
 from shared.tests import reset_di  # noqa
-from shared.util import And, BadCodingError, Not, Or
+from shared.util import And, BadCodingError, FilterOperator, InvalidFormat, Not, Or
 
 
 @pytest.fixture(autouse=True)
@@ -123,3 +123,16 @@ def test_build_filter_str_and(query_helper: SqlQueryHelper):
 def test_build_filter_str_invalid(query_helper: SqlQueryHelper):
     with pytest.raises(BadCodingError):
         query_helper.build_filter_str("invalid", [])
+
+
+def test_build_filter_str_none(query_helper: SqlQueryHelper):
+    filter = FilterOperator("field", "!=", None)
+    args = []
+    assert query_helper.build_filter_str(filter, args) == "data->>%s IS NOT NULL"
+    assert args == ["field"]
+
+
+def test_build_filter_str_none_invalid(query_helper: SqlQueryHelper):
+    filter = FilterOperator("field", ">", None)
+    with pytest.raises(InvalidFormat):
+        query_helper.build_filter_str(filter, [])
