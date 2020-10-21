@@ -4,8 +4,13 @@ import pytest
 
 from reader.core import Reader
 from reader.core.requests import GetManyRequest, GetRequest
-from reader.flask_frontend.json_handler import JSONHandler, get_schema, request_map
-from reader.flask_frontend.routes import Route
+from reader.flask_frontend.json_handler import JSONHandler
+from reader.flask_frontend.routes import (
+    Route,
+    RouteConfiguration,
+    get_schema,
+    route_configurations,
+)
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
 from shared.tests import reset_di  # noqa
@@ -50,10 +55,9 @@ def test_handle_request_invalid_data():
 def test_handle_request_invalid_config():
     json_handler = JSONHandler()
 
-    request_map[Route.GET] = {
-        "schema": get_schema,
-        "request_class": GetManyRequest,
-    }
+    route_configurations[Route.GET] = RouteConfiguration(
+        schema=get_schema, request_class=GetManyRequest
+    )
 
     with pytest.raises(BadCodingError):
         json_handler.handle_request(Route.GET, {"fqid": "c/1"})

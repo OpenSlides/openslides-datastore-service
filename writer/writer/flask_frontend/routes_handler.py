@@ -1,9 +1,12 @@
-from flask import abort, request
+from flask import request
 
 from shared.di import injector
-from shared.flask_frontend import InvalidRequest, JsonResponse, handle_internal_errors
-from shared.services import EnvironmentService
-from shared.services.environment_service import DATASTORE_DEV_MODE_ENVIRONMENT_VAR
+from shared.flask_frontend import (
+    InvalidRequest,
+    JsonResponse,
+    dev_only_route,
+    handle_internal_errors,
+)
 from writer.core import Writer
 from writer.flask_frontend.routes import RESERVE_IDS_URL, TRUNCATE_DB_URL, WRITE_URL
 
@@ -30,13 +33,9 @@ def reserve_ids():
     return JsonResponse({"ids": ids})
 
 
+@dev_only_route
 @handle_internal_errors
 def truncate_db():
-    # if not in dev mode, return not found
-    env_service = injector.get(EnvironmentService)
-    if not env_service.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR):
-        abort(404)
-
     writer = injector.get(Writer)
     writer.truncate_db()
     return "", 204

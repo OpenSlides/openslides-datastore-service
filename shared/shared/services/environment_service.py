@@ -32,3 +32,7 @@ class EnvironmentService:
     def ensure_cache(self, name: str) -> None:
         if name not in self.cache:
             self.cache[name] = os.environ.get(name, None)
+
+    def is_dev_mode(self) -> bool:
+        value = self.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR)
+        return value is not None and value.lower() in ("1", "on", "yes", "true")

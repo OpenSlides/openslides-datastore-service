@@ -8,6 +8,7 @@ from reader.core.requests import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
+    GetEverythingRequest,
     GetManyRequest,
     GetManyRequestPart,
     GetRequest,
@@ -106,7 +107,7 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
     ]
     request = GetManyRequest(parts, ["field"])
 
-    assert reader.get_many(request) == {"a": {}, "b": {}, "c": {"1": model}}
+    assert reader.get_many(request) == {"a": {}, "b": {}, "c": {1: model}}
 
     read_db.get_context.assert_called()
     get_many.assert_called_with(
@@ -132,7 +133,7 @@ def test_get_many_with_position(
     ]
     request = GetManyRequest(parts, ["field"], 42)
 
-    assert reader.get_many(request) == {"a": {}, "b": {}, "c": {"1": model}}
+    assert reader.get_many(request) == {"a": {}, "b": {}, "c": {1: model}}
 
     gds.assert_called_with(["a/1", "b/1"], 42)
     bmid.assert_called_with(["a/1", "b/1"], 42)
@@ -193,6 +194,18 @@ def test_get_all(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     get_all.assert_called_with(
         "collection", ["field"], DeletedModelsBehaviour.NO_DELETED
     )
+
+
+def test_get_everything(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
+    result = MagicMock()
+    read_db.get_everything = get_everything = MagicMock(return_value=result)
+
+    request = GetEverythingRequest(DeletedModelsBehaviour.ALL_MODELS)
+
+    assert reader.get_everything(request) == result
+
+    read_db.get_context.assert_called()
+    get_everything.assert_called_with(DeletedModelsBehaviour.ALL_MODELS)
 
 
 def test_filter(reader: ReaderService, read_db: SqlReadDatabaseBackendService):

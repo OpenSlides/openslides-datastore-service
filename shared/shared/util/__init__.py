@@ -19,6 +19,7 @@ from .key_strings import (  # noqa
 )
 from .key_transforms import (  # noqa
     build_fqid,
+    collection_and_id_from_fqid,
     collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,

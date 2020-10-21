@@ -33,6 +33,8 @@ services:
             - ./shared/shared:/app/shared
             - ./reader/reader:/app/reader
             - ./reader/tests:/app/tests
+        environment:
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
         depends_on:
             - postgresql
         networks:

@@ -1,8 +1,6 @@
-from flask import request
-
 from shared.flask_frontend import (
-    InvalidRequest,
     JsonResponse,
+    get_json_from_request,
     handle_internal_errors,
     unify_urls,
 )
@@ -14,11 +12,8 @@ from .routes import Route
 def get_route(route: Route):
     @handle_internal_errors
     def route_func():
-        if not request.is_json:
-            raise InvalidRequest("Data must be json")
-
         json_handler = JSONHandler()
-        result = json_handler.handle_request(route, request.get_json())
+        result = json_handler.handle_request(route, get_json_from_request())
         return JsonResponse(result)
 
     return route_func
