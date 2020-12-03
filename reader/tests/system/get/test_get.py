@@ -5,6 +5,7 @@ from shared.flask_frontend.errors import ERROR_CODES
 from shared.postgresql_backend import EVENT_TYPES
 from shared.tests.util import assert_error_response, assert_success_response
 from shared.util import DeletedModelsBehaviour
+from tests.system.util import setup_data
 
 
 FQID = "collection/1"
@@ -18,14 +19,8 @@ data = {
 data_json = json.dumps(data)
 
 
-def setup_data(connection, cursor, deleted=False):
-    cursor.execute("insert into models values ('collection/1', %s)", [data_json])
-    cursor.execute("insert into models_lookup values ('collection/1', %s)", [deleted])
-    connection.commit()
-
-
 def test_simple(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(Route.GET.URL, {"fqid": FQID})
     assert_success_response(response)
     assert response.json == data
@@ -37,7 +32,7 @@ def test_no_model(json_client, db_connection, db_cur):
 
 
 def test_get_no_deleted_success(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(
         Route.GET.URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.NO_DELETED},
@@ -47,7 +42,7 @@ def test_get_no_deleted_success(json_client, db_connection, db_cur):
 
 
 def test_get_no_deleted_fail(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, True)
+    setup_data(db_connection, db_cur, {FQID: data}, True)
     response = json_client.post(
         Route.GET.URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.NO_DELETED},
@@ -56,7 +51,7 @@ def test_get_no_deleted_fail(json_client, db_connection, db_cur):
 
 
 def test_get_only_deleted_success(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, True)
+    setup_data(db_connection, db_cur, {FQID: data}, True)
     response = json_client.post(
         Route.GET.URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
@@ -66,7 +61,7 @@ def test_get_only_deleted_success(json_client, db_connection, db_cur):
 
 
 def test_get_only_deleted_fail(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(
         Route.GET.URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
@@ -75,7 +70,7 @@ def test_get_only_deleted_fail(json_client, db_connection, db_cur):
 
 
 def test_get_all_models_not_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(
         Route.GET.URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
@@ -85,7 +80,7 @@ def test_get_all_models_not_deleted(json_client, db_connection, db_cur):
 
 
 def test_get_all_models_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, True)
+    setup_data(db_connection, db_cur, {FQID: data}, True)
     response = json_client.post(
         Route.GET.URL,
         {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
@@ -103,7 +98,7 @@ def test_get_all_models_no_model(json_client, db_connection, db_cur):
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(
         Route.GET.URL, {"fqid": FQID, "mapped_fields": ["fqid", "field_3"]}
     )
@@ -115,7 +110,7 @@ def test_mapped_fields(json_client, db_connection, db_cur):
 
 
 def test_mapped_fields_filter_none_values(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(
         Route.GET.URL, {"fqid": FQID, "mapped_fields": ["field_that_doesnt_exist"]}
     )

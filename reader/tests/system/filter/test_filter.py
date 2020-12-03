@@ -1,9 +1,8 @@
-import json
-
 from reader.flask_frontend.routes import Route
 from shared.flask_frontend import ERROR_CODES
 from shared.tests import assert_error_response
 from shared.tests.util import assert_success_response
+from tests.system.util import setup_data
 
 
 data = {
@@ -15,26 +14,17 @@ data = {
         "meta_position": 1,
     },
     "a/2": {"field_1": "test", "field_2": 21, "field_3": False, "meta_position": 2},
-}
-other_models = {
     "b/1": {
         "field_4": "data",
         "field_5": 42,
         "field_6": True,
         "meta_position": 3,
-    }
+    },
 }
 
 
-def setup_data(connection, cursor, deleted=False):
-    for fqid, model in list(data.items()) + list(other_models.items()):
-        cursor.execute("insert into models values (%s, %s)", [fqid, json.dumps(model)])
-        cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
-    connection.commit()
-
-
 def test_eq(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -47,7 +37,7 @@ def test_eq(json_client, db_connection, db_cur):
 
 
 def test_gt(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -60,7 +50,7 @@ def test_gt(json_client, db_connection, db_cur):
 
 
 def test_geq(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -73,7 +63,7 @@ def test_geq(json_client, db_connection, db_cur):
 
 
 def test_neq(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -86,7 +76,7 @@ def test_neq(json_client, db_connection, db_cur):
 
 
 def test_lt(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -99,7 +89,7 @@ def test_lt(json_client, db_connection, db_cur):
 
 
 def test_leq(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -112,7 +102,7 @@ def test_leq(json_client, db_connection, db_cur):
 
 
 def test_and(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -130,7 +120,7 @@ def test_and(json_client, db_connection, db_cur):
 
 
 def test_or(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -148,7 +138,7 @@ def test_or(json_client, db_connection, db_cur):
 
 
 def test_complex(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     # (field_1 == 'data' and field_2 > 21) or (field_3 == False and not field_2 < 21)
     response = json_client.post(
         Route.FILTER.URL,
@@ -183,7 +173,7 @@ def test_complex(json_client, db_connection, db_cur):
 
 
 def test_eq_none(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -196,7 +186,7 @@ def test_eq_none(json_client, db_connection, db_cur):
 
 
 def test_neq_none(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -209,7 +199,7 @@ def test_neq_none(json_client, db_connection, db_cur):
 
 
 def test_empty_field(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {
@@ -222,7 +212,7 @@ def test_empty_field(json_client, db_connection, db_cur):
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.FILTER.URL,
         {

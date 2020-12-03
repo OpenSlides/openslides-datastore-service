@@ -1,28 +1,20 @@
-import json
-
 from reader.flask_frontend.routes import Route
 from shared.flask_frontend import ERROR_CODES
 from shared.tests import assert_error_response
 from shared.tests.util import assert_success_response
+from tests.system.util import setup_data
 
 
 data = {
-    "a/1": {"field_1": "d", "meta_position": 2},
-    "a/2": {"field_1": "c", "meta_position": 3},
+    "a/1": {"field_1": "d", "meta_position": 2, "field_2": 1},
+    "a/2": {"field_1": "c", "meta_position": 3, "field_2": 1},
     "a/3": {"field_1": "b", "meta_position": 4},
     "b/1": {"field_1": "a", "meta_position": 5},
 }
 
 
-def setup_data(connection, cursor, deleted=False):
-    for fqid, model in data.items():
-        cursor.execute("insert into models values (%s, %s)", [fqid, json.dumps(model)])
-        cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
-    connection.commit()
-
-
 def test_simple(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.MAX.URL,
         {
@@ -32,11 +24,14 @@ def test_simple(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json["max"] == 4
+    assert response.json == {
+        "max": 4,
+        "position": 5,
+    }
 
 
 def test_with_type(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
+    setup_data(db_connection, db_cur, data)
     response = json_client.post(
         Route.MAX.URL,
         {
@@ -47,7 +42,27 @@ def test_with_type(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json["max"] == 3
+    assert response.json == {
+        "max": 3,
+        "position": 5,
+    }
+
+
+def test_position(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.MAX.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_2", "operator": "=", "value": 1},
+            "field": "meta_position",
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {
+        "max": 3,
+        "position": 5,
+    }
 
 
 def test_invalid_collection(json_client):
