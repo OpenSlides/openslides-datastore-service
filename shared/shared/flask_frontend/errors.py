@@ -2,13 +2,16 @@ from textwrap import dedent
 
 from werkzeug.exceptions import default_exceptions
 
+from shared.di import injector
 from shared.postgresql_backend.connection_handler import DatabaseError
+from shared.services import EnvironmentService
 from shared.util import (
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
     ModelLocked,
     ModelNotDeleted,
+    logger,
 )
 
 from .json_response import JsonResponse
@@ -72,6 +75,11 @@ def handle_internal_errors(fn):
         except Exception as e:
             print(e, type(e))
             raise e
+
+        env_service = injector.get(EnvironmentService)
+        if env_service.is_dev_mode():
+            logger.debug(f"HTTP error 400: {error_dict}")
+
         return {"error": error_dict}, 400
 
     return wrapper

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, Type
+from typing import Callable, Dict, Optional, Type
 
 import fastjsonschema
 
@@ -13,7 +13,7 @@ from reader.core.requests import (
     GetRequest,
     MinMaxRequest,
 )
-from shared.flask_frontend import unify_urls
+from shared.flask_frontend import InvalidRequest, unify_urls
 from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
 from shared.util import DeletedModelsBehaviour
 
@@ -216,10 +216,19 @@ minmax_schema = fastjsonschema.compile(
 )
 
 
+def handle_filter_schema_error(e: fastjsonschema.JsonSchemaException) -> None:
+    if e.rule == "anyOf":
+        # we only use anyOf for filters, so an invalid filter definition was given
+        raise InvalidRequest(f"Invalid filter definition: {e.value}")
+
+
 @dataclass
 class RouteConfiguration:
     schema: Callable
     request_class: Type
+    schema_error_handler: Optional[
+        Callable[[fastjsonschema.JsonSchemaException], None]
+    ] = None
     dev_only: bool = False
 
 
@@ -235,13 +244,29 @@ route_configurations: Dict[Route, RouteConfiguration] = {
     Route.GET_EVERYTHING: RouteConfiguration(
         schema=get_everything_schema, request_class=GetEverythingRequest, dev_only=True
     ),
-    Route.FILTER: RouteConfiguration(schema=filter_schema, request_class=FilterRequest),
+    Route.FILTER: RouteConfiguration(
+        schema=filter_schema,
+        request_class=FilterRequest,
+        schema_error_handler=handle_filter_schema_error,
+    ),
     Route.EXISTS: RouteConfiguration(
-        schema=aggregate_schema, request_class=AggregateRequest
+        schema=aggregate_schema,
+        request_class=AggregateRequest,
+        schema_error_handler=handle_filter_schema_error,
     ),
     Route.COUNT: RouteConfiguration(
-        schema=aggregate_schema, request_class=AggregateRequest
+        schema=aggregate_schema,
+        request_class=AggregateRequest,
+        schema_error_handler=handle_filter_schema_error,
     ),
-    Route.MIN: RouteConfiguration(schema=minmax_schema, request_class=MinMaxRequest),
-    Route.MAX: RouteConfiguration(schema=minmax_schema, request_class=MinMaxRequest),
+    Route.MIN: RouteConfiguration(
+        schema=minmax_schema,
+        request_class=MinMaxRequest,
+        schema_error_handler=handle_filter_schema_error,
+    ),
+    Route.MAX: RouteConfiguration(
+        schema=minmax_schema,
+        request_class=MinMaxRequest,
+        schema_error_handler=handle_filter_schema_error,
+    ),
 }
