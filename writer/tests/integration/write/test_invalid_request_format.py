@@ -100,7 +100,7 @@ class BaseTestCreateUpdateEvent:
             {"type": self.type, "fqid": "a/1", "fields": {2: 2, "none": None}}
         )
 
-        with pytest.raises(InvalidRequest):
+        with pytest.raises(InvalidFormat):
             write_handler.write(valid_metadata)
 
     def test_fields_invalid_field_name(self, write_handler, valid_metadata):
@@ -135,7 +135,7 @@ class TestUpdateEvent(BaseTestCreateUpdateEvent):
 def test_update_empty_fields(write_handler, valid_metadata):
     valid_metadata["events"].append({"type": "update", "fqid": "a/1", "fields": {}})
 
-    with pytest.raises(InvalidFormat):
+    with pytest.raises(InvalidRequest):
         write_handler.write(valid_metadata)
 
 

@@ -1,5 +1,6 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TypedDict
 
+from shared.flask_frontend import InvalidRequest
 from shared.typing import JSON
 from shared.util import (
     KEY_TYPE,
@@ -8,6 +9,13 @@ from shared.util import (
     assert_is_fqid,
     get_key_type,
     is_reserved_field,
+)
+
+
+ListFieldsData = TypedDict(
+    "ListFieldsData",
+    {"add": Dict[str, List[JSON]], "remove": Dict[str, List[JSON]]},
+    total=False,
 )
 
 
@@ -38,14 +46,27 @@ class RequestCreateEvent(BaseRequestEvent):
 
 
 class RequestUpdateEvent(BaseRequestEvent):
-    def __init__(self, fqid: str, fields: Dict[str, JSON]) -> None:
+    def __init__(
+        self, fqid: str, fields: Dict[str, JSON], list_fields: ListFieldsData = {}
+    ) -> None:
         super().__init__(fqid)
-        if len(fields) <= 0:
-            raise InvalidFormat("No fields are given")
-        for field in fields.keys():
+        add_list_fields = list_fields.get("add", {})
+        remove_list_fields = list_fields.get("remove", {})
+
+        fields_keys = set(fields.keys())
+        add_list_fields_keys = set(add_list_fields.keys())
+        remove_list_fields_keys = set(remove_list_fields.keys())
+
+        all_keys = fields_keys.union(add_list_fields_keys, remove_list_fields_keys)
+        if len(all_keys) == 0:
+            raise InvalidRequest("No fields are given")
+        if len(all_keys) < len(fields) + len(add_list_fields) + len(remove_list_fields):
+            raise InvalidRequest("You cannot give a field name multiple times")
+        for field in all_keys:
             assert_is_field(field)
             assert_no_special_field(field)
-            self.fields = fields
+        self.fields = fields
+        self.list_fields = list_fields
 
 
 class RequestDeleteEvent(BaseRequestEvent):
