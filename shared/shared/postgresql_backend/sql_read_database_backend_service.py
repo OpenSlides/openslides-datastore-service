@@ -334,5 +334,10 @@ class SqlReadDatabaseBackendService:
         result = self.connection.query(query, [tuple(fqids)])
         return {row["fqid"]: row["deleted"] for row in result}
 
+    def get_position(self) -> int:
+        return self.connection.query_single_value(
+            "select max(position) from positions", []
+        )
+
     def json(self, data):
         return self.connection.to_json(data)

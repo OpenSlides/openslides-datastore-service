@@ -13,6 +13,11 @@ from .requests import (
 )
 
 
+class FilterResult(TypedDict):
+    data: Dict[int, Model]
+    position: int
+
+
 class ExistsResult(TypedDict):
     exists: bool
     position: int
@@ -54,7 +59,7 @@ class Reader(Protocol):
         lists of models.
         """
 
-    def filter(self, request: FilterRequest) -> Dict[int, Model]:
+    def filter(self, request: FilterRequest) -> FilterResult:
         """ Returns all models that satisfy the filter condition. """
 
     def exists(self, request: AggregateRequest) -> ExistsResult:

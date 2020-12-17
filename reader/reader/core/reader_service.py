@@ -1,7 +1,13 @@
 from collections import defaultdict
 from typing import Any, Dict, List, cast
 
-from reader.core.reader import CountResult, ExistsResult, MaxResult, MinResult
+from reader.core.reader import (
+    CountResult,
+    ExistsResult,
+    FilterResult,
+    MaxResult,
+    MinResult,
+)
 from reader.core.requests import GetManyRequestPart
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
@@ -125,11 +131,16 @@ class ReaderService:
         with self.database.get_context():
             return self.database.get_everything(request.get_deleted_models)
 
-    def filter(self, request: FilterRequest) -> Dict[int, Model]:
+    def filter(self, request: FilterRequest) -> FilterResult:
         with self.database.get_context():
-            return self.database.filter(
+            data = self.database.filter(
                 request.collection, request.filter, request.mapped_fields
             )
+            position = self.database.get_position()
+        return {
+            "data": data,
+            "position": position,
+        }
 
     def exists(self, request: AggregateRequest) -> ExistsResult:
         count = self.count(request)
