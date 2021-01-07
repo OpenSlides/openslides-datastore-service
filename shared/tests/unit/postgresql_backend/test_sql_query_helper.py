@@ -136,3 +136,11 @@ def test_build_filter_str_none_invalid(query_helper: SqlQueryHelper):
     filter = FilterOperator("field", ">", None)
     with pytest.raises(InvalidFormat):
         query_helper.build_filter_str(filter, [])
+
+
+def test_build_filter_str_filter_operator(query_helper: SqlQueryHelper):
+    f = query_helper.build_filter_str
+    query_helper.build_filter_str = MagicMock(return_value="")
+    filter = FilterOperator("f", "=", 0)
+
+    assert f(filter, [], "a") == "a.data->>%s = %s::text"

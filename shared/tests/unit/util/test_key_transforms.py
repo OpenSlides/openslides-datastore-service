@@ -1,6 +1,7 @@
 from shared.util import (
     build_fqid,
     collection_and_id_from_fqid,
+    collection_from_collectionfield,
     collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,
@@ -65,6 +66,12 @@ def test_collection_and_id_from_fqid():
     fqid = "a/1"
 
     assert collection_and_id_from_fqid(fqid) == ("a", 1)
+
+
+def test_collection_from_collectionfield():
+    collectionfield = "a/1"
+
+    assert collection_from_collectionfield(collectionfield) == "a"
 
 
 def test_build_fqid():

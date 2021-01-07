@@ -112,7 +112,6 @@ def service(cls):
     # Find protocols for the arguments
     arg_protocols = []
     # check, if all given arg names are services:
-    # breakpoint()
     for arg_name in arg_names:
         if arg_name not in service_mapping:
             raise DependencyInjectionError(
@@ -134,7 +133,6 @@ def service(cls):
             if get_di_type(service) == _TYPE_FACTORY
         ]
         if injected_factories and get_di_type(cls) == _TYPE_SINGLETON:
-            # breakpoint()
             raise DependencyInjectionError(
                 f"Class {cls} is a singleton, but injected service "
                 + f"{injected_factories[0][0]} "

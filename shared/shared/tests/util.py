@@ -1,4 +1,6 @@
 def assert_response_code(response, code):
+    if response.status_code != code:
+        print(response.json() if callable(response.json) else response.json)
     assert response.status_code == code
 
 
