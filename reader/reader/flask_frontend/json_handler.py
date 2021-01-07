@@ -8,7 +8,7 @@ from reader.core import Reader
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest, dev_only_route
 from shared.typing import JSON
-from shared.util import BadCodingError
+from shared.util import BadCodingError, logger
 
 from .routes import Route, route_configurations
 
@@ -25,9 +25,13 @@ class JSONHandler:
         except KeyError:
             raise BadCodingError("Invalid route metadata: " + route)
 
+        logger.info(f"{route.upper()}-request: {data}")
+
         try:
             request_data = route_configuration.schema(data)
         except fastjsonschema.JsonSchemaException as e:
+            if route_configuration.schema_error_handler:
+                route_configuration.schema_error_handler(e)
             raise InvalidRequest(e.message)
 
         try:
