@@ -16,11 +16,11 @@ Full system tests:
 - `make run-full-system-tests`: starts the local productive setup and executes the full system tests. These test the reader and writer in conjunction. Requires that the dev environment is up and running and listening on the default ports. Prod environment does not work since the `truncate_db` route is not available there.
 - `make run-full-system-tests-interactive`: start a bash inside the full system test docker container for repeated usage.
 - `make run-full-system-tests-cleanup`: cleans up the full system tests.
-- `make run-full-system-tests-check`: runs the travis utilities for the full system tests.
+- `make run-full-system-tests-check`: runs the ci utilities for the full system tests.
 
 Utility:
 - `make run-cleanup`: runs the cleanup script in all modules
-- `make run-travis`: runs the travis script in all modules
+- `make run-ci`: runs the ci script in all modules
 - `make run-tests`: runs the tests of all modules
 
 Development environment:

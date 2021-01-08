@@ -31,10 +31,10 @@ run-coverage: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh pytest --cov --cov-report html
 	docker-compose -f dc.test.yml down
 
-run-travis-no-down: | setup-docker-compose
-	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh ./execute-travis.sh
+run-ci-no-down: | setup-docker-compose
+	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh ./execute-ci.sh
 
-run-travis: | run-travis-no-down
+run-ci: | run-ci-no-down
 	docker-compose -f dc.test.yml down
 
 run-cleanup: | setup-docker-compose
@@ -86,10 +86,10 @@ run-cleanup run-cleanup-with-update:
 	@$(MAKE) -C writer $@
 
 # no-down mode speeds up the process by up to 50%
-run-travis:
-	@$(MAKE) -C shared run-travis-no-down
-	@$(MAKE) -C reader run-travis-no-down
-	@$(MAKE) -C writer run-travis
+run-ci:
+	@$(MAKE) -C shared run-ci-no-down
+	@$(MAKE) -C reader run-ci-no-down
+	@$(MAKE) -C writer run-ci
 
 run-tests:
 	@$(MAKE) -C shared run-tests-no-down
@@ -119,7 +119,7 @@ run-full-system-tests-cleanup: | build-full-system-tests
 	docker run $(fst_args) ./cleanup.sh
 
 run-full-system-tests-check: | build-full-system-tests
-	docker run $(fst_args) ./execute-travis.sh
+	docker run $(fst_args) ./execute-ci.sh
 
 endif
 

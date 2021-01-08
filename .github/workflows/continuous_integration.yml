@@ -1,0 +1,63 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test-prod:
+    name: "Test: Productive start"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build container
+      run: make build
+    
+    - name: Start container 
+      run: make run
+    
+    - name: wait for container
+      run: sleep 10
+    
+    - name: Test that reader is up and running
+      run: curl -I http://localhost:9010/
+    
+    - name: Test that writer is up and running
+      run: curl -I http://localhost:9011/
+
+  test-shared:
+    name: "Tests: Shared"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Execute tests
+      run: make -C shared run-ci
+
+  test-reader:
+    name: "Tests: Reader"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Execute tests
+      run: make -C reader run-ci
+
+  test-writer:
+    name: "Tests: Writer"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Execute tests
+      run: make -C writer run-ci
+
+  test-fulll-system:
+    name: "Full System Tests"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Start containers
+      run: make run-dev
+    
+    - name: Execute tests
+      run: make run-full-system-tests-check
