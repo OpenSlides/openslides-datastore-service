@@ -50,7 +50,7 @@ jobs:
     - name: Execute tests
       run: make -C writer run-ci
 
-  test-fulll-system:
+  test-full-system:
     name: "Full System Tests"
     runs-on: ubuntu-latest
     steps:

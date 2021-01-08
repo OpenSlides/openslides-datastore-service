@@ -102,7 +102,7 @@ def test_update_empty_fields(json_client, data):
     data["events"][0]["fields"] = {}
     data["events"][0]["type"] = "update"
     response = json_client.post(WRITE_URL, data)
-    assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
 
 
 def test_update_missing_fields(json_client, data):
@@ -117,6 +117,57 @@ def test_update_invalid_field(json_client, data):
     data["events"][0]["type"] = "update"
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_list_update_add_remove_duplicate_field(json_client, data):
+    data["events"].append(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "list_fields": {"add": {"f": [2]}, "remove": {"f": [1]}},
+        }
+    )
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_update_list_update_duplicate_field(json_client, data):
+    data["events"].append(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "fields": {"f": [2]},
+            "list_fields": {"add": {"f": [3]}},
+        }
+    )
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_update_no_fields(json_client, data, redis_connection, reset_redis_data):
+    data["events"].append(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "fields": {},
+            "list_fields": {},
+        }
+    )
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_list_update_invalid_key(json_client, data, redis_connection, reset_redis_data):
+    data["events"].append(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "fields": {"g": 1},
+            "list_fields": {"invalid": {"field": [1]}},
+        }
+    )
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
 
 
 def test_locked_fields_invalid_key(json_client, data):

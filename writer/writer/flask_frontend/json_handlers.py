@@ -49,6 +49,43 @@ write_schema = fastjsonschema.compile(
 )
 
 
+update_event_schema = fastjsonschema.compile(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "type": {},
+            "fqid": {},
+            "fields": {
+                "type": "object",
+            },
+            "list_fields": {
+                "type": "object",
+                "properties": {
+                    "add": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {"type": ["integer", "string"]},
+                        },
+                    },
+                    "remove": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {"type": ["integer", "string"]},
+                        },
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "required": ["type", "fqid"],
+        "additionalProperties": False,
+    }
+)
+
+
 class WriteRequestJSON(TypedDict):
     user_id: int
     information: JSON
@@ -80,13 +117,17 @@ class WriteHandler:
         for event in events:
             type = event["type"]
 
-            if type in ("create", "update"):
+            if type == "create":
                 fields = event.get("fields")
                 if not isinstance(fields, dict):
                     raise InvalidRequest("Fields must be a dict")
-                for key, value in fields.items():
-                    if not isinstance(key, str):
-                        raise InvalidRequest("Each key of fields must be a string")
+
+            if type == "update":
+                try:
+                    update_event_schema(event)
+                except fastjsonschema.JsonSchemaException as e:
+                    raise InvalidRequest(e.message)
+
             request_events.append(self.create_event(event))
         return request_events
 
@@ -97,7 +138,9 @@ class WriteHandler:
         if type == "create":
             request_event = RequestCreateEvent(fqid, event["fields"])
         elif type == "update":
-            request_event = RequestUpdateEvent(fqid, event["fields"])
+            request_event = RequestUpdateEvent(
+                fqid, event.get("fields", {}), event.get("list_fields", {})
+            )
         elif type == "delete":
             request_event = RequestDeleteEvent(fqid)
         elif type == "restore":

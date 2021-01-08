@@ -29,10 +29,14 @@ class WriterService:
     ) -> None:
         with self._lock:
             self.write_request = write_request
-            # Convert request events to db events
-            self.db_events = self.event_translator.translate(write_request.events)
 
             with self.database.get_context():
+                # Convert request events to db events
+                self.db_events = self.event_translator.translate(write_request.events)
+                if not self.db_events:
+                    # may happen if a list update turns out to be empty
+                    logger.info("No events executed")
+                    return
                 self.write_with_database_context()
 
             # Only propagate updates to redis after the transaction has finished

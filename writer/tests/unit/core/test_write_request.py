@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from shared.flask_frontend import InvalidRequest
 from shared.util import InvalidFormat, InvalidKeyFormat
 from writer.core import (
     RequestCreateEvent,
@@ -60,8 +61,25 @@ def test_create_update_fqid():
 
 
 def test_update_no_fields():
-    with pytest.raises(InvalidFormat):
+    with pytest.raises(InvalidRequest):
         RequestUpdateEvent("c/1", {})
+
+
+def test_update_list_fields():
+    event = RequestUpdateEvent("c/1", {}, {"add": {"test": ["value"]}})
+    assert event.list_fields == {"add": {"test": ["value"]}}
+
+
+def test_update_duplicate_fields_1():
+    with pytest.raises(InvalidRequest):
+        RequestUpdateEvent("c/1", {"test": "stuff"}, {"add": {"test": ["value"]}})
+
+
+def test_update_duplicate_fields_2():
+    with pytest.raises(InvalidRequest):
+        RequestUpdateEvent(
+            "c/1", {}, {"add": {"test": ["value"]}, "remove": {"test": ["value"]}}
+        )
 
 
 def test_create_update_wrong_field_format():

@@ -11,7 +11,7 @@ build-tests:
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose -f dc.test.yml up -d $(MODULE)
-	docker-compose -f dc.test.yml exec $(MODULE) bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
+	docker-compose -f dc.test.yml exec -T $(MODULE) bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
 run-tests-no-down: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh pytest
@@ -21,7 +21,6 @@ run-tests: | run-tests-no-down
 
 run-tests-interactive run-bash: | setup-docker-compose
 	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) $(MODULE) ./entrypoint.sh bash
-	docker-compose -f dc.test.yml down
 
 run-system-tests: | setup-docker-compose
 	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh pytest tests/system
@@ -32,7 +31,7 @@ run-coverage: | setup-docker-compose
 	docker-compose -f dc.test.yml down
 
 run-ci-no-down: | setup-docker-compose
-	docker-compose -f dc.test.yml exec $(MODULE) ./entrypoint.sh ./execute-ci.sh
+	docker-compose -f dc.test.yml exec -T $(MODULE) ./entrypoint.sh ./execute-ci.sh
 
 run-ci: | run-ci-no-down
 	docker-compose -f dc.test.yml down
@@ -107,16 +106,16 @@ run-dev-verbose: | build-dev
 build-full-system-tests:
 	docker build -t openslides-datastore-full-system-tests -f system_tests/Dockerfile .
 
-fst_args=-ti -v `pwd`/system_tests/tests:/app/tests --network="host" --env-file=.env openslides-datastore-full-system-tests
+fst_args=-v `pwd`/system_tests/tests:/app/tests --network="host" --env-file=.env openslides-datastore-full-system-tests
 
 run-full-system-tests: | build-full-system-tests
-	docker run $(fst_args) pytest tests
+	docker run -ti $(fst_args) pytest tests
 
 run-full-system-tests-interactive: | build-full-system-tests
-	docker run $(fst_args) bash
+	docker run -ti $(fst_args) bash
 
 run-full-system-tests-cleanup: | build-full-system-tests
-	docker run $(fst_args) ./cleanup.sh
+	docker run -ti $(fst_args) ./cleanup.sh
 
 run-full-system-tests-check: | build-full-system-tests
 	docker run $(fst_args) ./execute-ci.sh

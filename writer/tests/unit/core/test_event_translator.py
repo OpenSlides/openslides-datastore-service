@@ -1,6 +1,9 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from shared.di import injector
+from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
 from shared.util import META_DELETED, BadCodingError
 from writer.core import (
@@ -21,6 +24,7 @@ from writer.core.event_translator import EventTranslator, EventTranslatorService
 
 @pytest.fixture()
 def event_translator(reset_di):  # noqa
+    injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register(EventTranslator, EventTranslatorService)
     yield injector.get(EventTranslator)
 

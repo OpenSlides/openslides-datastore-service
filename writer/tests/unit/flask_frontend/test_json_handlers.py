@@ -5,7 +5,7 @@ import pytest
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
 from shared.tests import reset_di  # noqa
-from shared.util import BadCodingError
+from shared.util import BadCodingError, InvalidFormat
 from writer.core import Writer
 from writer.flask_frontend.json_handlers import ReserveIdsHandler, WriteHandler
 
@@ -62,23 +62,23 @@ class TestWriteHandler:
         w.assert_called_once()
 
     def test_parse_events_create_event_type(self, write_handler):
-        event = {"type": "create", "fields": ["not_a_dict"]}
+        event = {"type": "create", "fqid": "a/1", "fields": ["not_a_dict"]}
         with pytest.raises(InvalidRequest):
             write_handler.parse_events([event])
 
     def test_parse_events_create_event_field_type(self, write_handler):
-        event = {"type": "create", "fields": {1: "key_is_not_a_string"}}
-        with pytest.raises(InvalidRequest):
+        event = {"type": "create", "fqid": "a/1", "fields": {1: "key_is_not_a_string"}}
+        with pytest.raises(InvalidFormat):
             write_handler.parse_events([event])
 
     def test_parse_events_update_event_type(self, write_handler):
-        event = {"type": "update", "fields": ["not_a_dict"]}
+        event = {"type": "update", "fqid": "a/1", "fields": ["not_a_dict"]}
         with pytest.raises(InvalidRequest):
             write_handler.parse_events([event])
 
     def test_parse_events_update_event_field_type(self, write_handler):
-        event = {"type": "update", "fields": {1: "key_is_not_a_string"}}
-        with pytest.raises(InvalidRequest):
+        event = {"type": "update", "fqid": "a/1", "fields": {1: "key_is_not_a_string"}}
+        with pytest.raises(InvalidFormat):
             write_handler.parse_events([event])
 
     def test_create_create_event(self, write_handler):
@@ -93,11 +93,17 @@ class TestWriteHandler:
     def test_create_update_event(self, write_handler):
         fqid = MagicMock()
         fields = MagicMock()
-        event = {"type": "update", "fqid": fqid, "fields": fields}
+        list_fields = MagicMock()
+        event = {
+            "type": "update",
+            "fqid": fqid,
+            "fields": fields,
+            "list_fields": list_fields,
+        }
         with patch("writer.flask_frontend.json_handlers.RequestUpdateEvent") as rue:
             rue.return_value = request_event = MagicMock()
             assert write_handler.create_event(event) == request_event
-            assert rue.call_args.args == (fqid, fields)
+            assert rue.call_args.args == (fqid, fields, list_fields)
 
     def test_create_delete_event(self, write_handler):
         fqid = MagicMock()
