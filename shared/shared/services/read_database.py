@@ -140,3 +140,6 @@ class ReadDatabase(Protocol):
         Returns a map indicating if the models with the given fqids are deleted. If
         position is given, the result refers to the state at the position.
         """
+
+    def get_position(self) -> int:
+        """ Returns the current (highest) position of the datastore. """

@@ -33,7 +33,7 @@ def test_eq(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"]}
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
 
 
 def test_gt(json_client, db_connection, db_cur):
@@ -46,7 +46,7 @@ def test_gt(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"]}
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
 
 
 def test_geq(json_client, db_connection, db_cur):
@@ -59,7 +59,10 @@ def test_geq(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
+    assert response.json == {
+        "data": {"1": data["a/1"], "2": data["a/2"]},
+        "position": 3,
+    }
 
 
 def test_neq(json_client, db_connection, db_cur):
@@ -72,7 +75,7 @@ def test_neq(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"]}
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
 
 
 def test_lt(json_client, db_connection, db_cur):
@@ -85,7 +88,7 @@ def test_lt(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"2": data["a/2"]}
+    assert response.json == {"data": {"2": data["a/2"]}, "position": 3}
 
 
 def test_leq(json_client, db_connection, db_cur):
@@ -98,7 +101,10 @@ def test_leq(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
+    assert response.json == {
+        "data": {"1": data["a/1"], "2": data["a/2"]},
+        "position": 3,
+    }
 
 
 def test_and(json_client, db_connection, db_cur):
@@ -116,7 +122,7 @@ def test_and(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"]}
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
 
 
 def test_or(json_client, db_connection, db_cur):
@@ -134,7 +140,10 @@ def test_or(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
+    assert response.json == {
+        "data": {"1": data["a/1"], "2": data["a/2"]},
+        "position": 3,
+    }
 
 
 def test_complex(json_client, db_connection, db_cur):
@@ -169,7 +178,10 @@ def test_complex(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
+    assert response.json == {
+        "data": {"1": data["a/1"], "2": data["a/2"]},
+        "position": 3,
+    }
 
 
 def test_eq_none(json_client, db_connection, db_cur):
@@ -182,7 +194,7 @@ def test_eq_none(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"2": data["a/2"]}
+    assert response.json == {"data": {"2": data["a/2"]}, "position": 3}
 
 
 def test_neq_none(json_client, db_connection, db_cur):
@@ -195,7 +207,7 @@ def test_neq_none(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": data["a/1"]}
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
 
 
 def test_empty_field(json_client, db_connection, db_cur):
@@ -208,7 +220,7 @@ def test_empty_field(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {}
+    assert response.json == {"data": {}, "position": 3}
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):
@@ -222,7 +234,10 @@ def test_mapped_fields(json_client, db_connection, db_cur):
         },
     )
     assert_success_response(response)
-    assert response.json == {"1": {"field_3": True, "meta_position": 1}}
+    assert response.json == {
+        "data": {"1": {"field_3": True, "meta_position": 1}},
+        "position": 3,
+    }
 
 
 def test_invalid_collection(json_client):

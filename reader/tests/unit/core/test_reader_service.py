@@ -211,14 +211,16 @@ def test_get_everything(reader: ReaderService, read_db: SqlReadDatabaseBackendSe
 def test_filter(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
     result = MagicMock()
     read_db.filter = filter = MagicMock(return_value=result)
+    read_db.get_position = get_pos = MagicMock(return_value=42)
 
     filter_operator = FilterOperator("field", "=", "data")
     request = FilterRequest("collection", filter_operator, ["field"])
 
-    assert reader.filter(request) == result
+    assert reader.filter(request) == {"data": result, "position": 42}
 
     read_db.get_context.assert_called()
     filter.assert_called_with("collection", filter_operator, ["field"])
+    get_pos.assert_called()
 
 
 def test_exists_true(reader: ReaderService):

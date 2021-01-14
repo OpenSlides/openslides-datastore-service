@@ -392,6 +392,12 @@ def test_get_deleted_status_position(
     assert q.call_args.args[1] == [(fqid,)]
 
 
+def test_get_position(read_database: ReadDatabase, connection: ConnectionHandler):
+    connection.query_single_value = q = MagicMock(return_value=42)
+    assert read_database.get_position() == 42
+    q.asser_called_with("select max(position) from positions", [])
+
+
 def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
     value = MagicMock()
     connection.to_json = tj = MagicMock(return_value=value)
