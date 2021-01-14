@@ -1,6 +1,17 @@
-from typing import Dict, Protocol
+from dataclasses import dataclass
+from typing import Dict, Protocol, Union
 
 from shared.di import service_interface
+from shared.util import Filter, SelfValidatingDataclass
+
+
+@dataclass
+class CollectionFieldLockWithFilter(SelfValidatingDataclass):
+    position: int
+    filter: Filter
+
+
+CollectionFieldLock = Union[int, CollectionFieldLockWithFilter]
 
 
 @service_interface
@@ -12,7 +23,7 @@ class OccLocker(Protocol):
         """ Raises ModelLocked if a position of at least one fqfield is too old """
 
     def assert_collectionfield_positions(
-        self, collectionfields: Dict[str, int]
+        self, collectionfields: Dict[str, CollectionFieldLock]
     ) -> None:
         """
         Raises ModelLocked if a position of at least one

@@ -41,5 +41,9 @@ def collection_and_id_from_fqid(fqid: str) -> Tuple[str, int]:
     return s[0], int(s[1])
 
 
+def collection_from_collectionfield(collectionfield: str) -> str:
+    return collectionfield.split(KEYSEPARATOR)[0]
+
+
 def build_fqid(collection: str, id: str) -> str:
     return f"{collection}{KEYSEPARATOR}{id}"

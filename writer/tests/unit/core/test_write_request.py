@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from shared.flask_frontend import InvalidRequest
-from shared.util import InvalidFormat, InvalidKeyFormat
+from shared.util import BadCodingError, InvalidFormat, InvalidKeyFormat
 from writer.core import (
     RequestCreateEvent,
     RequestDeleteEvent,
@@ -11,6 +11,7 @@ from writer.core import (
     RequestUpdateEvent,
     WriteRequest,
 )
+from writer.core.occ_locker import CollectionFieldLockWithFilter
 from writer.core.write_request import assert_no_special_field
 
 
@@ -38,6 +39,39 @@ def test_wrong_locked_field_position_1():
 def test_wrong_locked_field_position_2():
     locked_fields = {"collection/field": -492}
     with pytest.raises(InvalidFormat):
+        WriteRequest(get_dummy_request_events(), {}, 1, locked_fields)
+
+
+def test_collectionfield_lock():
+    locked_fields = {
+        "collection/field": {
+            "position": 1,
+            "filter": {"field": "f", "operator": "=", "value": 1},
+        }
+    }
+    wr = WriteRequest(get_dummy_request_events(), {}, 1, locked_fields)
+
+    assert isinstance(
+        wr.locked_collectionfields["collection/field"], CollectionFieldLockWithFilter
+    )
+
+
+def test_collectionfield_lock_with_non_collectionfield():
+    locked_fields = {
+        "collection/1": {
+            "position": 1,
+            "filter": {"field": "f", "operator": "=", "value": 1},
+        }
+    }
+    with pytest.raises(InvalidFormat):
+        WriteRequest(get_dummy_request_events(), {}, 1, locked_fields)
+
+
+def test_collectionfield_lock_with_invalid_filter():
+    locked_fields = {
+        "collection/field": {"position": 1, "filter": {"field": "f", "operator": "="}}
+    }
+    with pytest.raises(BadCodingError):
         WriteRequest(get_dummy_request_events(), {}, 1, locked_fields)
 
 

@@ -127,7 +127,9 @@ class SqlQueryHelper:
             sql_parameters,
         )
 
-    def build_filter_str(self, filter: Filter, arguments: List[str]) -> str:
+    def build_filter_str(
+        self, filter: Filter, arguments: List[str], table_alias=""
+    ) -> str:
         if isinstance(filter, Not):
             return f"NOT ({self.build_filter_str(filter.not_filter, arguments)})"
         elif isinstance(filter, Or):
@@ -141,14 +143,16 @@ class SqlQueryHelper:
                 for part in filter.and_filter
             )
         elif isinstance(filter, FilterOperator):
+            if table_alias:
+                table_alias += "."
             if filter.value is None:
                 if filter.operator not in ("=", "!="):
                     raise InvalidFormat("You can only compare to None with = or !=")
                 operator = filter.operator[::-1].replace("=", "IS").replace("!", " NOT")
-                condition = f"data->>%s {operator} NULL"
+                condition = f"{table_alias}data->>%s {operator} NULL"
                 arguments += [filter.field]
             else:
-                condition = f"data->>%s {filter.operator} %s::text"
+                condition = f"{table_alias}data->>%s {filter.operator} %s::text"
                 arguments += [filter.field, filter.value]
             return condition
         else:

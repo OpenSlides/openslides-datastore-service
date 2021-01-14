@@ -3,7 +3,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from shared.di import injector
-from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend import ConnectionHandler, SqlQueryHelper
+from shared.postgresql_backend.sql_read_database_backend_service import (
+    SqlReadDatabaseBackendService,
+)
+from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
 from shared.util import ModelLocked
 from writer.core import OccLocker
@@ -13,6 +17,8 @@ from writer.postgresql_backend import SqlOccLockerBackendService
 @pytest.fixture(autouse=True)
 def provide_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, MagicMock)
+    injector.register(SqlQueryHelper, SqlQueryHelper)
+    injector.register(ReadDatabase, SqlReadDatabaseBackendService)
     injector.register(OccLocker, SqlOccLockerBackendService)
     yield
 
@@ -89,7 +95,7 @@ def test_query_arguments_collectionfield(occ_locker, connection):
     occ_locker.assert_collectionfield_positions({"a/f": 2, "b/e": 42})
 
     query = qsv.call_args.args[0]
-    assert query.count("(collectionfield=%s and position>%s)") == 2
+    assert query.count("(cf.collectionfield=%s and e.position>%s)") == 2
     args = qsv.call_args.args[1]
     assert (args == ["a/f", 2, "b/e", 42]) or (
         args == ["b/e", 42, "a/f", 2]

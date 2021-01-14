@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from shared.di import injector
-from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend import ConnectionHandler, SqlQueryHelper
 from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
-from shared.util import ModelLocked
+from shared.util import FilterOperator, ModelLocked
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
 from writer.flask_frontend.json_handlers import WriteHandler
 from writer.postgresql_backend import SqlOccLockerBackendService
@@ -35,6 +35,7 @@ class FakeConnectionHandler:
 @pytest.fixture(autouse=True)
 def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, FakeConnectionHandler)
+    injector.register(SqlQueryHelper, SqlQueryHelper)
     injector.register(OccLocker, SqlOccLockerBackendService)
     injector.register_as_singleton(Database, MagicMock)
     injector.register_as_singleton(ReadDatabase, MagicMock)
@@ -92,6 +93,22 @@ def test_locked_collectionfield(write_handler, connection_handler, valid_metadat
     locked_collectionfield = MagicMock()
     connection_handler.collectionfield = MagicMock(return_value=locked_collectionfield)
     valid_metadata["locked_fields"]["a/f"] = 42
+
+    with pytest.raises(ModelLocked) as e:
+        write_handler.write(valid_metadata)
+
+    assert e.value.key == locked_collectionfield
+
+
+def test_locked_collectionfield_with_filter(
+    write_handler, connection_handler, valid_metadata
+):
+    locked_collectionfield = MagicMock()
+    connection_handler.collectionfield = MagicMock(return_value=locked_collectionfield)
+    valid_metadata["locked_fields"]["a/f"] = {
+        "position": 42,
+        "filter": FilterOperator("field", "=", "value"),
+    }
 
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)

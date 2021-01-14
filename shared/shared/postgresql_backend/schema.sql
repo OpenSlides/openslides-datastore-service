@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS events (
     data JSONB
 );
 CREATE INDEX IF NOT EXISTS events_fqid_idx ON events (fqid);
+-- TODO: create index for data->>meeting_id for collectionfieldlocks
 
 CREATE TABLE IF NOT EXISTS models_lookup (
     fqid VARCHAR(48) PRIMARY KEY,

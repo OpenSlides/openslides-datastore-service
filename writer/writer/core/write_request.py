@@ -1,15 +1,21 @@
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, TypedDict, Union, cast
+
+from dacite import from_dict
+from dacite.exceptions import MissingValueError, UnionMatchError
 
 from shared.flask_frontend import InvalidRequest
 from shared.typing import JSON
 from shared.util import (
     KEY_TYPE,
+    BadCodingError,
     InvalidFormat,
     assert_is_field,
     assert_is_fqid,
     get_key_type,
     is_reserved_field,
 )
+
+from . import CollectionFieldLock, CollectionFieldLockWithFilter
 
 
 ListFieldsData = TypedDict(
@@ -77,13 +83,16 @@ class RequestRestoreEvent(BaseRequestEvent):
     pass
 
 
+LockedFieldsJSON = Union[int, Dict[str, Any]]
+
+
 class WriteRequest:
     def __init__(
         self,
         events: List[BaseRequestEvent],
         information: JSON,
         user_id: int,
-        locked_fields: Dict[str, int],
+        locked_fields: Dict[str, LockedFieldsJSON],
     ) -> None:
         self.events = events
         self.information = information
@@ -92,21 +101,38 @@ class WriteRequest:
             raise InvalidFormat("No events were given")
         self.parse_locked_fields(locked_fields)
 
-    def parse_locked_fields(self, locked_fields: Dict[str, int]) -> None:
+    def parse_locked_fields(self, locked_fields: Dict[str, LockedFieldsJSON]) -> None:
         self.locked_fqids: Dict[str, int] = {}
         self.locked_fqfields: Dict[str, int] = {}
-        self.locked_collectionfields: Dict[str, int] = {}
+        self.locked_collectionfields: Dict[str, CollectionFieldLock] = {}
         for key, position in locked_fields.items():
             self.handle_single_key(key, position)
 
-    def handle_single_key(self, key: str, position: int) -> None:
-        if position <= 0:
+    def handle_single_key(self, key: str, cf_lock: LockedFieldsJSON) -> None:
+        if isinstance(cf_lock, int) and cf_lock <= 0:
             raise InvalidFormat(f"The position of key {key} must be >= 0")
 
         key_type = get_key_type(key)
+        if key_type in (KEY_TYPE.FQID, KEY_TYPE.FQFIELD) and not isinstance(
+            cf_lock, int
+        ):
+            raise InvalidFormat(
+                "CollectionFieldLocks can only be used with collectionfields"
+            )
+
         if key_type == KEY_TYPE.FQID:
-            self.locked_fqids[key] = position
+            self.locked_fqids[key] = cast(int, cf_lock)
         elif key_type == KEY_TYPE.FQFIELD:
-            self.locked_fqfields[key] = position
+            self.locked_fqfields[key] = cast(int, cf_lock)
         elif key_type == KEY_TYPE.COLLECTIONFIELD:
-            self.locked_collectionfields[key] = position
+            if isinstance(cf_lock, int):
+                self.locked_collectionfields[key] = cf_lock
+            else:
+                # build self validating data class
+                try:
+                    self.locked_collectionfields[key] = from_dict(
+                        CollectionFieldLockWithFilter,
+                        cf_lock,
+                    )
+                except (TypeError, MissingValueError, UnionMatchError) as e:
+                    raise BadCodingError("Invalid data to initialize class\n" + str(e))

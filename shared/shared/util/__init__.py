@@ -9,7 +9,14 @@ from .exceptions import (  # noqa
     ModelLocked,
     ModelNotDeleted,
 )
-from .filter import And, Filter, FilterOperator, Not, Or  # noqa
+from .filter import (  # noqa
+    And,
+    Filter,
+    FilterOperator,
+    Not,
+    Or,
+    filter_definitions_schema,
+)
 from .key_strings import (  # noqa
     KEYSEPARATOR,
     META_DELETED,
@@ -20,6 +27,7 @@ from .key_strings import (  # noqa
 from .key_transforms import (  # noqa
     build_fqid,
     collection_and_id_from_fqid,
+    collection_from_collectionfield,
     collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,

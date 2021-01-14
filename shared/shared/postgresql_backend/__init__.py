@@ -1,10 +1,10 @@
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES  # noqa
+from .sql_query_helper import SqlQueryHelper
 
 
 def setup_di():
     from shared.di import injector
-    from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
     from shared.services import ReadDatabase
 
     from .pg_connection_handler import PgConnectionHandlerService

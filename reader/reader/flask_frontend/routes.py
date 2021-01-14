@@ -15,7 +15,7 @@ from reader.core.requests import (
 )
 from shared.flask_frontend import InvalidRequest, unify_urls
 from shared.postgresql_backend.sql_query_helper import VALID_AGGREGATE_CAST_TARGETS
-from shared.util import DeletedModelsBehaviour
+from shared.util import DeletedModelsBehaviour, filter_definitions_schema
 
 
 URL_PREFIX = "/internal/datastore/reader/"
@@ -125,59 +125,11 @@ get_everything_schema = fastjsonschema.compile(
     }
 )
 
-# for reuse in filter_schema and aggregate_schema
-filter_definitions = {
-    "filter": {
-        "anyOf": [
-            {"$ref": "#/definitions/filter_operator"},
-            {"$ref": "#/definitions/not_filter"},
-            {"$ref": "#/definitions/and_filter"},
-            {"$ref": "#/definitions/or_filter"},
-        ],
-    },
-    "filter_operator": {
-        "type": "object",
-        "properties": {
-            "field": {"type": "string"},
-            "value": {},
-            "operator": {"type": "string", "enum": ["=", "!=", "<", ">", ">=", "<="]},
-        },
-        "required": ["field", "value", "operator"],
-    },
-    "not_filter": {
-        "type": "object",
-        "properties": {"not_filter": {"$ref": "#/definitions/filter"}},
-        "required": ["not_filter"],
-    },
-    "and_filter": {
-        "type": "object",
-        "properties": {
-            "and_filter": {
-                "type": "array",
-                "items": {"$ref": "#/definitions/filter"},
-                "minItems": 2,
-            },
-        },
-        "required": ["and_filter"],
-    },
-    "or_filter": {
-        "type": "object",
-        "properties": {
-            "or_filter": {
-                "type": "array",
-                "items": {"$ref": "#/definitions/filter"},
-                "minItems": 2,
-            },
-        },
-        "required": ["or_filter"],
-    },
-}
-
 filter_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "definitions": filter_definitions,
+        "definitions": filter_definitions_schema,
         "properties": {
             "collection": {"type": "string"},
             "filter": {"$ref": "#/definitions/filter"},
@@ -191,7 +143,7 @@ aggregate_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "definitions": filter_definitions,
+        "definitions": filter_definitions_schema,
         "properties": {
             "collection": {"type": "string"},
             "filter": {"$ref": "#/definitions/filter"},
@@ -204,7 +156,7 @@ minmax_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "definitions": filter_definitions,
+        "definitions": filter_definitions_schema,
         "properties": {
             "collection": {"type": "string"},
             "filter": {"$ref": "#/definitions/filter"},

@@ -4,3 +4,4 @@ flask
 psycopg2
 fastjsonschema
 gunicorn
+dacite

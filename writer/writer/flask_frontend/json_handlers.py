@@ -6,7 +6,11 @@ import fastjsonschema
 from shared.di import injector
 from shared.flask_frontend import InvalidRequest
 from shared.typing import JSON, Collection
-from shared.util import BadCodingError, SelfValidatingDataclass
+from shared.util import (
+    BadCodingError,
+    SelfValidatingDataclass,
+    filter_definitions_schema,
+)
 from writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
@@ -16,6 +20,7 @@ from writer.core import (
     Writer,
     WriteRequest,
 )
+from writer.core.write_request import LockedFieldsJSON
 
 
 write_schema = fastjsonschema.compile(
@@ -27,7 +32,14 @@ write_schema = fastjsonschema.compile(
             "information": {},
             "locked_fields": {
                 "type": "object",
-                "additionalProperties": {"type": "integer"},
+                "additionalProperties": {
+                    "type": ["integer", "object"],
+                    "properties": {
+                        "position": {"type": "integer"},
+                        "filter": filter_definitions_schema,
+                    },
+                    "required": ["position", "filter"],
+                },
             },
             "events": {
                 "type": "array",
@@ -89,7 +101,7 @@ update_event_schema = fastjsonschema.compile(
 class WriteRequestJSON(TypedDict):
     user_id: int
     information: JSON
-    locked_fields: Dict[str, int]
+    locked_fields: Dict[str, LockedFieldsJSON]
     events: List[Dict[str, Any]]
 
 

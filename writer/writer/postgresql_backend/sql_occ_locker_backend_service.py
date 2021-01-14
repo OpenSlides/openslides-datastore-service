@@ -3,7 +3,10 @@ from typing import Any, Dict, List
 
 from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
+from shared.services import ReadDatabase
 from shared.util import ModelLocked, collectionfield_and_fqid_from_fqfield
+from writer.core import CollectionFieldLock
 
 
 # FQID LOCKING
@@ -17,6 +20,8 @@ from shared.util import ModelLocked, collectionfield_and_fqid_from_fqfield
 @service_as_factory
 class SqlOccLockerBackendService:
     connection: ConnectionHandler
+    read_db: ReadDatabase
+    query_helper: SqlQueryHelper
 
     def assert_fqid_positions(self, fqids: Dict[str, int]) -> None:
         if not fqids:
@@ -95,27 +100,48 @@ class SqlOccLockerBackendService:
         self.raise_model_locked_if_match(query, query_arguments)
 
     def assert_collectionfield_positions(
-        self, collectionfields: Dict[str, int]
+        self, collectionfields: Dict[str, CollectionFieldLock]
     ) -> None:
         if not collectionfields:
             return
 
         query_arguments: List[Any] = []
         filter_parts = []
-        for collectionfield, position in collectionfields.items():
-            query_arguments.extend(
-                (
-                    collectionfield,
-                    position,
+        for collectionfield, cf_lock in collectionfields.items():
+            if isinstance(cf_lock, int):
+                query_arguments.extend(
+                    (
+                        collectionfield,
+                        cf_lock,
+                    )
                 )
-            )
-            filter_parts.append("(collectionfield=%s and position>%s)")
-        query = (
-            "select collectionfield from collectionfields where "
-            + " or ".join(filter_parts)
-            + " limit 1"
-        )
+                filter_parts.append("(cf.collectionfield=%s and e.position>%s)")
+            else:
+                query_arguments.extend(
+                    (
+                        cf_lock.position,
+                        collectionfield,
+                    )
+                )
+                filter_part = "(e.position>%s and cf.collectionfield=%s"
+                filter_part += (
+                    " and "
+                    + self.query_helper.build_filter_str(
+                        cf_lock.filter, query_arguments, "m"
+                    )
+                    + ")"
+                )
+                filter_parts.append(filter_part)
 
+        filter_query = " or ".join(filter_parts)
+        query = dedent(
+            f"""\
+            select collectionfield from collectionfields cf
+            inner join events_to_collectionfields ecf on cf.id=ecf.collectionfield_id
+            inner join events e on ecf.event_id=e.id
+            inner join models m on e.fqid=m.fqid
+            where {filter_query} limit 1"""
+        )
         self.raise_model_locked_if_match(query, query_arguments)
 
     def raise_model_locked_if_match(self, query, arguments):
