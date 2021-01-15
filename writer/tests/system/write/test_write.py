@@ -115,6 +115,22 @@ def test_single_update(json_client, data, redis_connection, reset_redis_data):
     )
 
 
+def test_single_field_delete(json_client, data, redis_connection, reset_redis_data):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+
+    data["events"][0] = {
+        "type": "update",
+        "fqid": "a/1",
+        "fields": {"another_field": None},
+    }
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert_model("a/1", {"f": 1}, 2)
+    assert_modified_fields(
+        redis_connection, {"a/1": ["another_field"]}, meta_deleted=False
+    )
+
+
 def test_list_update_add_empty(json_client, data, redis_connection, reset_redis_data):
     create_model(json_client, data, redis_connection, reset_redis_data)
 
@@ -225,7 +241,7 @@ def test_list_update_add_duplicate(
     assert_modified_fields(redis_connection, {"a/1": ["f"]}, meta_deleted=False)
 
 
-def test_list_update_remove_empty(
+def test_list_update_remove_empty_1(
     json_client, data, redis_connection, reset_redis_data
 ):
     create_model(json_client, data, redis_connection, reset_redis_data)
@@ -237,8 +253,8 @@ def test_list_update_remove_empty(
     }
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
-    assert_model("a/1", {"f": 1}, 1)
-    assert_no_modified_fields(redis_connection)
+    assert_model("a/1", {"f": 1}, 2)
+    assert_modified_fields(redis_connection, {"a/1": ["field"]}, meta_deleted=False)
 
 
 def test_list_update_remove_empty_2(
@@ -254,8 +270,8 @@ def test_list_update_remove_empty_2(
     }
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
-    assert_model("a/1", {"f": 1, "field": []}, 1)
-    assert_no_modified_fields(redis_connection)
+    assert_model("a/1", {"f": 1, "field": []}, 2)
+    assert_modified_fields(redis_connection, {"a/1": ["field"]}, meta_deleted=False)
 
 
 def test_list_update_remove_existing(
@@ -321,8 +337,8 @@ def test_list_update_remove_not_existent(
     }
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
-    assert_model("a/1", {"f": [1]}, 1)
-    assert_no_modified_fields(redis_connection)
+    assert_model("a/1", {"f": [1]}, 2)
+    assert_modified_fields(redis_connection, {"a/1": ["f"]}, meta_deleted=False)
 
 
 def test_list_update_remove_partially_not_existent(
@@ -372,6 +388,20 @@ def test_update_and_list_update(json_client, data, redis_connection, reset_redis
     assert_response_code(response, 201)
     assert_model("a/1", {"f": [1, 2], "g": [2]}, 2)
     assert_modified_fields(redis_connection, {"a/1": ["f", "g"]}, meta_deleted=False)
+
+
+def test_list_update_with_create(json_client, data, redis_connection, reset_redis_data):
+    data["events"].append(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "list_fields": {"add": {"g": [2]}},
+        }
+    )
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert_model("a/1", {"f": 1, "g": [2]}, 1)
+    assert_modified_fields(redis_connection, {"a/1": ["f", "g"]})
 
 
 def test_update_non_existing_1(json_client, data, db_cur, redis_connection):
@@ -530,6 +560,21 @@ def test_update_delete_restore_update(
     assert_response_code(response, 201)
     assert_model("a/1", {"another": "value", "third_field": ["my", "list"]}, 2)
     assert_modified_fields(redis_connection, {"a/1": ["f", "another", "third_field"]})
+
+
+def test_delete_update(json_client, data, redis_connection, reset_redis_data):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+
+    data["events"][0] = {"type": "delete", "fqid": "a/1"}
+    data["events"].append(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "fields": {"f": 42},
+        }
+    )
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
 
 
 def test_read_db_is_updated_before_redis_fires(json_client, data):

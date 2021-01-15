@@ -2,12 +2,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from shared.util import META_DELETED
+from shared.util import META_DELETED, BadCodingError
 from writer.core.db_events import (
     BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
     DbDeleteFieldsEvent,
+    DbListUpdateEvent,
     DbRestoreEvent,
     DbUpdateEvent,
 )
@@ -29,10 +30,6 @@ def test_db_create_event():
     assert "my_key" in event.field_data
     assert META_DELETED in event.field_data
 
-    fields = event.get_modified_fields()
-    assert "my_key" in fields
-    assert META_DELETED in fields
-
     modified_fields = event.get_modified_fields()
     assert "my_key" in modified_fields
     assert META_DELETED in modified_fields
@@ -48,11 +45,39 @@ def test_db_update_event():
     assert event.fqid == fqid
     assert "my_key" in event.field_data
 
-    fields = event.get_modified_fields()
-    assert "my_key" in fields
+    modified_fields = event.get_modified_fields()
+    assert "my_key" in modified_fields
+
+
+def test_db_list_update_event():
+    fqid = MagicMock()
+    value = MagicMock()
+    add = {"my_key": value}
+    remove = {"other_key": value}
+
+    event = DbListUpdateEvent(fqid, add, remove)
+    # init translated events
+    event.get_translated_events({})
+
+    assert event.fqid == fqid
+    assert "my_key" in event.add
+    assert "other_key" in event.remove
 
     modified_fields = event.get_modified_fields()
     assert "my_key" in modified_fields
+    assert "other_key" in modified_fields
+
+
+def test_db_list_update_event_get_translated_events_no_model():
+    event = DbListUpdateEvent(MagicMock(), {}, {})
+    with pytest.raises(BadCodingError):
+        event.get_translated_events()
+
+
+def test_db_list_update_event_get_translated_events_empty_events():
+    event = DbListUpdateEvent(MagicMock(), {}, {})
+    with pytest.raises(BadCodingError):
+        event.get_translated_events(MagicMock())
 
 
 def test_db_delete_fields_event():
