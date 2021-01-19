@@ -50,18 +50,21 @@ class DbListUpdateEvent(BaseDbEvent):
         self.add = add
         self.remove = remove
         self.events: List[BaseDbEvent] = []
-
-    def get_translated_events(self, model: Model = None) -> List[BaseDbEvent]:
+    
+    def translate_events(self, model: Model) -> None:
+        if self.events:
+            raise BadCodingError()
+        updated_fields, deleted_fields = self.calculate_updated_fields(model)
+        if updated_fields:
+            self.events.append(DbUpdateEvent(self.fqid, updated_fields))
+        if deleted_fields:
+            self.events.append(DbDeleteFieldsEvent(self.fqid, deleted_fields))
         if not self.events:
-            if model is None:
-                raise BadCodingError()
-            updated_fields, deleted_fields = self.calculate_updated_fields(model)
-            if updated_fields:
-                self.events.append(DbUpdateEvent(self.fqid, updated_fields))
-            if deleted_fields:
-                self.events.append(DbDeleteFieldsEvent(self.fqid, deleted_fields))
-            if not self.events:
-                raise BadCodingError()
+            raise BadCodingError()
+
+    def get_translated_events(self) -> List[BaseDbEvent]:
+        if not self.events:
+            raise BadCodingError("Fields have to be translated first")
         return self.events
 
     def calculate_updated_fields(self, model: Model) -> Tuple[Model, List[str]]:

@@ -146,7 +146,8 @@ class SqlDatabaseBackendService:
         self.assert_exists(event.fqid)
 
         model = self.read_database.build_model_ignore_deleted(event.fqid)
-        for translated_event in event.get_translated_events(model):
+        event.translate_events(model)
+        for translated_event in event.get_translated_events():
             self.insert_event(translated_event, position)
 
     def insert_delete_fields_event(self, delete_fields_event, position: int) -> None:
