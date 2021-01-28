@@ -51,6 +51,7 @@ class DbListUpdateEvent(BaseDbEvent):
     The translation is necessary since the current state of the field in the datastore
     influences the result of the list update.
     """
+
     def __init__(
         self, fqid: str, add: ListUpdatesDict, remove: ListUpdatesDict
     ) -> None:
