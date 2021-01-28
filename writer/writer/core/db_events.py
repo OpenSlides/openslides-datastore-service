@@ -43,6 +43,14 @@ class DbUpdateEvent(BaseDbEventWithValues):
 
 
 class DbListUpdateEvent(BaseDbEvent):
+    """
+    Before get_modified_fields can be called, the list updates have to be translated
+    first via the translate_events method. All list updates can be reduced to a list
+    of normal update and delete_fields events which are saved in self.events and whose
+    modified fields are returned in the aforementioned method.
+    The translation is necessary since the current state of the field in the datastore
+    influences the result of the list update.
+    """
     def __init__(
         self, fqid: str, add: ListUpdatesDict, remove: ListUpdatesDict
     ) -> None:
