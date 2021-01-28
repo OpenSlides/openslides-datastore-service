@@ -106,6 +106,12 @@ class TestInsertEvents:
             sql_backend.insert_events([], {}, 1)
         cp.assert_not_called()
 
+    def test_insert_invalid_event(self, sql_backend):
+        sql_backend.create_position = cp = MagicMock()
+        with pytest.raises(BadCodingError):
+            sql_backend.insert_event({}, 1)
+        cp.assert_not_called()
+
     def test_set_position(self, sql_backend):
         sql_backend.create_position = MagicMock(return_value=239)
         sql_backend.insert_event = MagicMock()

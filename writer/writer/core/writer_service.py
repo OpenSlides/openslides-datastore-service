@@ -33,10 +33,6 @@ class WriterService:
             with self.database.get_context():
                 # Convert request events to db events
                 self.db_events = self.event_translator.translate(write_request.events)
-                if not self.db_events:
-                    # may happen if a list update turns out to be empty
-                    logger.info("No events executed")
-                    return
                 self.write_with_database_context()
 
             # Only propagate updates to redis after the transaction has finished
@@ -52,21 +48,21 @@ class WriterService:
     def print_stats(self) -> None:
         stats: Dict[str, int] = defaultdict(int)
         for event in self.write_request.events:
-            stats[self.getRequestName(event)] += 1
+            stats[self.get_request_name(event)] += 1
         stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
         logger.info(f"Events executed ({stats_string})")
 
     def print_summary(self) -> None:
         summary: Dict[str, Set[str]] = defaultdict(set)  # event type <-> set[fqid]
         for event in self.write_request.events:
-            summary[self.getRequestName(event)].add(event.fqid)
+            summary[self.get_request_name(event)].add(event.fqid)
         logger.info(
             "\n".join(
                 f"{eventType}: {list(fqids)}" for eventType, fqids in summary.items()
             )
         )
 
-    def getRequestName(self, event: BaseRequestEvent) -> str:
+    def get_request_name(self, event: BaseRequestEvent) -> str:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
     def write_with_database_context(self) -> None:

@@ -14,6 +14,7 @@ from writer.core.db_events import (
     DbCreateEvent,
     DbDeleteEvent,
     DbDeleteFieldsEvent,
+    DbListUpdateEvent,
     DbRestoreEvent,
     DbUpdateEvent,
 )
@@ -83,6 +84,10 @@ class EventExecutorService:
         elif isinstance(event, DbUpdateEvent):
             self.models[event.fqid].update(event.field_data)
             self.model_status[event.fqid] = MODEL_STATUS.WRITE
+
+        elif isinstance(event, DbListUpdateEvent):
+            for translated_event in event.get_translated_events():
+                self.execute_event(translated_event)
 
         elif isinstance(event, DbDeleteFieldsEvent):
             for field in event.fields:

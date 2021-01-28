@@ -16,11 +16,12 @@ from shared.util import (
 )
 
 from . import CollectionFieldLock, CollectionFieldLockWithFilter
+from .db_events import ListUpdatesDict
 
 
 ListFieldsData = TypedDict(
     "ListFieldsData",
-    {"add": Dict[str, List[JSON]], "remove": Dict[str, List[JSON]]},
+    {"add": ListUpdatesDict, "remove": ListUpdatesDict},
     total=False,
 )
 

@@ -23,6 +23,7 @@ from writer.core.db_events import (
     DbCreateEvent,
     DbDeleteEvent,
     DbDeleteFieldsEvent,
+    DbListUpdateEvent,
     DbRestoreEvent,
     DbUpdateEvent,
 )
@@ -82,14 +83,18 @@ class SqlDatabaseBackendService:
     def insert_event(self, event, position: int):
         if isinstance(event, DbCreateEvent):
             self.insert_create_event(event, position)
-        if isinstance(event, DbUpdateEvent):
+        elif isinstance(event, DbUpdateEvent):
             self.insert_update_event(event, position)
-        if isinstance(event, DbDeleteFieldsEvent):
+        elif isinstance(event, DbListUpdateEvent):
+            self.insert_list_update_event(event, position)
+        elif isinstance(event, DbDeleteFieldsEvent):
             self.insert_delete_fields_event(event, position)
-        if isinstance(event, DbDeleteEvent):
+        elif isinstance(event, DbDeleteEvent):
             self.insert_delete_event(event, position)
-        if isinstance(event, DbRestoreEvent):
+        elif isinstance(event, DbRestoreEvent):
             self.insert_restore_event(event, position)
+        else:
+            raise BadCodingError()
 
     def insert_create_event(self, create_event, position: int) -> None:
         if self.exists_query("models_lookup", "fqid=%s", [create_event.fqid]):
@@ -137,6 +142,14 @@ class SqlDatabaseBackendService:
         ]
         self.insert_db_event(update_event, arguments, position)
 
+    def insert_list_update_event(self, event: DbListUpdateEvent, position) -> None:
+        self.assert_exists(event.fqid)
+
+        model = self.read_database.build_model_ignore_deleted(event.fqid)
+        event.translate_events(model)
+        for translated_event in event.get_translated_events():
+            self.insert_event(translated_event, position)
+
     def insert_delete_fields_event(self, delete_fields_event, position: int) -> None:
         self.assert_exists(delete_fields_event.fqid)
 
@@ -175,7 +188,7 @@ class SqlDatabaseBackendService:
     def get_current_fields_from_model(self, fqid):
         # Get all current keys from the model. This is a bit exhausting,
         # because we cannot query the read db: It is not updated and this delete event
-        # might not the first event, so we might miss keys, if we query the read db.
+        # might not be the first event, so we might miss keys if we query the read db.
         model = self.read_database.build_model_ignore_deleted(fqid)
         return list(model.keys())
 
