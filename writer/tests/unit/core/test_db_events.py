@@ -57,7 +57,7 @@ def test_db_list_update_event():
 
     event = DbListUpdateEvent(fqid, add, remove)
     # init translated events
-    event.get_translated_events({})
+    event.translate_events({})
 
     assert event.fqid == fqid
     assert "my_key" in event.add
@@ -68,16 +68,24 @@ def test_db_list_update_event():
     assert "other_key" in modified_fields
 
 
-def test_db_list_update_event_get_translated_events_no_model():
+def test_db_list_update_event_get_translated_events_before_translate():
     event = DbListUpdateEvent(MagicMock(), {}, {})
     with pytest.raises(BadCodingError):
         event.get_translated_events()
 
 
-def test_db_list_update_event_get_translated_events_empty_events():
+def test_db_list_update_event_translate_events_empty_events():
     event = DbListUpdateEvent(MagicMock(), {}, {})
     with pytest.raises(BadCodingError):
-        event.get_translated_events(MagicMock())
+        event.translate_events(MagicMock())
+
+
+def test_db_list_update_event_double_translate_events():
+    event = DbListUpdateEvent(MagicMock(), {}, {})
+    event.calculate_updated_fields = MagicMock(return_value=[MagicMock(), MagicMock()])
+    event.translate_events({})
+    with pytest.raises(BadCodingError):
+        event.translate_events({})
 
 
 def test_db_delete_fields_event():

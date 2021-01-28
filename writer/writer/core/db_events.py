@@ -50,7 +50,7 @@ class DbListUpdateEvent(BaseDbEvent):
         self.add = add
         self.remove = remove
         self.events: List[BaseDbEvent] = []
-    
+
     def translate_events(self, model: Model) -> None:
         if self.events:
             raise BadCodingError()
