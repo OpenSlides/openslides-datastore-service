@@ -1,11 +1,12 @@
 import threading
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Union
 
 from shared.di import service_as_factory
 from shared.util import logger
 
 from .database import Database
+from .db_events import BaseDbEvent
 from .event_executor import EventExecutor
 from .event_translator import EventTranslator
 from .messaging import Messaging
@@ -25,37 +26,48 @@ class WriterService:
     messaging: Messaging
 
     def write(
-        self, write_request: WriteRequest, log_all_modified_fields: bool = True
+        self,
+        write_requests: Union[WriteRequest, List[WriteRequest]],
+        log_all_modified_fields: bool = True,
     ) -> None:
-        with self._lock:
-            self.write_request = write_request
+        if isinstance(write_requests, list):
+            self.write_requests = write_requests
+        else:
+            self.write_requests = [write_requests]
 
+        with self._lock:
+            self.position_to_db_events = {}
             with self.database.get_context():
-                # Convert request events to db events
-                self.db_events = self.event_translator.translate(write_request.events)
-                self.write_with_database_context()
+                for write_request in self.write_requests:
+                    # Convert request events to db events
+                    db_events = self.event_translator.translate(write_request.events)
+                    position = self.write_with_database_context(
+                        write_request, db_events
+                    )
+                    self.position_to_db_events[position] = db_events
 
             # Only propagate updates to redis after the transaction has finished
             self.messaging.handle_events(
-                self.db_events,
-                self.position,
+                self.position_to_db_events,
                 log_all_modified_fields=log_all_modified_fields,
             )
 
-            self.print_stats()
-            self.print_summary()
+        self.print_stats()
+        self.print_summary()
 
     def print_stats(self) -> None:
         stats: Dict[str, int] = defaultdict(int)
-        for event in self.write_request.events:
-            stats[self.get_request_name(event)] += 1
+        for write_request in self.write_requests:
+            for event in write_request.events:
+                stats[self.get_request_name(event)] += 1
         stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
         logger.info(f"Events executed ({stats_string})")
 
     def print_summary(self) -> None:
         summary: Dict[str, Set[str]] = defaultdict(set)  # event type <-> set[fqid]
-        for event in self.write_request.events:
-            summary[self.get_request_name(event)].add(event.fqid)
+        for write_request in self.write_requests:
+            for event in write_request.events:
+                summary[self.get_request_name(event)].add(event.fqid)
         logger.info(
             "\n".join(
                 f"{eventType}: {list(fqids)}" for eventType, fqids in summary.items()
@@ -65,24 +77,28 @@ class WriterService:
     def get_request_name(self, event: BaseRequestEvent) -> str:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
-    def write_with_database_context(self) -> None:
+    def write_with_database_context(
+        self, write_request: WriteRequest, db_events: List[BaseDbEvent]
+    ) -> int:
         # Check locked_fields -> Possible LockedError
-        self.assert_locked_fields()
+        self.assert_locked_fields(write_request)
 
         # Insert db events with position data
-        self.position = self.database.insert_events(
-            self.db_events, self.write_request.information, self.write_request.user_id
+        position = self.database.insert_events(
+            db_events, write_request.information, write_request.user_id
         )
 
         # Store updated models in the Read-DB
-        self.event_executor.update(self.db_events, self.position)
+        self.event_executor.update(db_events, position)
 
-    def assert_locked_fields(self) -> None:
+        return position
+
+    def assert_locked_fields(self, write_request: WriteRequest) -> None:
         """ May raise a ModelLockedException """
-        self.occ_locker.assert_fqid_positions(self.write_request.locked_fqids)
-        self.occ_locker.assert_fqfield_positions(self.write_request.locked_fqfields)
+        self.occ_locker.assert_fqid_positions(write_request.locked_fqids)
+        self.occ_locker.assert_fqfield_positions(write_request.locked_fqfields)
         self.occ_locker.assert_collectionfield_positions(
-            self.write_request.locked_collectionfields
+            write_request.locked_collectionfields
         )
 
     def reserve_ids(self, collection: str, amount: int) -> List[int]:

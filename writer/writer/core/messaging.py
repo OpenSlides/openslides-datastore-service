@@ -1,4 +1,4 @@
-from typing import List, Protocol
+from typing import Dict, List, Protocol
 
 from shared.di import service_interface
 from writer.core.db_events import BaseDbEvent
@@ -8,8 +8,7 @@ from writer.core.db_events import BaseDbEvent
 class Messaging(Protocol):
     def handle_events(
         self,
-        events: List[BaseDbEvent],
-        position: int,
+        events_per_position: Dict[int, List[BaseDbEvent]],
         log_all_modified_fields: bool = True,
     ) -> None:
         """

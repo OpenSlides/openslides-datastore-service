@@ -109,7 +109,7 @@ def test_writer_single_thread(writer):
     writer.current_lock = 0
     writer.position = 0
 
-    def wait_for_lock():
+    def wait_for_lock(*args, **kwargs):
         lock = writer.locks[writer.current_lock]
         writer.current_lock += 1
         lock.acquire()
