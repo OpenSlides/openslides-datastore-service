@@ -1,6 +1,6 @@
 import threading
 from collections import defaultdict
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set
 
 from shared.di import service_as_factory
 from shared.util import logger
@@ -27,13 +27,10 @@ class WriterService:
 
     def write(
         self,
-        write_requests: Union[WriteRequest, List[WriteRequest]],
+        write_requests: List[WriteRequest],
         log_all_modified_fields: bool = True,
     ) -> None:
-        if isinstance(write_requests, list):
-            self.write_requests = write_requests
-        else:
-            self.write_requests = [write_requests]
+        self.write_requests = write_requests
 
         with self._lock:
             self.position_to_db_events = {}

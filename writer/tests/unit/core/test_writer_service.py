@@ -79,7 +79,7 @@ def test_writer_distribution(
     event_executor.update = eeu = MagicMock()
     messaging.handle_events = he = MagicMock()
 
-    writer.write(write_request)
+    writer.write([write_request])
 
     event_translator.translate.assert_called_with(events)
     database.get_context.assert_called()
@@ -119,9 +119,9 @@ def test_writer_single_thread(writer):
     writer.messaging = MagicMock()
     writer.write_with_database_context = MagicMock(side_effect=wait_for_lock)
 
-    thread1 = Thread(target=writer.write, args=[MagicMock()])
+    thread1 = Thread(target=writer.write, args=[[MagicMock()]])
     thread1.start()
-    thread2 = Thread(target=writer.write, args=[MagicMock()])
+    thread2 = Thread(target=writer.write, args=[[MagicMock()]])
     thread2.start()
 
     thread1.join(0.5)

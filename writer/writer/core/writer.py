@@ -1,4 +1,4 @@
-from typing import List, Protocol, Union
+from typing import List, Protocol
 
 from .write_request import WriteRequest
 
@@ -8,7 +8,7 @@ class Writer(Protocol):
 
     def write(
         self,
-        write_requests: Union[WriteRequest, List[WriteRequest]],
+        write_requests: List[WriteRequest],
         log_all_modified_fields: bool = True,
     ) -> None:
         """ Writes into the DB. """

@@ -53,6 +53,6 @@ for collection, models in data.items():
 write_request = WriteRequest(events, None, 0, {})
 
 print("Write events")
-writer.write(write_request, log_all_modified_fields=False)
+writer.write([write_request], log_all_modified_fields=False)
 
 print(f"Wrote {len(events)} events to the datastore.")
