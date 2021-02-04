@@ -107,9 +107,15 @@ class WriteRequestJSON(TypedDict):
 
 class WriteHandler:
     def write(self, data: JSON) -> None:
-        write_request = self.build_write_request(data)
+        if not isinstance(data, list):
+            data = [data]
+
+        write_requests = []
+        for request in data:
+            write_requests.append(self.build_write_request(request))
+
         writer = injector.get(Writer)
-        writer.write(write_request)
+        writer.write(write_requests)
 
     def build_write_request(self, data: JSON) -> WriteRequest:
         try:

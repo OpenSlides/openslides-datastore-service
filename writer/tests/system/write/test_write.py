@@ -593,3 +593,30 @@ def test_read_db_is_updated_before_redis_fires(json_client, data):
     with patch.object(messaging, "handle_events", new=assert_read_db_data):
         response = json_client.post(WRITE_URL, data)
         assert_response_code(response, 201)
+
+
+def test_two_write_requests(json_client, data, redis_connection, reset_redis_data):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+
+    data["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f": None}}
+    data2 = copy.deepcopy(data)
+    data2["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f2": 1}}
+    response = json_client.post(WRITE_URL, [data, data2])
+    assert_response_code(response, 201)
+    assert_model("a/1", {"f2": 1}, 3)
+    assert_modified_fields(redis_connection, {"a/1": ["f", "f2"]}, meta_deleted=False)
+
+
+def test_two_write_requests_with_locked_fields(
+    json_client, data, redis_connection, reset_redis_data
+):
+    create_model(json_client, data, redis_connection, reset_redis_data)
+
+    data["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f": None}}
+    data2 = copy.deepcopy(data)
+    data2["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f2": 1}}
+    data2["locked_fields"] = {"a/1/f": 1}
+    response = json_client.post(WRITE_URL, [data, data2])
+    assert_model("a/1", {"f": 1}, 1)
+    assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert_no_modified_fields(redis_connection)

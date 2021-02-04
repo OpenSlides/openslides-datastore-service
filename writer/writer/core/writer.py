@@ -7,7 +7,9 @@ class Writer(Protocol):
     """ For detailed interface descriptions, see the docs repo. """
 
     def write(
-        self, write_request: WriteRequest, log_all_modified_fields: bool = True
+        self,
+        write_requests: List[WriteRequest],
+        log_all_modified_fields: bool = True,
     ) -> None:
         """ Writes into the DB. """
 

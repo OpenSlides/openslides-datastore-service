@@ -19,11 +19,10 @@ class RedisMessagingBackendService(Messaging):
 
     def handle_events(
         self,
-        events: List[BaseDbEvent],
-        position: int,
+        events_per_position: Dict[int, List[BaseDbEvent]],
         log_all_modified_fields: bool = True,
     ) -> None:
-        modified_fqfields = self.get_modified_fqfields(events, position)
+        modified_fqfields = self.get_modified_fqfields(events_per_position)
         if log_all_modified_fields:
             logger.debug(
                 f"written fqfields into {MODIFIED_FIELDS_TOPIC}: "
@@ -32,16 +31,17 @@ class RedisMessagingBackendService(Messaging):
         self.connection.xadd(MODIFIED_FIELDS_TOPIC, modified_fqfields)
 
     def get_modified_fqfields(
-        self, events: List[BaseDbEvent], position: int
+        self, events_per_position: Dict[int, List[BaseDbEvent]]
     ) -> Dict[str, str]:
         modified_fqfields = {}
-        for event in events:
-            fqfields = self.get_modified_fqfields_from_event(event)
-            modified_fqfields.update(fqfields)
-            meta_position_fqfield = fqfield_from_fqid_and_field(
-                event.fqid, META_POSITION
-            )
-            modified_fqfields[meta_position_fqfield] = str(position)
+        for position, events in events_per_position.items():
+            for event in events:
+                fqfields = self.get_modified_fqfields_from_event(event)
+                modified_fqfields.update(fqfields)
+                meta_position_fqfield = fqfield_from_fqid_and_field(
+                    event.fqid, META_POSITION
+                )
+                modified_fqfields[meta_position_fqfield] = str(position)
         return modified_fqfields
 
     def get_modified_fqfields_from_event(self, event: BaseDbEvent) -> Dict[str, str]:
