@@ -30,8 +30,8 @@ with connection.get_connection_context():
 
 path = env_service.get("DATASTORE_INITIAL_DATA_FILE")
 print(f"Loading data: {path}")
-if path.startswith("initial-data://"):
-    data = json.loads(path.replace("initial-data://", "", 1))
+if path.startswith("initial-data:"):
+    data = json.loads(path.replace("initial-data:", "", 1))
 else:
     if path.startswith("http://") or path.startswith("https://"):
         try:
