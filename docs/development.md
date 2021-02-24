@@ -14,7 +14,7 @@ You can issue commands to the datastore on startup via the docker variable `COMM
 
 - `create_initial_data`: this will load the file given in the environment variable `DATASTORE_INITIAL_DATA_FILE`, which may be a relative or absolute path to a file inside the docker container or an URL to a web resource (e.g. the [OpenSlides 4 example data](https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json)) and write it to the datastore. If any data is present already, the command will fail. Note that if a path is given, the respective file has to be mounted to this place in the container; if an URL is given, the internet has to be accessible from inside the docker container (which means that in a setup with isolated networks e.g. as in the main repository, this option will not work).
 
-Another possibility is to provide `initial-data://` as prefix followed by JSON encoded data as value of that environment variable if you do not want to provide a web ressource or mount a file into the container.
+Another possibility is to provide `initial-data:` as prefix followed by JSON encoded data as value of that environment variable if you do not want to provide a web ressource or mount a file into the container.
 
 The script is also available from inside the container under `cli/create_initial_data.py`. Example setup to load initial data:
 
