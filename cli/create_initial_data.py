@@ -30,16 +30,18 @@ with connection.get_connection_context():
 
 path = env_service.get("DATASTORE_INITIAL_DATA_FILE")
 print(f"Loading data: {path}")
-if path.startswith("http://") or path.startswith("https://"):
-    try:
-        file = request.urlopen(path, timeout=20)
-    except URLError:
-        print(f"Timeout while fetching {path}")
-        sys.exit(1)
+if path.startswith("initial-data:"):
+    data = json.loads(path.replace("initial-data:", "", 1))
 else:
-    file = open(path)
-
-data = json.loads(file.read())
+    if path.startswith("http://") or path.startswith("https://"):
+        try:
+            file = request.urlopen(path, timeout=20)
+        except URLError:
+            print(f"Timeout while fetching {path}")
+            sys.exit(1)
+    else:
+        file = open(path)
+    data = json.loads(file.read())
 
 print("Create events")
 
