@@ -131,15 +131,18 @@ class SqlQueryHelper:
         self, filter: Filter, arguments: List[str], table_alias=""
     ) -> str:
         if isinstance(filter, Not):
-            return f"NOT ({self.build_filter_str(filter.not_filter, arguments)})"
+            filter_str = self.build_filter_str(
+                filter.not_filter, arguments, table_alias
+            )
+            return f"NOT ({filter_str})"
         elif isinstance(filter, Or):
             return " OR ".join(
-                f"({self.build_filter_str(part, arguments)})"
+                f"({self.build_filter_str(part, arguments, table_alias)})"
                 for part in filter.or_filter
             )
         elif isinstance(filter, And):
             return " AND ".join(
-                f"({self.build_filter_str(part, arguments)})"
+                f"({self.build_filter_str(part, arguments, table_alias)})"
                 for part in filter.and_filter
             )
         elif isinstance(filter, FilterOperator):
