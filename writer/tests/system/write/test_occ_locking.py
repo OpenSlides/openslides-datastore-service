@@ -20,27 +20,30 @@ def data():
     )
 
 
+def _set_model(json_client, fqid, payload, mode):
+    response = json_client.post(
+        WRITE_URL,
+        {
+            "user_id": 1,
+            "information": {},
+            "locked_fields": {},
+            "events": [{"type": mode, "fqid": fqid, "fields": payload}],
+        },
+    )
+    assert_response_code(response, 201)
+
+
+def create_model(json_client, fqid, payload):
+    _set_model(json_client, fqid, payload, "create")
+
+
+def update_model(json_client, fqid, payload):
+    _set_model(json_client, fqid, payload, "update")
+
+
 def create_and_update_model(json_client, fqid, create_payload, update_payload):
-    response = json_client.post(
-        WRITE_URL,
-        {
-            "user_id": 1,
-            "information": {},
-            "locked_fields": {},
-            "events": [{"type": "create", "fqid": fqid, "fields": create_payload}],
-        },
-    )
-    assert_response_code(response, 201)
-    response = json_client.post(
-        WRITE_URL,
-        {
-            "user_id": 1,
-            "information": {},
-            "locked_fields": {},
-            "events": [{"type": "update", "fqid": fqid, "fields": update_payload}],
-        },
-    )
-    assert_response_code(response, 201)
+    create_model(json_client, fqid, create_payload)
+    update_model(json_client, fqid, update_payload)
 
 
 # FQIDs
@@ -261,6 +264,30 @@ def test_lock_collectionfield_prefix_not_locked(json_client, data):
         },
     }
 
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert_model("a/2", {}, 3)
+
+
+def test_lock_collectionfield_with_and_filter(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f1": 1, "f3": False}, {"f2": 2})
+    data["locked_fields"]["a/f1"] = {
+        "position": 1,
+        "filter": {
+            "and_filter": [
+                {
+                    "field": "f1",
+                    "operator": "=",
+                    "value": 1,
+                },
+                {
+                    "field": "f3",
+                    "operator": "=",
+                    "value": False,
+                },
+            ],
+        },
+    }
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
     assert_model("a/2", {}, 3)
