@@ -97,6 +97,9 @@ run-tests:
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
 
+stop-tests:
+	docker-compose -f dc.test.yml down
+
 run-dev: | build-dev
 	docker-compose -f dc.dev.yml up -d
 
