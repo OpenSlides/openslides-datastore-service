@@ -52,7 +52,7 @@ class ReaderService:
         with self.database.get_context():
             if request.position:
                 # if a position is given, first test if the model is in the correct
-                # state to prevent the unneccessary building of the model if it's not
+                # state to prevent the unnecessary building of the model if it's not
                 fqids = self.filter_fqids_by_deleted_status(
                     [request.fqid], request.position, request.get_deleted_models
                 )

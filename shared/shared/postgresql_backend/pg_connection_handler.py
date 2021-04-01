@@ -35,9 +35,17 @@ class ConnectionContext:
         self.connection = self.connection_handler.get_connection()
         self.connection.__enter__()
 
-    def __exit__(self, type, value, traceback):
-        self.connection.__exit__(type, value, traceback)
-        self.connection_handler.put_connection(self.connection)
+    def __exit__(self, exception, exception_value, traceback):
+        has_connection_error = exception is not None and issubclass(
+            exception, psycopg2.Error
+        )
+        self.connection.__exit__(exception, exception_value, traceback)
+        self.connection_handler.put_connection(self.connection, has_connection_error)
+
+        if has_connection_error:
+            self.connection_handler.raise_error(
+                f"Database connection error ({type(exception).__name__}) {exception.pgcode}: {exception.pgerror}"  # noqa
+            )
 
 
 @service_as_singleton
@@ -97,11 +105,16 @@ class PgConnectionHandlerService:
         self.set_current_connection(connection)
         return connection
 
-    def put_connection(self, connection):
+    def put_connection(self, connection, has_error):
+        """
+        has_error indicated, whether to not reuse the connection.
+        If the connection encountered an error, set it to true, so
+        it will be discarded from the pool.
+        """
         if connection != self.get_current_connection():
             raise BadCodingError("Invalid connection")
 
-        self.connection_pool.putconn(connection)
+        self.connection_pool.putconn(connection, close=has_error)
         self.set_current_connection(None)
         self._semaphore.release()
 

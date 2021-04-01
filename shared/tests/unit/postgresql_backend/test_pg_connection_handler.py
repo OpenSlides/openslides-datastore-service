@@ -32,6 +32,9 @@ def handler(provide_di):
     yield injector.get(ConnectionHandler)
 
 
+# Basic connection and connection context
+
+
 def test_connection_context(handler):
     connection = MagicMock()
     handler.get_connection = gc = MagicMock(return_value=connection)
@@ -43,9 +46,10 @@ def test_connection_context(handler):
 
     with context:
         connection.__enter__.assert_called()
+        connection.__exit__.assert_not_called()
         gc.assert_called()
     connection.__exit__.assert_called()
-    pc.assert_called_with(connection)
+    pc.assert_called_with(connection, False)
 
 
 def test_init_error():
@@ -67,9 +71,10 @@ def test_get_connection(handler):
     semaphore.acquire.assert_called()
     gc.assert_called()
     assert connection.autocommit is False
+    assert handler.get_current_connection() == connection
 
 
-def test_get_connection_error(handler):
+def test_get_connection_twice_error(handler):
     handler.get_connection()
     with pytest.raises(BadCodingError):
         handler.get_connection()
@@ -79,9 +84,9 @@ def test_get_connection_lock(handler):
     conn = handler.get_connection()
     thread = Thread(target=handler.get_connection)
     thread.start()
-    thread.join(0.5)
+    thread.join(0.05)
     assert thread.is_alive()
-    handler.put_connection(conn)
+    handler.put_connection(conn, False)
     thread.join(0.05)
     assert not thread.is_alive()
 
@@ -110,8 +115,8 @@ def test_put_connection(handler):
 
     pool.putconn = pc = MagicMock()
 
-    handler.put_connection(connection)
-    pc.assert_called_with(connection)
+    handler.put_connection(connection, False)
+    pc.assert_called_with(connection, close=False)
     semaphore.release.assert_called()
     gcc.assert_called()
     scc.assert_called_with(None)
@@ -122,7 +127,7 @@ def test_put_connection_invalid_connection(handler):
     handler._storage.connection = MagicMock()
 
     with pytest.raises(BadCodingError):
-        handler.put_connection(MagicMock())
+        handler.put_connection(MagicMock(), False)
 
 
 def test_get_connection_context(handler):
@@ -131,6 +136,32 @@ def test_get_connection_context(handler):
     ) as context:
         handler.get_connection_context()
         context.assert_called_with(handler)
+
+
+# Connection context and error handling
+
+
+def test_connection_error_in_context(handler):
+    connection = MagicMock()
+    handler._semaphore = semaphore = MagicMock()
+    handler.connection_pool = pool = MagicMock()
+    pool.getconn = gc = MagicMock(return_value=connection)
+    pool.putconn = pc = MagicMock()
+
+    context = ConnectionContext(handler)
+    with pytest.raises(DatabaseError):
+        with context:
+            gc.assert_called()
+            raise psycopg2.Error("Test")
+
+    # not blocked
+    semaphore.acquire.assert_called_once()
+    semaphore.release.assert_called_once()
+    assert handler.get_current_connection() is None
+    pc.assert_called_with(connection, close=True)
+
+
+# Query methods
 
 
 def test_to_json(handler):
