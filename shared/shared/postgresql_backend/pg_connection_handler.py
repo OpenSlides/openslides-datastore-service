@@ -8,7 +8,7 @@ from psycopg2.pool import ThreadedConnectionPool
 
 from shared.di import service_as_singleton
 from shared.services import EnvironmentService, ShutdownService
-from shared.util import BadCodingError
+from shared.util import BadCodingError, logger
 
 from .connection_handler import DatabaseError
 
@@ -39,7 +39,11 @@ class ConnectionContext:
         has_connection_error = exception is not None and issubclass(
             exception, psycopg2.Error
         )
-        self.connection.__exit__(exception, exception_value, traceback)
+        if has_connection_error:
+            # make sure the connection was already closed by psycopg
+            assert self.connection.closed > 0
+        else:
+            self.connection.__exit__(exception, exception_value, traceback)
         self.connection_handler.put_connection(self.connection, has_connection_error)
 
         if has_connection_error:
@@ -95,10 +99,18 @@ class PgConnectionHandlerService:
         }
 
     def get_connection(self):
-        if self.get_current_connection():
-            raise BadCodingError(
-                "You cannot start multiple transactions in one thread!"
-            )
+        if old_conn := self.get_current_connection():
+            if old_conn.closed:
+                # If an error happens while returning the connection to the pool, it
+                # might still be set as the current connection although it is already
+                # closed. In this case, we just discard it.
+                logger.debug(f"Discarding old connection (closed={old_conn.closed})")
+                logger.debug("This indicates a previous error, please check the logs")
+                self.put_connection(old_conn, True)
+            else:
+                raise BadCodingError(
+                    "You cannot start multiple transactions in one thread!"
+                )
         self._semaphore.acquire()
         connection = self.connection_pool.getconn()
         connection.autocommit = False
@@ -157,7 +169,7 @@ class PgConnectionHandlerService:
         return prepared_query
 
     def raise_error(self, msg):
-        # TODO: log the error!
+        logger.error(f"Connection handler error: {msg}")
         raise DatabaseError(msg)
 
     def shutdown(self):
