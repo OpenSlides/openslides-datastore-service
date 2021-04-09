@@ -17,14 +17,13 @@ from .connection_handler import DatabaseError
 MAX_RETRIES = 3
 
 
-def ensure_connection(fn):
+def retry_on_db_failure(fn):
     @wraps(fn)
-    def wrapper(database, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         tries = 0
         while True:
             try:
-                with database.get_connection():
-                    fn(database, *args, **kwargs)
+                return fn(*args, **kwargs)
             except DatabaseError as e:
                 # this seems to be the only indication for a sudden connection break
                 if (
@@ -35,8 +34,6 @@ def ensure_connection(fn):
                     if tries < MAX_RETRIES:
                         continue
                 raise
-            else:
-                return
 
     return wrapper
 

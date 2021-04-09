@@ -36,13 +36,14 @@ class WriterService:
 
         with self._lock:
             self.position_to_db_events = {}
-            for write_request in self.write_requests:
-                # Convert request events to db events
-                db_events = self.event_translator.translate(write_request.events)
-                position = self.write_with_database_context(
-                    write_request, db_events
-                )
-                self.position_to_db_events[position] = db_events
+            with self.database.get_context():
+                for write_request in self.write_requests:
+                    # Convert request events to db events
+                    db_events = self.event_translator.translate(write_request.events)
+                    position = self.write_with_database_context(
+                        write_request, db_events
+                    )
+                    self.position_to_db_events[position] = db_events
 
             # Only propagate updates to redis after the transaction has finished
             self.messaging.handle_events(

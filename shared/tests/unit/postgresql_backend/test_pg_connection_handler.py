@@ -14,7 +14,7 @@ from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.pg_connection_handler import (
     ConnectionContext,
     PgConnectionHandlerService,
-    ensure_connection,
+    retry_on_db_failure,
 )
 from shared.services import EnvironmentService, setup_di as util_setup_di
 from shared.tests import reset_di  # noqa
@@ -259,46 +259,30 @@ def test_shutdown(handler):
     pool.closeall.assert_called()
 
 
-# test ensure_connection
+# test retry_on_db_failure
 
 
-def test_ensure_connection():
-    @ensure_connection
-    def test(database):
-        database.mock_count()
+def test_retry_on_db_failure():
+    @retry_on_db_failure
+    def test(counter):
+        counter()
         error = psycopg2.OperationalError()
         raise DatabaseError("", error)
 
-    database = MagicMock()
-    database.get_context = lambda: handler.get_connection_context()
-
+    counter = MagicMock()
     with pytest.raises(DatabaseError):
-        test(database)
-    assert database.mock_count.call_count == 3
+        test(counter)
+    assert counter.call_count == 3
 
 
-def test_ensure_connection_raise_on_other_error():
-    @ensure_connection
-    def test(database):
-        database.mock_count()
+def test_retry_on_db_failure_raise_on_other_error():
+    @retry_on_db_failure
+    def test(counter):
+        counter()
         error = psycopg2.Error()
         raise DatabaseError("", error)
 
-    database = MagicMock()
-    database.get_context = lambda: handler.get_connection_context()
-
+    counter = MagicMock()
     with pytest.raises(DatabaseError):
-        test(database)
-    assert database.mock_count.call_count == 1
-
-
-def test_ensure_connection_no_error():
-    @ensure_connection
-    def test(database):
-        database.mock_count()
-
-    database = MagicMock()
-    database.get_context = lambda: handler.get_connection_context()
-
-    test(database)
-    assert database.mock_count.call_count == 1
+        test(counter)
+    assert counter.call_count == 1
