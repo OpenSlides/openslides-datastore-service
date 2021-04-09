@@ -1,4 +1,5 @@
 import threading
+from functools import wraps
 from threading import Semaphore
 
 import psycopg2
@@ -13,10 +14,31 @@ from shared.util import BadCodingError, logger
 from .connection_handler import DatabaseError
 
 
-# TODO: Test this. Add something like a @ensure_connection decorator, that wraps a
-# function that uses the database. It should ensure, that a transaction is running
-# and if the command fails with psycopg2.InterfaceError (=Connection reset) it should
-# be retried. Also it should create a connection, if it wasn't established before.
+MAX_RETRIES = 3
+
+
+def ensure_connection(fn):
+    @wraps(fn)
+    def wrapper(database, *args, **kwargs):
+        tries = 0
+        while True:
+            try:
+                with database.get_connection():
+                    fn(database, *args, **kwargs)
+            except DatabaseError as e:
+                # this seems to be the only indication for a sudden connection break
+                if (
+                    isinstance(e.base_exception, psycopg2.OperationalError)
+                    and e.base_exception.pgcode is None
+                ):
+                    tries += 1
+                    if tries < MAX_RETRIES:
+                        continue
+                raise
+            else:
+                return
+
+    return wrapper
 
 
 class DATABASE_ENVIRONMENT_VARIABLES:
@@ -47,9 +69,7 @@ class ConnectionContext:
         self.connection_handler.put_connection(self.connection, has_connection_error)
 
         if has_connection_error:
-            self.connection_handler.raise_error(
-                f"Database connection error ({exception.__name__}, code {exception_value.pgcode}): {exception_value.pgerror}"  # noqa
-            )
+            self.connection_handler.raise_error(exception_value)
 
 
 @service_as_singleton
@@ -73,9 +93,7 @@ class PgConnectionHandlerService:
                 min_conn, max_conn, **self.get_connection_params()
             )
         except psycopg2.Error as e:
-            self.raise_error(
-                f"Database connection error ({type(e).__name__}) {e.pgcode}: {e.pgerror}"  # noqa
-            )
+            self.raise_error(e)
 
     def get_current_connection(self):
         try:
@@ -168,9 +186,10 @@ class PgConnectionHandlerService:
         )
         return prepared_query
 
-    def raise_error(self, msg):
-        logger.error(f"Connection handler error: {msg}")
-        raise DatabaseError(msg)
+    def raise_error(self, e: psycopg2.Error):
+        msg = f"Database connection error ({type(e).__name__}, code {e.pgcode}): {e.pgerror}"  # noqa
+        logger.error(msg)
+        raise DatabaseError(msg, e)
 
     def shutdown(self):
         self.connection_pool.closeall()

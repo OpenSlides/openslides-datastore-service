@@ -14,6 +14,7 @@ from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.pg_connection_handler import (
     ConnectionContext,
     PgConnectionHandlerService,
+    ensure_connection,
 )
 from shared.services import EnvironmentService, setup_di as util_setup_di
 from shared.tests import reset_di  # noqa
@@ -256,3 +257,48 @@ def test_shutdown(handler):
 
     handler.shutdown()
     pool.closeall.assert_called()
+
+
+# test ensure_connection
+
+
+def test_ensure_connection():
+    @ensure_connection
+    def test(database):
+        database.mock_count()
+        error = psycopg2.OperationalError()
+        raise DatabaseError("", error)
+
+    database = MagicMock()
+    database.get_context = lambda: handler.get_connection_context()
+
+    with pytest.raises(DatabaseError):
+        test(database)
+    assert database.mock_count.call_count == 3
+
+
+def test_ensure_connection_raise_on_other_error():
+    @ensure_connection
+    def test(database):
+        database.mock_count()
+        error = psycopg2.Error()
+        raise DatabaseError("", error)
+
+    database = MagicMock()
+    database.get_context = lambda: handler.get_connection_context()
+
+    with pytest.raises(DatabaseError):
+        test(database)
+    assert database.mock_count.call_count == 1
+
+
+def test_ensure_connection_no_error():
+    @ensure_connection
+    def test(database):
+        database.mock_count()
+
+    database = MagicMock()
+    database.get_context = lambda: handler.get_connection_context()
+
+    test(database)
+    assert database.mock_count.call_count == 1

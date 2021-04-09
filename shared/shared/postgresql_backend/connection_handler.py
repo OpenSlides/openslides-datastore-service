@@ -4,8 +4,9 @@ from shared.di import service_interface
 
 
 class DatabaseError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, base_exception: Exception = None):
         self.msg = msg
+        self.base_exception = base_exception
 
 
 @service_interface

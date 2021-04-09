@@ -1,4 +1,5 @@
 from .connection_handler import ConnectionHandler
+from .pg_connection_handler import ensure_connection  # noqa
 from .sql_event_types import EVENT_TYPES  # noqa
 from .sql_query_helper import SqlQueryHelper
 
