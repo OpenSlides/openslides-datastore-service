@@ -48,7 +48,7 @@ class ConnectionContext:
 
         if has_connection_error:
             self.connection_handler.raise_error(
-                f"Database connection error ({type(exception).__name__}) {exception.pgcode}: {exception.pgerror}"  # noqa
+                f"Database connection error ({exception.__name__}, code {exception_value.pgcode}): {exception_value.pgerror}"  # noqa
             )
 
 
