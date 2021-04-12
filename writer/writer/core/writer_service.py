@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 from shared.di import service_as_factory
+from shared.postgresql_backend import retry_on_db_failure
 from shared.util import logger
 
 from .database import Database
@@ -25,6 +26,7 @@ class WriterService:
     event_executor: EventExecutor
     messaging: Messaging
 
+    @retry_on_db_failure
     def write(
         self,
         write_requests: List[WriteRequest],

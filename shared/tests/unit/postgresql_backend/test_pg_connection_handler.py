@@ -14,6 +14,7 @@ from shared.postgresql_backend.connection_handler import DatabaseError
 from shared.postgresql_backend.pg_connection_handler import (
     ConnectionContext,
     PgConnectionHandlerService,
+    retry_on_db_failure,
 )
 from shared.services import EnvironmentService, setup_di as util_setup_di
 from shared.tests import reset_di  # noqa
@@ -80,6 +81,13 @@ def test_get_connection_twice_error(handler):
         handler.get_connection()
 
 
+def test_get_connection_ignore_invalid_connection(handler):
+    old_conn = handler.get_connection()
+    old_conn.close()
+    new_conn = handler.get_connection()
+    assert old_conn != new_conn
+
+
 def test_get_connection_lock(handler):
     conn = handler.get_connection()
     thread = Thread(target=handler.get_connection)
@@ -130,6 +138,27 @@ def test_put_connection_invalid_connection(handler):
         handler.put_connection(MagicMock(), False)
 
 
+@pytest.mark.skipif(
+    not os.getenv("RUN_MANUAL_TESTS"), reason="needs manual intervention"
+)
+def test_postgres_connection_reset(handler):
+    """
+    Unfortunately, a manual restart of the postgres container is necessary to provoke
+    the needed OperationalError. Run this test to see how the connection handler
+    handles a short connection loss to the db.
+    """
+    try:
+        with handler.get_connection_context():
+            breakpoint()  # restart postgres here
+            handler.execute("SELECT 1", [])
+    except Exception:
+        pass
+
+    # this should still work without error
+    with handler.get_connection_context():
+        handler.execute("SELECT 1", [])
+
+
 def test_get_connection_context(handler):
     with patch(
         "shared.postgresql_backend.pg_connection_handler.ConnectionContext"
@@ -143,6 +172,7 @@ def test_get_connection_context(handler):
 
 def test_connection_error_in_context(handler):
     connection = MagicMock()
+    connection.closed = 1
     handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
     pool.getconn = gc = MagicMock(return_value=connection)
@@ -227,3 +257,32 @@ def test_shutdown(handler):
 
     handler.shutdown()
     pool.closeall.assert_called()
+
+
+# test retry_on_db_failure
+
+
+def test_retry_on_db_failure():
+    @retry_on_db_failure
+    def test(counter):
+        counter()
+        error = psycopg2.OperationalError()
+        raise DatabaseError("", error)
+
+    counter = MagicMock()
+    with pytest.raises(DatabaseError):
+        test(counter)
+    assert counter.call_count == 3
+
+
+def test_retry_on_db_failure_raise_on_other_error():
+    @retry_on_db_failure
+    def test(counter):
+        counter()
+        error = psycopg2.Error()
+        raise DatabaseError("", error)
+
+    counter = MagicMock()
+    with pytest.raises(DatabaseError):
+        test(counter)
+    assert counter.call_count == 1
