@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 from shared.di import service_as_factory
+from shared.postgresql_backend import retry_on_db_failure
 from shared.util import logger
 
 from .database import Database
@@ -12,7 +13,6 @@ from .event_translator import EventTranslator
 from .messaging import Messaging
 from .occ_locker import OccLocker
 from .write_request import BaseRequestEvent, WriteRequest
-from shared.postgresql_backend import ensure_connection
 
 
 @service_as_factory
@@ -26,7 +26,7 @@ class WriterService:
     event_executor: EventExecutor
     messaging: Messaging
 
-    @ensure_connection
+    @retry_on_db_failure
     def write(
         self,
         write_requests: List[WriteRequest],
