@@ -286,3 +286,18 @@ def test_retry_on_db_failure_raise_on_other_error():
     with pytest.raises(DatabaseError):
         test(counter)
     assert counter.call_count == 1
+
+
+def test_retry_on_db_failure_with_timeout():
+    @retry_on_db_failure
+    def test(counter):
+        counter()
+        error = psycopg2.OperationalError()
+        raise DatabaseError("", error)
+
+    counter = MagicMock()
+    with patch("shared.postgresql_backend.pg_connection_handler.sleep") as sleep:
+        with pytest.raises(DatabaseError):
+            test(counter)
+    assert counter.call_count == 3
+    assert sleep.call_count == 2

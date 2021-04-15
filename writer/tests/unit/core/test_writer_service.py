@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from shared.di import injector
+from shared.services import EnvironmentService
 from shared.tests import reset_di  # noqa
 from writer.core import (
     Database,
@@ -28,6 +29,7 @@ def provide_di(reset_di):  # noqa
     injector.register_as_singleton(EventExecutor, MagicMock)
     injector.register_as_singleton(Messaging, MagicMock)
     injector.register(Writer, WriterService)
+    injector.register(EnvironmentService, EnvironmentService)
     yield
 
 

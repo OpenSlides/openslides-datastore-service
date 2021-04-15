@@ -100,12 +100,14 @@ class WriterService:
             write_request.locked_collectionfields
         )
 
+    @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> List[int]:
         with self.database.get_context():
             ids = self.database.reserve_next_ids(collection, amount)
             logger.info(f"{len(ids)} ids reserved")
             return ids
 
+    @retry_on_db_failure
     def truncate_db(self) -> None:
         with self.database.get_context():
             self.database.truncate_db()

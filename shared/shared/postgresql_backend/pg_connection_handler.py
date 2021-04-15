@@ -1,25 +1,26 @@
 import threading
 from functools import wraps
 from threading import Semaphore
+from time import sleep
 
 import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import DictCursor, Json
 from psycopg2.pool import ThreadedConnectionPool
 
-from shared.di import service_as_singleton
+from shared.di import injector, service_as_singleton
 from shared.services import EnvironmentService, ShutdownService
 from shared.util import BadCodingError, logger
 
 from .connection_handler import DatabaseError
 
 
-MAX_RETRIES = 3
-
-
 def retry_on_db_failure(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        env_service: EnvironmentService = injector.get(EnvironmentService)
+        RETRY_TIMEOUT = int(env_service.try_get("DATASTORE_RETRY_TIMEOUT") or 10)
+        MAX_RETRIES = int(env_service.try_get("DATASTORE_MAX_RETRIES") or 3)
         tries = 0
         while True:
             try:
@@ -31,9 +32,12 @@ def retry_on_db_failure(fn):
                     and e.base_exception.pgcode is None
                 ):
                     tries += 1
-                    if tries < MAX_RETRIES:
-                        continue
-                raise
+                    if tries >= MAX_RETRIES:
+                        raise
+                else:
+                    raise
+            if RETRY_TIMEOUT:
+                sleep(RETRY_TIMEOUT / 1000)
 
     return wrapper
 

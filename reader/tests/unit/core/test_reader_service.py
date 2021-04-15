@@ -19,7 +19,7 @@ from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
-from shared.services import ReadDatabase
+from shared.services import EnvironmentService, ReadDatabase
 from shared.services.read_database import (
     AggregateFilterQueryFieldsParameters,
     CountFilterQueryFieldsParameters,
@@ -38,6 +38,7 @@ def provide_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, MagicMock)
     injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register(Reader, ReaderService)
+    injector.register(EnvironmentService, EnvironmentService)
     yield
 
 

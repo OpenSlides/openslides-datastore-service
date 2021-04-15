@@ -12,7 +12,7 @@ from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.postgresql_backend.sql_read_database_backend_service import (
     SqlReadDatabaseBackendService,
 )
-from shared.services import ReadDatabase
+from shared.services import EnvironmentService, ReadDatabase
 from shared.tests import reset_di  # noqa
 
 
@@ -30,6 +30,7 @@ def setup_di(reset_di):  # noqa
     injector.register_as_singleton(SqlQueryHelper, SqlQueryHelper)
     injector.register_as_singleton(ReadDatabase, SqlReadDatabaseBackendService)
     injector.register_as_singleton(Reader, ReaderService)
+    injector.register(EnvironmentService, EnvironmentService)
 
 
 @pytest.fixture()
