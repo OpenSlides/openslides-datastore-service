@@ -10,7 +10,7 @@ from reader.core.reader import (
 )
 from reader.core.requests import GetManyRequestPart
 from shared.di import service_as_factory
-from shared.postgresql_backend import ConnectionHandler
+from shared.postgresql_backend import ConnectionHandler, retry_on_db_failure
 from shared.services import ReadDatabase
 from shared.services.read_database import (
     AggregateFilterQueryFieldsParameters,
@@ -48,6 +48,7 @@ class ReaderService:
     connection: ConnectionHandler
     database: ReadDatabase
 
+    @retry_on_db_failure
     def get(self, request: GetRequest) -> Model:
         with self.database.get_context():
             if request.position:
@@ -71,6 +72,7 @@ class ReaderService:
                 )
         return model
 
+    @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
         with self.database.get_context():
             mapped_fields_per_fqid: Dict[str, List[str]] = {}
@@ -121,16 +123,19 @@ class ReaderService:
 
         return final
 
+    @retry_on_db_failure
     def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
         with self.database.get_context():
             return self.database.get_all(
                 request.collection, request.mapped_fields, request.get_deleted_models
             )
 
+    @retry_on_db_failure
     def get_everything(self, request: GetEverythingRequest) -> Dict[str, List[Model]]:
         with self.database.get_context():
             return self.database.get_everything(request.get_deleted_models)
 
+    @retry_on_db_failure
     def filter(self, request: FilterRequest) -> FilterResult:
         with self.database.get_context():
             data = self.database.filter(
@@ -164,6 +169,7 @@ class ReaderService:
         res = self.minmax(request, "max")
         return cast(MaxResult, res)
 
+    @retry_on_db_failure
     def aggregate(
         self,
         collection: str,

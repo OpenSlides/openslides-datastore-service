@@ -5,7 +5,7 @@ import pytest
 
 from shared.di import injector
 from shared.postgresql_backend import ConnectionHandler
-from shared.services import ReadDatabase
+from shared.services import EnvironmentService, ReadDatabase
 from shared.tests import reset_di  # noqa
 from shared.util import ModelDoesNotExist, ModelExists
 from writer.core import Database, Messaging, OccLocker, setup_di as core_setup_di
@@ -64,6 +64,7 @@ def setup_di(reset_di):  # noqa
     injector.register(Database, SqlDatabaseBackendService)
     injector.register_as_singleton(OccLocker, lambda: MagicMock(unsafe=True))
     injector.register_as_singleton(Messaging, MagicMock)
+    injector.register(EnvironmentService, EnvironmentService)
     core_setup_di()
 
 
