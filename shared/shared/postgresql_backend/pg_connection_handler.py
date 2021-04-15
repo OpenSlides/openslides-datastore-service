@@ -32,7 +32,12 @@ def retry_on_db_failure(fn):
                     and e.base_exception.pgcode is None
                 ):
                     tries += 1
-                    if tries >= MAX_RETRIES:
+                    if tries < MAX_RETRIES:
+                        oe = e.base_exception
+                        logger.info(
+                            f"Retrying request to database because of the following error ({type(oe).__name__}, code {oe.pgcode}): {oe.pgerror}"  # noqa
+                        )
+                    else:
                         raise
                 else:
                     raise
