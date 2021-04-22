@@ -106,12 +106,10 @@ def test_locked_collectionfield_with_filter(
 ):
     locked_collectionfield = MagicMock()
     connection_handler.collectionfield = MagicMock(return_value=locked_collectionfield)
-    valid_metadata["locked_fields"]["a/f"] = [
-        {
-            "position": 42,
-            "filter": FilterOperator("field", "=", "value"),
-        }
-    ]
+    valid_metadata["locked_fields"]["a/f"] = {
+        "position": 42,
+        "filter": FilterOperator("field", "=", "value"),
+    }
 
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
@@ -124,7 +122,7 @@ def test_locked_collectionfield_with_filter_without_filter(
 ):
     locked_collectionfield = MagicMock()
     connection_handler.collectionfield = MagicMock(return_value=locked_collectionfield)
-    valid_metadata["locked_fields"]["a/f"] = [{"position": 42}]
+    valid_metadata["locked_fields"]["a/f"] = {"position": 42}
 
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
