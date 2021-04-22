@@ -52,7 +52,7 @@ def test_collectionfield_lock():
     wr = WriteRequest(get_dummy_request_events(), {}, 1, locked_fields)
 
     assert isinstance(
-        wr.locked_collectionfields["collection/field"], CollectionFieldLockWithFilter
+        wr.locked_collectionfields["collection/field"][0], CollectionFieldLockWithFilter
     )
 
 

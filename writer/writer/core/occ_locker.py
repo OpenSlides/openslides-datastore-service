@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Protocol, Union
+from typing import Dict, List, Optional, Protocol, Union
 
 from shared.di import service_interface
 from shared.util import Filter, SelfValidatingDataclass
@@ -8,10 +8,10 @@ from shared.util import Filter, SelfValidatingDataclass
 @dataclass
 class CollectionFieldLockWithFilter(SelfValidatingDataclass):
     position: int
-    filter: Filter
+    filter: Optional[Filter]
 
 
-CollectionFieldLock = Union[int, CollectionFieldLockWithFilter]
+CollectionFieldLock = Union[int, List[CollectionFieldLockWithFilter]]
 
 
 @service_interface

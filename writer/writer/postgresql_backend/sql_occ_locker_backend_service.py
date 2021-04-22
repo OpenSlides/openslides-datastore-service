@@ -117,21 +117,20 @@ class SqlOccLockerBackendService:
                 )
                 filter_parts.append("(cf.collectionfield=%s and e.position>%s)")
             else:
-                query_arguments.extend(
-                    (
-                        cf_lock.position,
-                        collectionfield,
+                for lock in cf_lock:
+                    query_arguments.extend(
+                        (
+                            lock.position,
+                            collectionfield,
+                        )
                     )
-                )
-                filter_part = "(e.position>%s and cf.collectionfield=%s"
-                filter_part += (
-                    " and "
-                    + self.query_helper.build_filter_str(
-                        cf_lock.filter, query_arguments, "m"
-                    )
-                    + ")"
-                )
-                filter_parts.append(filter_part)
+                    filter_part = "(e.position>%s and cf.collectionfield=%s"
+                    if lock.filter:
+                        filter_part += " and " + self.query_helper.build_filter_str(
+                            lock.filter, query_arguments, "m"
+                        )
+                    filter_part += ")"
+                    filter_parts.append(filter_part)
 
         filter_query = " or ".join(filter_parts)
         query = dedent(
