@@ -23,6 +23,15 @@ from writer.core import (
 from writer.core.write_request import LockedFieldsJSON
 
 
+collectionfield_lock_with_filter_schema = {
+    "type": "object",
+    "properties": {
+        "position": {"type": "integer"},
+        "filter": filter_definitions_schema,
+    },
+    "required": ["position"],
+}
+
 write_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -33,12 +42,10 @@ write_schema = fastjsonschema.compile(
             "locked_fields": {
                 "type": "object",
                 "additionalProperties": {
-                    "type": ["integer", "object"],
-                    "properties": {
-                        "position": {"type": "integer"},
-                        "filter": filter_definitions_schema,
-                    },
-                    "required": ["position", "filter"],
+                    **collectionfield_lock_with_filter_schema,
+                    "type": ["integer", "object", "array"],
+                    "items": collectionfield_lock_with_filter_schema,
+                    "minItems": 1,
                 },
             },
             "events": {

@@ -293,6 +293,65 @@ def test_lock_collectionfield_with_and_filter(json_client, data):
     assert_model("a/2", {}, 3)
 
 
+def test_lock_collectionfield_empty_array(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f1": 1, "f3": False}, {"f2": 2})
+    data["locked_fields"]["a/f1"] = []
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 400)
+
+
+def test_lock_collectionfield_multiple_locks_ok(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f1": 1}, {"f2": 2})
+    data["locked_fields"]["a/f1"] = [
+        {
+            "position": 1,
+            "filter": {
+                "field": "f1",
+                "operator": "=",
+                "value": 1,
+            },
+        },
+        {
+            "position": 1,
+            "filter": {
+                "field": "f2",
+                "operator": "=",
+                "value": 2,
+            },
+        },
+    ]
+
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert_model("a/2", {}, 3)
+
+
+def test_lock_collectionfield_multiple_locks_not_ok(json_client, data):
+    create_and_update_model(json_client, "a/1", {"f1": 1}, {"f2": 2})
+    data["locked_fields"]["a/f2"] = [
+        {
+            "position": 1,
+            "filter": {
+                "field": "f1",
+                "operator": "=",
+                "value": 1,
+            },
+        },
+        {
+            "position": 2,
+            "filter": {
+                "field": "f2",
+                "operator": "=",
+                "value": 2,
+            },
+        },
+    ]
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert_no_model("a/2")
+
+
 # Template fields
 
 

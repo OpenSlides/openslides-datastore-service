@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict, List, TypedDict, Union, cast
 
 from dacite import from_dict
@@ -84,7 +85,7 @@ class RequestRestoreEvent(BaseRequestEvent):
     pass
 
 
-LockedFieldsJSON = Union[int, Dict[str, Any]]
+LockedFieldsJSON = Union[int, Dict[str, Any], List[Dict[str, Any]]]
 
 
 class WriteRequest:
@@ -105,7 +106,7 @@ class WriteRequest:
     def parse_locked_fields(self, locked_fields: Dict[str, LockedFieldsJSON]) -> None:
         self.locked_fqids: Dict[str, int] = {}
         self.locked_fqfields: Dict[str, int] = {}
-        self.locked_collectionfields: Dict[str, CollectionFieldLock] = {}
+        self.locked_collectionfields: Dict[str, CollectionFieldLock] = defaultdict(list)
         for key, position in locked_fields.items():
             self.handle_single_key(key, position)
 
@@ -129,11 +130,16 @@ class WriteRequest:
             if isinstance(cf_lock, int):
                 self.locked_collectionfields[key] = cf_lock
             else:
+                if not isinstance(cf_lock, list):
+                    cf_lock = [cf_lock]
                 # build self validating data class
                 try:
-                    self.locked_collectionfields[key] = from_dict(
-                        CollectionFieldLockWithFilter,
-                        cf_lock,
-                    )
+                    for lock in cf_lock:
+                        self.locked_collectionfields[key].append(  # type: ignore
+                            from_dict(
+                                CollectionFieldLockWithFilter,
+                                lock,
+                            )
+                        )
                 except (TypeError, MissingValueError, UnionMatchError) as e:
                     raise BadCodingError("Invalid data to initialize class\n" + str(e))
