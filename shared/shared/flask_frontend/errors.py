@@ -14,8 +14,6 @@ from shared.util import (
     logger,
 )
 
-from .json_response import JsonResponse
-
 
 # internal errors
 
@@ -35,7 +33,7 @@ def handle_internal_errors(fn):
         try:
             return fn(*args, **kwargs)
         except DatabaseError as e:
-            return JsonResponse({"error": e.msg}), 500
+            return {"error": e.msg}, 500
         except InvalidFormat as e:
             error_dict = {
                 "type": ERROR_CODES.INVALID_FORMAT,
