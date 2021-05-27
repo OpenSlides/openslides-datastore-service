@@ -1,6 +1,6 @@
-from .init import init
+from reader.app import register_services
 
-init()
+register_services()
 
-from .handler import handle_request  # noqa
-from reader.flask_frontend.routes import Route  # noqa
+import reader  # noqa
+import shared  # noqa

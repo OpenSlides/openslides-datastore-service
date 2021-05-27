@@ -49,4 +49,5 @@ class JSONHandler:
         if route_configuration.dev_only:
             route_handler = dev_only_route(route_handler)
 
-        return route_handler(request_object)
+        with reader.get_database_context():
+            return route_handler(request_object)
