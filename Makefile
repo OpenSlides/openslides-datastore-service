@@ -8,6 +8,9 @@ args=-t -v `pwd`/shared/shared:/app/shared -v `pwd`/$(MODULE)/$(MODULE):/app/$(M
 build-tests:
 	docker build -t openslides-datastore-$(MODULE)-test -f Dockerfile.test . --build-arg MODULE=$(MODULE)
 
+rebuild-tests:
+	docker build -t openslides-datastore-$(MODULE)-test -f Dockerfile.test . --build-arg MODULE=$(MODULE) --no-cache
+
 # Docker compose
 setup-docker-compose: | build-tests
 	docker-compose -f dc.test.yml up -d $(MODULE)
@@ -79,7 +82,7 @@ run-verbose:
 	docker-compose up
 
 # execute the target for all modules
-run-cleanup run-cleanup-with-update:
+run-cleanup run-cleanup-with-update rebuild-tests:
 	@$(MAKE) -C shared $@
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
