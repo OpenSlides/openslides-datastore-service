@@ -93,7 +93,7 @@ class WriterService:
         return position
 
     def assert_locked_fields(self, write_request: WriteRequest) -> None:
-        """ May raise a ModelLockedException """
+        """May raise a ModelLockedException"""
         self.occ_locker.assert_fqid_positions(write_request.locked_fqids)
         self.occ_locker.assert_fqfield_positions(write_request.locked_fqfields)
         self.occ_locker.assert_collectionfield_positions(

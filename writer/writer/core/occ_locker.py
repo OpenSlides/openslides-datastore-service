@@ -17,10 +17,10 @@ CollectionFieldLock = Union[int, List[CollectionFieldLockWithFilter]]
 @service_interface
 class OccLocker(Protocol):
     def assert_fqid_positions(self, fqids: Dict[str, int]) -> None:
-        """ Raises ModelLocked if a position of at least one fqid is too old """
+        """Raises ModelLocked if a position of at least one fqid is too old"""
 
     def assert_fqfield_positions(self, fqfields: Dict[str, int]) -> None:
-        """ Raises ModelLocked if a position of at least one fqfield is too old """
+        """Raises ModelLocked if a position of at least one fqfield is too old"""
 
     def assert_collectionfield_positions(
         self, collectionfields: Dict[str, CollectionFieldLock]

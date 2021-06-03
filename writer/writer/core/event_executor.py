@@ -23,7 +23,7 @@ from writer.core.db_events import (
 @service_interface
 class EventExecutor(Protocol):
     def update(self, events: List[BaseDbEvent], position: int) -> None:
-        """ Execute the given list of events. """
+        """Execute the given list of events."""
 
 
 class MODEL_STATUS:

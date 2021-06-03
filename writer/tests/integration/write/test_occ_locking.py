@@ -23,13 +23,13 @@ class FakeConnectionHandler:
             return self.collectionfield()
 
     def fqid(self):
-        ""
+        """"""
 
     def fqfield(self):
-        ""
+        """"""
 
     def collectionfield(self):
-        ""
+        """"""
 
 
 @pytest.fixture(autouse=True)

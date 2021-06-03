@@ -27,4 +27,4 @@ class Database(Protocol):
         """
 
     def truncate_db(self) -> None:
-        """ Truncate all tables. Only for dev purposes! """
+        """Truncate all tables. Only for dev purposes!"""

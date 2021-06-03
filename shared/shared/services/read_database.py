@@ -142,4 +142,4 @@ class ReadDatabase(Protocol):
         """
 
     def get_position(self) -> int:
-        """ Returns the current (highest) position of the datastore. """
+        """Returns the current (highest) position of the datastore."""
