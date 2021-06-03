@@ -12,7 +12,7 @@ class DatabaseError(Exception):
 @service_interface
 class ConnectionHandler(Protocol):
     def get_connection_context(self):
-        """ Returns the connection """
+        """Returns the connection"""
 
     def to_json(self, data):
         """
@@ -21,7 +21,7 @@ class ConnectionHandler(Protocol):
         """
 
     def execute(self, query, arguments, sql_parameters=[]):
-        """ Executes the query. """
+        """Executes the query."""
 
     def query(self, query, arguments, sql_parameters=[]):
         """

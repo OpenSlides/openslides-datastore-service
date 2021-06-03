@@ -24,10 +24,10 @@ class FakeConnectionHandler:
             self.create_model_lookup(statement, arguments)
 
     def create_position(self, statement, arguments):
-        ""
+        """"""
 
     def create_model_lookup(self, statement, arguments):
-        ""
+        """"""
 
     def query_single_value(self, query, arguments):
         if query == "select max(position) from positions":
@@ -38,20 +38,20 @@ class FakeConnectionHandler:
             return self.create_event(query, arguments)
 
     def get_max_position(self):
-        ""
+        """"""
 
     def exists(self):
-        ""
+        """"""
 
     def create_event(self, query, arguments):
-        ""
+        """"""
 
     def query_list_of_single_values(self, query, arguments):
         if query.startswith("insert into collectionfields (collectionfield, position)"):
             return self.attach_fields()
 
     def attach_fields(self):
-        ""
+        """"""
 
     def to_json(self, data):
         return data

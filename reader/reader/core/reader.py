@@ -39,13 +39,13 @@ class MaxResult(TypedDict):
 
 
 class Reader(Protocol):
-    """ An abstract class for the reader. For more details, see the specs. """
+    """An abstract class for the reader. For more details, see the specs."""
 
     def get(self, request: GetRequest) -> Model:
-        """ Gets the specified model. """
+        """Gets the specified model."""
 
     def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
-        """ Gets multiple models. """
+        """Gets multiple models."""
 
     def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
         """
@@ -60,13 +60,13 @@ class Reader(Protocol):
         """
 
     def filter(self, request: FilterRequest) -> FilterResult:
-        """ Returns all models that satisfy the filter condition. """
+        """Returns all models that satisfy the filter condition."""
 
     def exists(self, request: AggregateRequest) -> ExistsResult:
-        """ Determines whether at least one model satisfies the filter conditions. """
+        """Determines whether at least one model satisfies the filter conditions."""
 
     def count(self, request: AggregateRequest) -> CountResult:
-        """ Returns the amount of models taht satisfy the filter conditions. """
+        """Returns the amount of models taht satisfy the filter conditions."""
 
     def min(self, request: MinMaxRequest) -> MinResult:
         """

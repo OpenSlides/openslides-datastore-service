@@ -155,7 +155,7 @@ class SqlReadDatabaseBackendService:
         sql_parameters: List[str],
         mapped_fields: List[str],
     ) -> Dict[int, Model]:
-        """ Fetched models for one collection """
+        """Fetched models for one collection"""
         result = self.connection.query(query, arguments, sql_parameters)
         models = {}
         for row in result:

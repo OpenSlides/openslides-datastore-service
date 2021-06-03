@@ -144,7 +144,7 @@ class SqlOccLockerBackendService:
         self.raise_model_locked_if_match(query, query_arguments)
 
     def raise_model_locked_if_match(self, query, arguments):
-        """ returns str (the only response) or None if there is no row """
+        """returns str (the only response) or None if there is no row"""
         locked_key = self.connection.query_single_value(query, arguments)
         if locked_key is not None:
             raise ModelLocked(locked_key)
