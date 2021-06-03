@@ -1,12 +1,18 @@
 import setuptools
 
 
-# hard code the dependencies since we unfortunately do not have access to the requirements file
+# hard code the dependencies since we unfortunately do not have access to the
+# requirements file
 install_requires = ["flask", "psycopg2", "fastjsonschema", "gunicorn", "dacite"]
 for dep in ["reader", "shared"]:
     # See https://stackoverflow.com/a/64921671 for different pip/setuptools formats
     # Installing this package will only work through pip
-    install_requires.append(f"datastore_{dep}@git+https://github.com/jsangmeister/openslides-datastore-service@pip-package#subdirectory={dep}")
+    install_requires.append(
+        f"datastore_{dep}@git+https://github.com/jsangmeister/openslides-datastore-service@pip-package#subdirectory={dep}"  # noqa: E501
+    )
+    # install_requires.append(
+    #     f"datastore_{dep}@git+https://github.com/OpenSlides/openslides-datastore-service#subdirectory={dep}"  # noqa: E501
+    # )
 
 setuptools.setup(
     name="readerlib",

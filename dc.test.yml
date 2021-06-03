@@ -31,6 +31,7 @@ services:
         command: ["sleep", "infinity"]
         volumes:
             - ./shared/shared:/app/shared
+            - ./reader/lib:/app/lib
             - ./reader/reader:/app/reader
             - ./reader/tests:/app/tests
         environment:
