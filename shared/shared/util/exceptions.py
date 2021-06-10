@@ -23,8 +23,8 @@ class ModelNotDeleted(DatastoreException):
 
 
 class ModelLocked(DatastoreException):
-    def __init__(self, key):
-        self.key = key
+    def __init__(self, keys):
+        self.keys = keys
 
 
 class BadCodingError(RuntimeError):

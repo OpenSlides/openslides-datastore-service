@@ -69,7 +69,7 @@ def handle_internal_errors(fn):
         except ModelLocked as e:
             error_dict = {
                 "type": ERROR_CODES.MODEL_LOCKED,
-                "key": e.key,
+                "keys": e.keys,
                 "type_verbose": "MODEL_LOCKED",
             }
         except Exception as e:

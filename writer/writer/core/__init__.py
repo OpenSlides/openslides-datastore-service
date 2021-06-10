@@ -8,13 +8,11 @@ from .db_events import (  # noqa
     DbUpdateEvent,
 )
 from .messaging import Messaging  # noqa
-from .occ_locker import (  # noqa
-    CollectionFieldLock,
-    CollectionFieldLockWithFilter,
-    OccLocker,
-)
+from .occ_locker import OccLocker  # noqa
 from .write_request import (  # noqa
     BaseRequestEvent,
+    CollectionFieldLock,
+    CollectionFieldLockWithFilter,
     RequestCreateEvent,
     RequestDeleteEvent,
     RequestRestoreEvent,
