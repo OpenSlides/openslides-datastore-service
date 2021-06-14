@@ -28,5 +28,5 @@ def test_model_not_deleted():
 
 
 def test_model_locked():
-    e = ModelLocked("key")
-    assert e.key == "key"
+    e = ModelLocked(["key"])
+    assert e.keys == ["key"]

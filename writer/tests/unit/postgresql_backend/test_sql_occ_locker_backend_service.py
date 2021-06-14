@@ -9,7 +9,7 @@ from shared.postgresql_backend.sql_read_database_backend_service import (
 )
 from shared.services import ReadDatabase
 from shared.tests import reset_di  # noqa
-from shared.util import ModelLocked
+from shared.util import KEYSEPARATOR, ModelLocked
 from writer.core import OccLocker
 from writer.postgresql_backend import SqlOccLockerBackendService
 
@@ -33,39 +33,68 @@ def connection(provide_di):
     yield injector.get(ConnectionHandler)
 
 
-def test_no_data(occ_locker):
-    occ_locker.assert_fqid_positions({})
-    occ_locker.assert_fqfield_positions({})
-    occ_locker.assert_collectionfield_positions({})
+@pytest.fixture()
+def mock_write_request(provide_di):
+    write_request = MagicMock()
+    write_request.locked_fqids = None
+    write_request.locked_fqfields = None
+    write_request.locked_collectionfields = None
+    yield write_request
 
 
-def test_raise_model_locked_fqid(occ_locker, connection):
-    connection.query_single_value = MagicMock(return_value="test matched fqid")
-    with pytest.raises(ModelLocked) as e:
-        occ_locker.assert_fqid_positions({"a/1": 2})
-    assert e.value.key == "test matched fqid"
+def test_no_data(occ_locker, mock_write_request):
+    occ_locker.assert_locked_fields(mock_write_request)
+    assert occ_locker.get_locked_fqids({}) == []
+    assert occ_locker.get_locked_fqfields({}) == []
+    assert occ_locker.get_locked_collectionfields({}) == []
 
 
-def test_raise_model_locked_fqfield(occ_locker, connection):
-    connection.query_single_value = MagicMock(return_value="test matched fqfield")
-    with pytest.raises(ModelLocked) as e:
-        occ_locker.assert_fqfield_positions({"a/1/f": 2})
-    assert e.value.key == "test matched fqfield"
-
-
-def test_raise_model_locked_collectionfield(occ_locker, connection):
-    connection.query_single_value = MagicMock(
-        return_value="test matched collectionfield"
+def test_raise_model_locked_fqid(occ_locker, connection, mock_write_request):
+    connection.query_list_of_single_values = MagicMock(
+        return_value=["test matched fqid"]
     )
+    mock_write_request.locked_fqids = {"a/1": 2}
     with pytest.raises(ModelLocked) as e:
-        occ_locker.assert_collectionfield_positions({"a/f": 2})
-    assert e.value.key == "test matched collectionfield"
+        occ_locker.assert_locked_fields(mock_write_request)
+    assert e.value.keys == ["test matched fqid"]
+
+
+def test_raise_model_locked_fqfield(occ_locker, connection, mock_write_request):
+    connection.query_list_of_single_values = MagicMock(
+        return_value=["test matched fqfield"]
+    )
+    mock_write_request.locked_fqfields = {"a/1/f": 2}
+    with pytest.raises(ModelLocked) as e:
+        occ_locker.assert_locked_fields(mock_write_request)
+    assert e.value.keys == ["test matched fqfield"]
+
+
+def test_raise_model_locked_collectionfield(occ_locker, connection, mock_write_request):
+    connection.query_list_of_single_values = MagicMock(
+        return_value=["test matched collectionfield"]
+    )
+    mock_write_request.locked_collectionfields = {"a/f": 2}
+    with pytest.raises(ModelLocked) as e:
+        occ_locker.assert_locked_fields(mock_write_request)
+    assert e.value.keys == ["test matched collectionfield"]
+
+
+def test_raise_model_locked_multiple(occ_locker, connection, mock_write_request):
+    connection.query_list_of_single_values = MagicMock(
+        return_value=["test matched something"]
+    )
+    mock_write_request.locked_fqids = {"a/1": 2}
+    mock_write_request.locked_fqfields = {"a/1/f": 2}
+    mock_write_request.locked_collectionfields = {"a/f": 2}
+    with pytest.raises(ModelLocked) as e:
+        occ_locker.assert_locked_fields(mock_write_request)
+    assert e.value.keys == ["test matched something"] * 3
 
 
 def test_query_arguments_fqid(occ_locker, connection):
-    connection.query_single_value = qsv = MagicMock(return_value=None)
+    connection.query_list_of_single_values = qsv = MagicMock(return_value=None)
 
-    occ_locker.assert_fqid_positions({"a/1": 2, "b/3": 42})
+    occ_locker.get_locked_fqids({"a/1": 2, "b/3": 42})
 
     query = qsv.call_args.args[0]
     assert query.count("(fqid=%s and position>%s)") == 2
@@ -76,23 +105,27 @@ def test_query_arguments_fqid(occ_locker, connection):
 
 
 def test_query_arguments_fqfield(occ_locker, connection):
-    connection.query_single_value = qsv = MagicMock(return_value=None)
+    connection.query_list_of_single_values = qsv = MagicMock(return_value=None)
 
-    occ_locker.assert_fqfield_positions({"a/1/f": 2, "b/3/e": 42})
+    occ_locker.get_locked_fqfields({"a/1/f": 2, "b/3/e": 42})
 
     query = qsv.call_args.args[0]
     assert query.count("(fqid=%s and position>%s)") == 2
     assert query.count("(e.fqid=%s and cf.collectionfield LIKE %s)") == 2
     args = qsv.call_args.args[1]
-    assert (args == ["a/1", 2, "b/3", 42, "a/1", "a/f", "b/3", "b/e"]) or (
-        args == ["b/3", 42, "a/1", 2, "b/3", "b/e", "a/1", "a/f"]
+    assert (
+        args
+        == [KEYSEPARATOR, KEYSEPARATOR, "a/1", 2, "b/3", 42, "a/1", "a/f", "b/3", "b/e"]
+    ) or (
+        args
+        == [KEYSEPARATOR, KEYSEPARATOR, "b/3", 42, "a/1", 2, "b/3", "b/e", "a/1", "a/f"]
     )  # order of arguments is not determinated
 
 
 def test_query_arguments_collectionfield(occ_locker, connection):
-    connection.query_single_value = qsv = MagicMock(return_value=None)
+    connection.query_list_of_single_values = qsv = MagicMock(return_value=None)
 
-    occ_locker.assert_collectionfield_positions({"a/f": 2, "b/e": 42})
+    occ_locker.get_locked_collectionfields({"a/f": 2, "b/e": 42})
 
     query = qsv.call_args.args[0]
     assert query.count("(cf.collectionfield=%s and e.position>%s)") == 2

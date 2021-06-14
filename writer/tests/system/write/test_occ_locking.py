@@ -72,6 +72,7 @@ def test_lock_fqid_not_ok(json_client, data):
 
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert response.json["error"]["keys"] == ["a/1"]
     assert_no_model("a/2")
 
 
@@ -110,6 +111,7 @@ def test_lock_fqfield_not_ok(json_client, data):
 
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert response.json["error"]["keys"] == ["a/1/f2"]
     assert_no_model("a/2")
 
 
@@ -148,6 +150,7 @@ def test_lock_collectionfield_not_ok(json_client, data):
 
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
+    assert response.json["error"]["keys"] == ["a/f2"]
     assert_no_model("a/2")
 
 

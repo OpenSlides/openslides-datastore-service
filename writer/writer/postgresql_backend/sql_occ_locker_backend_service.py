@@ -5,8 +5,8 @@ from shared.di import service_as_factory
 from shared.postgresql_backend import ConnectionHandler
 from shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from shared.services import ReadDatabase
-from shared.util import ModelLocked, collectionfield_and_fqid_from_fqfield
-from writer.core import CollectionFieldLock
+from shared.util import KEYSEPARATOR, ModelLocked, collectionfield_and_fqid_from_fqfield
+from writer.core import CollectionFieldLock, WriteRequest
 
 
 # FQID LOCKING
@@ -23,9 +23,20 @@ class SqlOccLockerBackendService:
     read_db: ReadDatabase
     query_helper: SqlQueryHelper
 
-    def assert_fqid_positions(self, fqids: Dict[str, int]) -> None:
+    def assert_locked_fields(self, write_request: WriteRequest) -> None:
+        """May raise a ModelLockedException"""
+        broken_locks = []
+        broken_locks += self.get_locked_fqids(write_request.locked_fqids)
+        broken_locks += self.get_locked_fqfields(write_request.locked_fqfields)
+        broken_locks += self.get_locked_collectionfields(
+            write_request.locked_collectionfields
+        )
+        if broken_locks:
+            raise ModelLocked(broken_locks)
+
+    def get_locked_fqids(self, fqids: Dict[str, int]) -> List[str]:
         if not fqids:
-            return
+            return []
 
         query_arguments: List[Any] = []
         filter_parts = []
@@ -37,15 +48,13 @@ class SqlOccLockerBackendService:
                 )
             )
             filter_parts.append("(fqid=%s and position>%s)")
-        query = (
-            "select fqid from events where " + " or ".join(filter_parts) + " limit 1"
-        )
+        query = "select fqid from events where " + " or ".join(filter_parts)
 
-        self.raise_model_locked_if_match(query, query_arguments)
+        return self.connection.query_list_of_single_values(query, query_arguments)
 
-    def assert_fqfield_positions(self, fqfields: Dict[str, int]) -> None:
+    def get_locked_fqfields(self, fqfields: Dict[str, int]) -> List[str]:
         if not fqfields:
-            return
+            return []
 
         event_query_arguments: List[Any] = []
         event_filter_parts = []
@@ -88,22 +97,24 @@ class SqlOccLockerBackendService:
         collectionfield_filter = " or ".join(collectionfield_filter_parts)
         query = dedent(
             f"""\
-            select e.fqid from (
+            select e.fqid || %s || split_part(cf.collectionfield, %s, 2) from (
                 select id, fqid from events where {event_filter}
             ) e
             inner join events_to_collectionfields ecf on e.id=ecf.event_id
             inner join collectionfields cf on ecf.collectionfield_id=cf.id
-            where {collectionfield_filter} limit 1"""
+            where {collectionfield_filter}"""
         )
-        query_arguments = event_query_arguments + collectionfield_query_arguments
+        query_arguments = (
+            [KEYSEPARATOR] * 2 + event_query_arguments + collectionfield_query_arguments
+        )
 
-        self.raise_model_locked_if_match(query, query_arguments)
+        return self.connection.query_list_of_single_values(query, query_arguments)
 
-    def assert_collectionfield_positions(
+    def get_locked_collectionfields(
         self, collectionfields: Dict[str, CollectionFieldLock]
-    ) -> None:
+    ) -> List[str]:
         if not collectionfields:
-            return
+            return []
 
         query_arguments: List[Any] = []
         filter_parts = []
@@ -139,12 +150,6 @@ class SqlOccLockerBackendService:
             inner join events_to_collectionfields ecf on cf.id=ecf.collectionfield_id
             inner join events e on ecf.event_id=e.id
             inner join models m on e.fqid=m.fqid
-            where {filter_query} limit 1"""
+            where {filter_query}"""
         )
-        self.raise_model_locked_if_match(query, query_arguments)
-
-    def raise_model_locked_if_match(self, query, arguments):
-        """returns str (the only response) or None if there is no row"""
-        locked_key = self.connection.query_single_value(query, arguments)
-        if locked_key is not None:
-            raise ModelLocked(locked_key)
+        return self.connection.query_list_of_single_values(query, query_arguments)

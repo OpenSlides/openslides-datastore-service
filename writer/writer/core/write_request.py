@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Dict, List, TypedDict, Union, cast
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, TypedDict, Union, cast
 
 from dacite import from_dict
 from dacite.exceptions import MissingValueError, UnionMatchError
@@ -9,14 +10,15 @@ from shared.typing import JSON
 from shared.util import (
     KEY_TYPE,
     BadCodingError,
+    Filter,
     InvalidFormat,
+    SelfValidatingDataclass,
     assert_is_field,
     assert_is_fqid,
     get_key_type,
     is_reserved_field,
 )
 
-from . import CollectionFieldLock, CollectionFieldLockWithFilter
 from .db_events import ListUpdatesDict
 
 
@@ -25,6 +27,15 @@ ListFieldsData = TypedDict(
     {"add": ListUpdatesDict, "remove": ListUpdatesDict},
     total=False,
 )
+
+
+@dataclass
+class CollectionFieldLockWithFilter(SelfValidatingDataclass):
+    position: int
+    filter: Optional[Filter]
+
+
+CollectionFieldLock = Union[int, List[CollectionFieldLockWithFilter]]
 
 
 def assert_no_special_field(field: Any) -> None:

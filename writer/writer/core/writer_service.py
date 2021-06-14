@@ -80,7 +80,7 @@ class WriterService:
         self, write_request: WriteRequest, db_events: List[BaseDbEvent]
     ) -> int:
         # Check locked_fields -> Possible LockedError
-        self.assert_locked_fields(write_request)
+        self.occ_locker.assert_locked_fields(write_request)
 
         # Insert db events with position data
         position = self.database.insert_events(
@@ -91,14 +91,6 @@ class WriterService:
         self.event_executor.update(db_events, position)
 
         return position
-
-    def assert_locked_fields(self, write_request: WriteRequest) -> None:
-        """May raise a ModelLockedException"""
-        self.occ_locker.assert_fqid_positions(write_request.locked_fqids)
-        self.occ_locker.assert_fqfield_positions(write_request.locked_fqfields)
-        self.occ_locker.assert_collectionfield_positions(
-            write_request.locked_collectionfields
-        )
 
     @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> List[int]:

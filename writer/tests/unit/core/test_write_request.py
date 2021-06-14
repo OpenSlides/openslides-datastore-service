@@ -5,13 +5,13 @@ import pytest
 from shared.flask_frontend import InvalidRequest
 from shared.util import BadCodingError, InvalidFormat, InvalidKeyFormat
 from writer.core import (
+    CollectionFieldLockWithFilter,
     RequestCreateEvent,
     RequestDeleteEvent,
     RequestRestoreEvent,
     RequestUpdateEvent,
     WriteRequest,
 )
-from writer.core.occ_locker import CollectionFieldLockWithFilter
 from writer.core.write_request import assert_no_special_field
 
 

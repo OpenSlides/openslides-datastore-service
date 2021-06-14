@@ -85,9 +85,7 @@ def test_writer_distribution(
 
     event_translator.translate.assert_called_with(events)
     database.get_context.assert_called()
-    occ_locker.assert_fqid_positions.assert_called_with({"c/1": 3})
-    occ_locker.assert_fqfield_positions.assert_called_with({"c/2/f": 4})
-    occ_locker.assert_collectionfield_positions.assert_called_with({"c/f": 5})
+    occ_locker.assert_locked_fields.assert_called_with(write_request)
     database.insert_events.assert_called_with([2, 3, 4], {}, 1)
     eeu.assert_called_once()
     he.assert_called_once()

@@ -14,13 +14,13 @@ from writer.postgresql_backend import SqlOccLockerBackendService
 
 
 class FakeConnectionHandler:
-    def query_single_value(self, query, arguments):
-        if query.startswith("select e.fqid from ("):
-            return self.fqfield()
+    def query_list_of_single_values(self, query, arguments):
+        if query.startswith("select e.fqid"):
+            return [self.fqfield()]
         elif query.startswith("select fqid from events"):
-            return self.fqid()
+            return [self.fqid()]
         elif query.startswith("select collectionfield from collectionfields"):
-            return self.collectionfield()
+            return [self.collectionfield()]
 
     def fqid(self):
         """"""
@@ -76,7 +76,7 @@ def test_locked_fqid(write_handler, connection_handler, valid_metadata):
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
 
-    assert e.value.key == locked_fqid
+    assert e.value.keys == [locked_fqid]
 
 
 def test_locked_fqfield(write_handler, connection_handler, valid_metadata):
@@ -87,7 +87,7 @@ def test_locked_fqfield(write_handler, connection_handler, valid_metadata):
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
 
-    assert e.value.key == locked_fqfield
+    assert e.value.keys == [locked_fqfield]
 
 
 def test_locked_collectionfield(write_handler, connection_handler, valid_metadata):
@@ -98,7 +98,7 @@ def test_locked_collectionfield(write_handler, connection_handler, valid_metadat
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
 
-    assert e.value.key == locked_collectionfield
+    assert e.value.keys == [locked_collectionfield]
 
 
 def test_locked_collectionfield_with_filter(
@@ -114,7 +114,7 @@ def test_locked_collectionfield_with_filter(
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
 
-    assert e.value.key == locked_collectionfield
+    assert e.value.keys == [locked_collectionfield]
 
 
 def test_locked_collectionfield_with_filter_without_filter(
@@ -127,4 +127,4 @@ def test_locked_collectionfield_with_filter_without_filter(
     with pytest.raises(ModelLocked) as e:
         write_handler.write(valid_metadata)
 
-    assert e.value.key == locked_collectionfield
+    assert e.value.keys == [locked_collectionfield]
