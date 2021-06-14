@@ -79,16 +79,29 @@ def test_raise_model_locked_collectionfield(occ_locker, connection, mock_write_r
     assert e.value.keys == ["test matched collectionfield"]
 
 
-def test_raise_model_locked_multiple(occ_locker, connection, mock_write_request):
+def test_raise_model_locked_multiple_reduced_to_one(
+    occ_locker, connection, mock_write_request
+):
     connection.query_list_of_single_values = MagicMock(
         return_value=["test matched something"]
     )
     mock_write_request.locked_fqids = {"a/1": 2}
     mock_write_request.locked_fqfields = {"a/1/f": 2}
+    with pytest.raises(ModelLocked) as e:
+        occ_locker.assert_locked_fields(mock_write_request)
+    assert e.value.keys == ["test matched something"]
+
+
+def test_raise_model_locked_multiple_different(
+    occ_locker, connection, mock_write_request
+):
+    connection.query_list_of_single_values = lambda query, args: [args[0]]
+    mock_write_request.locked_fqids = {"a/1": 2}
+    mock_write_request.locked_fqfields = {"a/1/f": 2}
     mock_write_request.locked_collectionfields = {"a/f": 2}
     with pytest.raises(ModelLocked) as e:
         occ_locker.assert_locked_fields(mock_write_request)
-    assert e.value.keys == ["test matched something"] * 3
+    assert set(e.value.keys) == {"a/1", "/", "a/f"}
 
 
 def test_query_arguments_fqid(occ_locker, connection):

@@ -25,14 +25,14 @@ class SqlOccLockerBackendService:
 
     def assert_locked_fields(self, write_request: WriteRequest) -> None:
         """May raise a ModelLockedException"""
-        broken_locks = []
-        broken_locks += self.get_locked_fqids(write_request.locked_fqids)
-        broken_locks += self.get_locked_fqfields(write_request.locked_fqfields)
-        broken_locks += self.get_locked_collectionfields(
-            write_request.locked_collectionfields
+        broken_locks = set()
+        broken_locks.update(self.get_locked_fqids(write_request.locked_fqids))
+        broken_locks.update(self.get_locked_fqfields(write_request.locked_fqfields))
+        broken_locks.update(
+            self.get_locked_collectionfields(write_request.locked_collectionfields)
         )
         if broken_locks:
-            raise ModelLocked(broken_locks)
+            raise ModelLocked(list(broken_locks))
 
     def get_locked_fqids(self, fqids: Dict[str, int]) -> List[str]:
         if not fqids:
