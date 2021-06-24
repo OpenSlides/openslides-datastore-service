@@ -374,6 +374,23 @@ def test_list_update_add_remove(json_client, data, redis_connection, reset_redis
     assert_modified_fields(redis_connection, {"a/1": ["f", "f2"]}, meta_deleted=False)
 
 
+def test_list_update_add_remove_same_field(
+    json_client, data, redis_connection, reset_redis_data
+):
+    data["events"][0]["fields"]["f"] = [1]
+    create_model(json_client, data, redis_connection, reset_redis_data)
+
+    data["events"][0] = {
+        "type": "update",
+        "fqid": "a/1",
+        "list_fields": {"add": {"f": [2]}, "remove": {"f": [1]}},
+    }
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert_model("a/1", {"f": [2]}, 2)
+    assert_modified_fields(redis_connection, {"a/1": ["f"]}, meta_deleted=False)
+
+
 def test_update_and_list_update(json_client, data, redis_connection, reset_redis_data):
     data["events"][0]["fields"]["f"] = [1]
     create_model(json_client, data, redis_connection, reset_redis_data)

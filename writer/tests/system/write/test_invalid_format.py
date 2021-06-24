@@ -119,18 +119,6 @@ def test_update_invalid_field(json_client, data):
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
 
 
-def test_list_update_add_remove_duplicate_field(json_client, data):
-    data["events"].append(
-        {
-            "type": "update",
-            "fqid": "a/1",
-            "list_fields": {"add": {"f": [2]}, "remove": {"f": [1]}},
-        }
-    )
-    response = json_client.post(WRITE_URL, data)
-    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
-
-
 def test_update_list_update_duplicate_field(json_client, data):
     data["events"].append(
         {

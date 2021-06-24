@@ -107,7 +107,10 @@ class DbListUpdateEvent(BaseDbEvent):
 
         for field, value in self.remove.items():
             if field in model:
-                db_list = model.get(field)
+                if field in updated_fields:
+                    db_list = updated_fields[field]
+                else:
+                    db_list = model.get(field)
                 updated_list = [el for el in db_list if el not in value]
                 updated_fields[field] = updated_list
             else:

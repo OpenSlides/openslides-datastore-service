@@ -104,16 +104,15 @@ def test_update_list_fields():
     assert event.list_fields == {"add": {"test": ["value"]}}
 
 
-def test_update_duplicate_fields_1():
+def test_update_duplicate_fields():
     with pytest.raises(InvalidRequest):
         RequestUpdateEvent("c/1", {"test": "stuff"}, {"add": {"test": ["value"]}})
 
 
 def test_update_duplicate_fields_2():
-    with pytest.raises(InvalidRequest):
-        RequestUpdateEvent(
-            "c/1", {}, {"add": {"test": ["value"]}, "remove": {"test": ["value"]}}
-        )
+    assert RequestUpdateEvent(
+        "c/1", {}, {"add": {"test": ["value"]}, "remove": {"test": ["value"]}}
+    )
 
 
 def test_create_update_wrong_field_format():

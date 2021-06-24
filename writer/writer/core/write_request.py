@@ -79,8 +79,12 @@ class RequestUpdateEvent(BaseRequestEvent):
         all_keys = fields_keys.union(add_list_fields_keys, remove_list_fields_keys)
         if len(all_keys) == 0:
             raise InvalidRequest("No fields are given")
-        if len(all_keys) < len(fields) + len(add_list_fields) + len(remove_list_fields):
-            raise InvalidRequest("You cannot give a field name multiple times")
+        if fields_keys.intersection(add_list_fields_keys) or fields_keys.intersection(
+            remove_list_fields_keys
+        ):
+            raise InvalidRequest(
+                "Fields cannot be given both as normal fields and as list updates"
+            )
         for field in all_keys:
             assert_is_field(field)
             assert_no_special_field(field)
