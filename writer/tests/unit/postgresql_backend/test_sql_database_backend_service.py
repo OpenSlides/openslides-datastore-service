@@ -497,5 +497,11 @@ class TestReserveNextIds:
 def test_truncate_db(sql_backend, connection):
     connection.execute = ex = MagicMock()
     sql_backend.truncate_db()
-    assert ex.call_count == len(ALL_TABLES)
-    assert all("TRUNCATE" in call.args[0] for call in ex.call_args_list)
+    assert ex.call_count == len(ALL_TABLES) + 3  # account for sequence resets
+    assert all(
+        "DELETE FROM" in call.args[0] for call in ex.call_args_list[: len(ALL_TABLES)]
+    )
+    assert all(
+        "RESTART" in call.args[0]
+        for call in ex.call_args_list[len(ALL_TABLES) + 1 :]  # noqa: E203
+    )
