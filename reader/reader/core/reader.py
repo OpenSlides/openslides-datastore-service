@@ -1,4 +1,4 @@
-from typing import Dict, List, Protocol, TypedDict
+from typing import ContextManager, Dict, List, Protocol, TypedDict
 
 from shared.typing import Model
 
@@ -40,6 +40,9 @@ class MaxResult(TypedDict):
 
 class Reader(Protocol):
     """An abstract class for the reader. For more details, see the specs."""
+
+    def get_database_context(self) -> ContextManager[None]:
+        """Returns the context manager of the underlying database."""
 
     def get(self, request: GetRequest) -> Model:
         """Gets the specified model."""

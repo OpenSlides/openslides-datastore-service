@@ -91,7 +91,7 @@ class PgConnectionHandlerService:
         shutdown_service.register(self)
         self._storage = threading.local()
 
-        min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 1)
+        min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 0)
         max_conn = int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 1)
         self._semaphore = Semaphore(max_conn)
         try:

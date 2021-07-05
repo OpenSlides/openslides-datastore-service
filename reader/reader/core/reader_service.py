@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, cast
+from typing import Any, ContextManager, Dict, List, cast
 
 from reader.core.reader import (
     CountResult,
@@ -48,66 +48,65 @@ class ReaderService:
     connection: ConnectionHandler
     database: ReadDatabase
 
+    def get_database_context(self) -> ContextManager[None]:
+        return self.database.get_context()
+
     @retry_on_db_failure
     def get(self, request: GetRequest) -> Model:
-        with self.database.get_context():
-            if request.position:
-                # if a position is given, first test if the model is in the correct
-                # state to prevent the unnecessary building of the model if it's not
-                fqids = self.filter_fqids_by_deleted_status(
-                    [request.fqid], request.position, request.get_deleted_models
+        if request.position:
+            # if a position is given, first test if the model is in the correct
+            # state to prevent the unnecessary building of the model if it's not
+            fqids = self.filter_fqids_by_deleted_status(
+                [request.fqid], request.position, request.get_deleted_models
+            )
+            if not len(fqids):
+                raise get_exception_for_deleted_models_behaviour(
+                    request.fqid, request.get_deleted_models
                 )
-                if not len(fqids):
-                    raise get_exception_for_deleted_models_behaviour(
-                        request.fqid, request.get_deleted_models
-                    )
 
-                model = self.database.build_model_ignore_deleted(
-                    request.fqid, request.position
-                )
-                model = self.apply_mapped_fields(model, request.mapped_fields)
-            else:
-                model = self.database.get(
-                    request.fqid, request.mapped_fields, request.get_deleted_models
-                )
+            model = self.database.build_model_ignore_deleted(
+                request.fqid, request.position
+            )
+            model = self.apply_mapped_fields(model, request.mapped_fields)
+        else:
+            model = self.database.get(
+                request.fqid, request.mapped_fields, request.get_deleted_models
+            )
         return model
 
     @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
-        with self.database.get_context():
-            mapped_fields_per_fqid: Dict[str, List[str]] = {}
-            if isinstance(request.requests[0], GetManyRequestPart):
-                requests = cast(List[GetManyRequestPart], request.requests)
-                for part in requests:
-                    for id in part.ids:
-                        fqid = build_fqid(part.collection, str(id))
-                        mapped_fields_per_fqid.setdefault(fqid, []).extend(
-                            part.mapped_fields + request.mapped_fields
-                        )
-            else:
-                fqfield_requests = cast(List[str], request.requests)
-                for fqfield in fqfield_requests:
-                    fqid = fqid_from_fqfield(fqfield)
-                    mapped_fields_per_fqid.setdefault(fqid, []).append(
-                        field_from_fqfield(fqfield)
+        mapped_fields_per_fqid: Dict[str, List[str]] = {}
+        if isinstance(request.requests[0], GetManyRequestPart):
+            requests = cast(List[GetManyRequestPart], request.requests)
+            for part in requests:
+                for id in part.ids:
+                    fqid = build_fqid(part.collection, str(id))
+                    mapped_fields_per_fqid.setdefault(fqid, []).extend(
+                        part.mapped_fields + request.mapped_fields
                     )
+        else:
+            fqfield_requests = cast(List[str], request.requests)
+            for fqfield in fqfield_requests:
+                fqid = fqid_from_fqfield(fqfield)
+                mapped_fields_per_fqid.setdefault(fqid, []).append(
+                    field_from_fqfield(fqfield)
+                )
 
-            fqids = list(mapped_fields_per_fqid.keys())
+        fqids = list(mapped_fields_per_fqid.keys())
 
-            if request.position:
-                fqids = self.filter_fqids_by_deleted_status(
-                    fqids, request.position, request.get_deleted_models
-                )
-                result = self.database.build_models_ignore_deleted(
-                    fqids, request.position
-                )
-                result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
-            else:
-                result = self.database.get_many(
-                    fqids,
-                    mapped_fields_per_fqid,
-                    request.get_deleted_models,
-                )
+        if request.position:
+            fqids = self.filter_fqids_by_deleted_status(
+                fqids, request.position, request.get_deleted_models
+            )
+            result = self.database.build_models_ignore_deleted(fqids, request.position)
+            result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
+        else:
+            result = self.database.get_many(
+                fqids,
+                mapped_fields_per_fqid,
+                request.get_deleted_models,
+            )
 
         # change mapping fqid->model to collection->id->model
         final: Dict[str, Dict[int, Model]] = defaultdict(dict)
@@ -125,23 +124,20 @@ class ReaderService:
 
     @retry_on_db_failure
     def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
-        with self.database.get_context():
-            return self.database.get_all(
-                request.collection, request.mapped_fields, request.get_deleted_models
-            )
+        return self.database.get_all(
+            request.collection, request.mapped_fields, request.get_deleted_models
+        )
 
     @retry_on_db_failure
     def get_everything(self, request: GetEverythingRequest) -> Dict[str, List[Model]]:
-        with self.database.get_context():
-            return self.database.get_everything(request.get_deleted_models)
+        return self.database.get_everything(request.get_deleted_models)
 
     @retry_on_db_failure
     def filter(self, request: FilterRequest) -> FilterResult:
-        with self.database.get_context():
-            data = self.database.filter(
-                request.collection, request.filter, request.mapped_fields
-            )
-            position = self.database.get_position()
+        data = self.database.filter(
+            request.collection, request.filter, request.mapped_fields
+        )
+        position = self.database.get_position()
         return {
             "data": data,
             "position": position,
@@ -176,8 +172,7 @@ class ReaderService:
         filter: Filter,
         fields_params: BaseAggregateFilterQueryFieldsParameters,
     ) -> Dict[str, Any]:
-        with self.database.get_context():
-            result = self.database.aggregate(collection, filter, fields_params)
+        result = self.database.aggregate(collection, filter, fields_params)
         return result
 
     def filter_fqids_by_deleted_status(

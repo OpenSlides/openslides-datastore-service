@@ -60,7 +60,6 @@ def test_get(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.get(request) == model
 
-    read_db.get_context.assert_called()
     get.assert_called_with("c/1", ["field"], DeletedModelsBehaviour.NO_DELETED)
 
 
@@ -110,7 +109,6 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
 
     assert reader.get_many(request) == {"a": {}, "b": {}, "c": {1: model}}
 
-    read_db.get_context.assert_called()
     get_many.assert_called_with(
         ["a/1", "b/1"],
         {"a/1": ["field1", "field"], "b/1": ["field2", "field"]},
@@ -191,7 +189,6 @@ def test_get_all(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.get_all(request) == result
 
-    read_db.get_context.assert_called()
     get_all.assert_called_with(
         "collection", ["field"], DeletedModelsBehaviour.NO_DELETED
     )
@@ -205,7 +202,6 @@ def test_get_everything(reader: ReaderService, read_db: SqlReadDatabaseBackendSe
 
     assert reader.get_everything(request) == result
 
-    read_db.get_context.assert_called()
     get_everything.assert_called_with(DeletedModelsBehaviour.ALL_MODELS)
 
 
@@ -219,7 +215,6 @@ def test_filter(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.filter(request) == {"data": result, "position": 42}
 
-    read_db.get_context.assert_called()
     filter.assert_called_with("collection", filter_operator, ["field"])
     get_pos.assert_called()
 
@@ -255,7 +250,6 @@ def test_count(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.count(request) == result
 
-    read_db.get_context.assert_called()
     aggregate.assert_called_with(
         "collection", filter_operator, CountFilterQueryFieldsParameters()
     )
@@ -271,7 +265,6 @@ def test_min(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.min(request) == result
 
-    read_db.get_context.assert_called()
     aggregate.assert_called_with("collection", filter_operator, params)
 
 
@@ -285,7 +278,6 @@ def test_max(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.max(request) == result
 
-    read_db.get_context.assert_called()
     aggregate.assert_called_with("collection", filter_operator, params)
 
 

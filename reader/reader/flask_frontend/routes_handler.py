@@ -9,12 +9,24 @@ from .json_handler import JSONHandler
 from .routes import Route
 
 
+def make_json_response(fn):
+    def wrapper(*args, **kwargs):
+        response = fn(*args, **kwargs)
+        if isinstance(response, tuple) and isinstance(response[0], dict):
+            return JsonResponse(response[0]), response[1]
+        elif isinstance(response, dict):
+            return JsonResponse(response)
+        return response
+
+    return wrapper
+
+
 def get_route(route: Route):
+    @make_json_response
     @handle_internal_errors
     def route_func():
         json_handler = JSONHandler()
-        result = json_handler.handle_request(route, get_json_from_request())
-        return JsonResponse(result)
+        return json_handler.handle_request(route, get_json_from_request())
 
     return route_func
 
