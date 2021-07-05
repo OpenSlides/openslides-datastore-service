@@ -54,6 +54,8 @@ def test_connection_context(handler):
 
 
 def test_init_error():
+    os.environ["DATASTORE_MIN_CONNECTIONS"] = "1"
+    injector.get(EnvironmentService).cache = {}
     connect = MagicMock()
     connect.side_effect = psycopg2.Error
     with patch("psycopg2.connect", new=connect):
