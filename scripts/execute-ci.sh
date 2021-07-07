@@ -1,18 +1,20 @@
 #!/bin/bash
 
-# executes all lines of ci.sh and gathers the error codes.
-# Fails if at least one command failed
-
-printf "\n\n\n\n\n\n\n ------------- COMMANDS -------------- \n"
+printf "\n\n\n ------------- COMMANDS -------------- \n"
 
 result=0
-while read p; do
-    eval "$p"
+readarray -d '' ci_files < <(printf '%s\0' ci/*.sh | sort -zV)
+for i in "${ci_files[@]}"; do
+    [ -f "$i" ] || break
+    echo "-> $i"
+    bash -c "$i $1"
     error=$?
+    if (( error > 0 )); then
+        echo "Got a non-zero status code!"
+    fi
     if (( error > result )); then
         result=$error
     fi
-done < ci.sh
-exit $result
+done
 
-printf "\n\n\n\n\n\n\n"
+exit $result

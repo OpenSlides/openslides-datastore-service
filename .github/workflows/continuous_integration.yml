@@ -15,7 +15,7 @@ jobs:
       run: make build
     
     - name: Start container 
-      run: make run
+      run: source .env; make run
     
     - name: wait for container
       run: sleep 10
@@ -26,29 +26,13 @@ jobs:
     - name: Test that writer is up and running
       run: curl -I http://localhost:9011/
 
-  test-shared:
-    name: "Tests: Shared"
+  tests:
+    name: "Tests"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Execute tests
-      run: make -C shared run-ci
-
-  test-reader:
-    name: "Tests: Reader"
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Execute tests
-      run: make -C reader run-ci
-
-  test-writer:
-    name: "Tests: Writer"
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Execute tests
-      run: make -C writer run-ci
+      run: make run-ci
 
   test-full-system:
     name: "Full System Tests"
@@ -61,3 +45,6 @@ jobs:
     
     - name: Execute tests
       run: make run-full-system-tests-check
+
+    - name: Stop tests
+      run: make stop-dev

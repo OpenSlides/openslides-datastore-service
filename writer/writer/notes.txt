@@ -1,5 +1,0 @@
-Common notes I found important to write down during development:
-
-- Functions starting with `assert` does not return anything, but raise errors.
-- The high-level-services get data from low-level-code. Data formats are stated in high-level-services. In the low-level, just the datatypes must be checked, in the high level the content of this data. Example WriteRequest: The low-level-code must ensure, that locked_fields is a dict of strings to numbers. The high-level-service ensures, that the keys are valid and numbers positive.
-- 

@@ -2,7 +2,7 @@
 
 ## Source code layout
 
-See [basic repository layout](docs/layout.md).
+See [basic repository layout](layout.md).
 
 ## Using the Datastore in other services
 

@@ -6,26 +6,25 @@ RUN apt-get -y update && apt-get -y upgrade && \
 WORKDIR /app
 ENV PYTHONPATH /app/
 
-ARG MODULE
-RUN test -n "$MODULE" || (echo "MODULE not set" && false)
-ENV MODULE=$MODULE
+COPY requirements/requirements-general.txt /app/
+
+RUN pip install -U -r requirements-general.txt
+
+COPY cli cli
+COPY datastore datastore
 
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)
 ENV PORT=$PORT
 EXPOSE $PORT
 
-COPY requirements/requirements-general.txt /app/
-COPY $MODULE/requirements.txt .
+ARG MODULE
+RUN test -n "$MODULE" || (echo "MODULE not set" && false)
+ENV MODULE=$MODULE
 
-RUN pip install -U -r requirements-general.txt
-
-COPY cli cli
-COPY shared/shared shared
-COPY $MODULE/$MODULE $MODULE
 COPY $MODULE/entrypoint.sh scripts/system/* ./
 
 ENV NUM_WORKERS=1
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT $MODULE.app:application
+CMD gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application

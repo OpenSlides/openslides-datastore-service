@@ -6,15 +6,16 @@ RUN apt-get -y update && apt-get -y upgrade && \
 WORKDIR /app
 COPY requirements/requirements-general.txt scripts/system/* ./
 
+RUN pip install -U -r requirements-general.txt
+
 ARG MODULE
 RUN test -n "$MODULE" || (echo "MODULE not set" && false)
 
-COPY $MODULE/requirements.txt $MODULE/entrypoint.sh ./
-RUN pip install -U -r requirements-general.txt
+COPY $MODULE/entrypoint.sh ./
 
 ENV PYTHONPATH /app/
 
-ENV FLASK_APP=$MODULE.app
+ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_ENV=development
 
 ARG PORT

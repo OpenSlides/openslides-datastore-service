@@ -4,12 +4,17 @@ from typing import List
 from urllib import request
 from urllib.error import URLError
 
-from shared.di import injector
-from shared.postgresql_backend import ConnectionHandler
-from shared.services import EnvironmentService
-from shared.util import build_fqid
-from writer.app import register_services
-from writer.core import BaseRequestEvent, RequestCreateEvent, Writer, WriteRequest
+from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ConnectionHandler
+from datastore.shared.services import EnvironmentService
+from datastore.shared.util import build_fqid
+from datastore.writer.app import register_services
+from datastore.writer.core import (
+    BaseRequestEvent,
+    RequestCreateEvent,
+    Writer,
+    WriteRequest,
+)
 
 
 register_services()
