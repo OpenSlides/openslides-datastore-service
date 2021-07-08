@@ -7,14 +7,10 @@ WORKDIR /app
 ENV PYTHONPATH /app/
 COPY requirements/ .
 
-ARG MODULE
-RUN test -n "$MODULE" || (echo "MODULE not set" && false)
-
-COPY $MODULE/requirements.txt .
-
 RUN pip install -U -r requirements-testing.txt
 
-COPY scripts/* scripts/system/* $MODULE/.coveragerc $MODULE/entrypoint.sh ./
+COPY scripts/* scripts/system/* tests/entrypoint.sh ./
+COPY scripts/ci/* ./ci/
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["pytest"]

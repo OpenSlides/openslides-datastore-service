@@ -7,17 +7,16 @@ WORKDIR /app
 ENV PYTHONPATH /app/
 
 COPY system_tests/requirements.txt .
-COPY shared/requirements.txt requirements-shared.txt
-COPY reader/requirements.txt requirements-reader.txt
-COPY writer/requirements.txt requirements-writer.txt
 COPY requirements/* ./
-RUN pip install -U -r requirements-testing.txt -r requirements-shared.txt -r requirements-reader.txt -r requirements-writer.txt 
+RUN pip install -U -r requirements.txt -r requirements-testing.txt
 
 COPY scripts/* ./
-COPY scripts/tests-cleanup.sh cleanup.sh
+COPY scripts/ci/* ./ci/
 
-COPY shared/shared shared
-COPY reader/reader reader
-COPY writer/writer writer
+COPY datastore datastore
+COPY tests tests
 
-CMD ["pytest"]
+ARG CHOWN
+RUN chown -R $CHOWN /app
+
+CMD ["pytest", "system_tests"]

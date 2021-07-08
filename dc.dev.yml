@@ -3,9 +3,8 @@ services:
     reader:
         image: openslides-datastore-reader-dev
         volumes:
-            - ./shared/shared:/app/shared
-            - ./reader/reader:/app/reader
-            - ./reader/tests:/app/tests
+            - ./datastore:/app/datastore
+            - ./tests:/app/tests
         ports:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
         environment:
@@ -19,9 +18,8 @@ services:
     writer:
         image: openslides-datastore-writer-dev
         volumes:
-            - ./shared/shared:/app/shared
-            - ./writer/writer:/app/writer
-            - ./writer/tests:/app/tests
+            - ./datastore:/app/datastore
+            - ./tests:/app/tests
             - ./cli:/app/cli
         ports:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"

@@ -1,12 +1,11 @@
 version: '3'
 services:
-    writer:
-        image: openslides-datastore-writer-test
+    datastore:
+        image: openslides-datastore-test
         command: ["sleep", "infinity"]
         volumes:
-            - ./shared/shared:/app/shared
-            - ./writer/writer:/app/writer
-            - ./writer/tests:/app/tests
+            - ./datastore:/app/datastore
+            - ./tests:/app/tests
             - ./cli:/app/cli
         environment:
             - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
@@ -16,30 +15,6 @@ services:
         networks:
             - postgresql
             - redis
-    shared:
-        image: openslides-datastore-shared-test
-        command: ["sleep", "infinity"]
-        volumes:
-            - ./shared/shared:/app/shared
-            - ./shared/tests:/app/tests
-        depends_on:
-            - postgresql
-        networks:
-            - postgresql
-    reader:
-        image: openslides-datastore-reader-test
-        command: ["sleep", "infinity"]
-        volumes:
-            - ./shared/shared:/app/shared
-            - ./reader/lib:/app/lib
-            - ./reader/reader:/app/reader
-            - ./reader/tests:/app/tests
-        environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
-        depends_on:
-            - postgresql
-        networks:
-            - postgresql
     postgresql:
         image: postgres:11
         env_file: database.env
