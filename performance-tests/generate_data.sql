@@ -21,7 +21,7 @@ DO $$
 DECLARE
     fields text[] = array['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
     collections text[] = ARRAY['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-    types text[] = array['create', 'update', 'delete', 'deletefields', 'restore', 'noop'];
+    types text[] = array['create', 'update', 'delete', 'deletefields', 'restore'];
 BEGIN
     --- WARNING: Uncommenting this takes a loooong time ---
     -- INSERT INTO events

@@ -21,8 +21,8 @@ from datastore.shared.typing import Model
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
-    build_fqid,
     collection_from_fqid,
+    fqid_from_collection_and_id,
     get_exception_for_deleted_models_behaviour,
 )
 from datastore.shared.util.key_transforms import (
@@ -81,7 +81,7 @@ class ReaderService:
             requests = cast(List[GetManyRequestPart], request.requests)
             for part in requests:
                 for id in part.ids:
-                    fqid = build_fqid(part.collection, str(id))
+                    fqid = fqid_from_collection_and_id(part.collection, str(id))
                     mapped_fields_per_fqid.setdefault(fqid, []).extend(
                         part.mapped_fields + request.mapped_fields
                     )
@@ -137,7 +137,7 @@ class ReaderService:
         data = self.database.filter(
             request.collection, request.filter, request.mapped_fields
         )
-        position = self.database.get_position()
+        position = self.database.get_max_position()
         return {
             "data": data,
             "position": position,

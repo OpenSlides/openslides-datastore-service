@@ -1,0 +1,402 @@
+from typing import List, Optional
+
+import pytest
+
+from datastore.migrations import (
+    BaseEvent,
+    BaseMigration,
+    MigrationKeyframeAccessor,
+    MigrationKeyframeModelDeleted,
+    MigrationKeyframeModelDoesNotExist,
+    MigrationKeyframeModelNotDeleted,
+    PositionData,
+)
+from datastore.shared.typing import Position
+
+
+class BaseTest:
+    meta_position: Position
+
+    def _write(self, write, *data):
+        raise NotImplementedError()
+
+    @pytest.fixture()
+    def write_data(self, write):
+        def _write_data(*data):
+            self._write(write, *data)
+
+        yield _write_data
+
+    def test_get_model(self, migration_handler, write_data):
+        write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_model("a/1")
+                    new = new_accessor.get_model("a/1")
+                    assert old == new
+                    assert old == {
+                        "f": 1,
+                        "meta_deleted": False,
+                        "meta_position": self.meta_position,
+                    }
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_model_does_not_exist(self, migration_handler, write_data):
+        write_data()
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    with pytest.raises(MigrationKeyframeModelDoesNotExist):
+                        old_accessor.get_model("a/1")
+                    with pytest.raises(MigrationKeyframeModelDoesNotExist):
+                        new_accessor.get_model("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_model_deleted(self, migration_handler, write_data):
+        write_data(
+            {"type": "create", "fqid": "a/1", "fields": {"f": 1}},
+            {"type": "delete", "fqid": "a/1"},
+        )
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    with pytest.raises(MigrationKeyframeModelDeleted):
+                        old_accessor.get_model("a/1")
+                    with pytest.raises(MigrationKeyframeModelDeleted):
+                        new_accessor.get_model("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_deleted_model(self, migration_handler, write_data):
+        write_data(
+            {"type": "create", "fqid": "a/1", "fields": {"f": 1}},
+            {"type": "delete", "fqid": "a/1"},
+        )
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_deleted_model("a/1")
+                    new = new_accessor.get_deleted_model("a/1")
+                    assert old == new
+                    assert old == {
+                        "f": 1,
+                        "meta_deleted": True,
+                        "meta_position": self.meta_position,
+                    }
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_deleted_model_does_not_exists(self, migration_handler, write_data):
+        write_data()
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    with pytest.raises(MigrationKeyframeModelDoesNotExist):
+                        old_accessor.get_deleted_model("a/1")
+                    with pytest.raises(MigrationKeyframeModelDoesNotExist):
+                        new_accessor.get_deleted_model("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_deleted_model_not_deleted(self, migration_handler, write_data):
+        write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    with pytest.raises(MigrationKeyframeModelNotDeleted):
+                        old_accessor.get_deleted_model("a/1")
+                    with pytest.raises(MigrationKeyframeModelNotDeleted):
+                        new_accessor.get_deleted_model("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_model_ignore_deleted_is_deleted(self, migration_handler, write_data):
+        write_data(
+            {"type": "create", "fqid": "a/1", "fields": {"f": 1}},
+            {"type": "delete", "fqid": "a/1"},
+        )
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_model_ignore_deleted("a/1")
+                    new = new_accessor.get_model_ignore_deleted("a/1")
+                    assert old == new
+                    assert old == (
+                        {
+                            "f": 1,
+                            "meta_deleted": True,
+                            "meta_position": self.meta_position,
+                        },
+                        True,
+                    )
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_model_ignore_deleted_not_deleted(self, migration_handler, write_data):
+        write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_model_ignore_deleted("a/1")
+                    new = new_accessor.get_model_ignore_deleted("a/1")
+                    assert old == new
+                    assert old == (
+                        {
+                            "f": 1,
+                            "meta_deleted": False,
+                            "meta_position": self.meta_position,
+                        },
+                        False,
+                    )
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_model_ignore_deleted_does_not_exist(
+        self, migration_handler, write_data
+    ):
+        write_data()
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    with pytest.raises(MigrationKeyframeModelDoesNotExist):
+                        old_accessor.get_model_ignore_deleted("a/1")
+                    with pytest.raises(MigrationKeyframeModelDoesNotExist):
+                        new_accessor.get_model_ignore_deleted("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_model_exists(self, migration_handler, write_data):
+        write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    assert old_accessor.model_exists("a/1")
+                    assert new_accessor.model_exists("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_model_exists_does_not_exist(self, migration_handler, write_data):
+        write_data()
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    assert not old_accessor.model_exists("a/1")
+                    assert not new_accessor.model_exists("a/1")
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_all_ids_for_collection(self, migration_handler, write_data):
+        write_data(
+            {"type": "create", "fqid": "a/1", "fields": {}},
+            {"type": "create", "fqid": "a/1337", "fields": {}},
+            {"type": "create", "fqid": "a/2", "fields": {}},
+            {"type": "create", "fqid": "a/42", "fields": {}},
+            {"type": "create", "fqid": "a/128", "fields": {}},
+        )
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_all_ids_for_collection("a")
+                    new = new_accessor.get_all_ids_for_collection("a")
+                    assert old == new
+                    assert old == set([1, 1337, 2, 42, 128])
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_all_ids_for_collection_single_id(self, migration_handler, write_data):
+        write_data({"type": "create", "fqid": "a/1", "fields": {}})
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_all_ids_for_collection("a")
+                    new = new_accessor.get_all_ids_for_collection("a")
+                    assert old == new
+                    assert old == set([1])
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+    def test_get_all_ids_for_collection_empty_collection(
+        self, migration_handler, write_data
+    ):
+        write_data()
+
+        class MyMigration(BaseMigration):
+            target_migration_index = 2
+
+            def migrate_event(
+                inner_self,
+                event: BaseEvent,
+                old_accessor: MigrationKeyframeAccessor,
+                new_accessor: MigrationKeyframeAccessor,
+                position_data: PositionData,
+            ) -> Optional[List[BaseEvent]]:
+                if event.fqid == "trigger/1":
+                    old = old_accessor.get_all_ids_for_collection("a")
+                    new = new_accessor.get_all_ids_for_collection("a")
+                    assert old == new
+                    assert old == set()
+                return None
+
+        migration_handler.register_migrations(MyMigration)
+        migration_handler.finalize()
+
+
+class TestInitialMigrationKeyframeModifier(BaseTest):
+    meta_position = 1
+
+    def _write(self, write, *data):
+        write(*data, {"type": "create", "fqid": "trigger/1", "fields": {}})
+
+
+class TestDatabaseMigrationKeyframeModifier(BaseTest):
+    meta_position = 2
+
+    def _write(self, write, *data):
+        write({"type": "create", "fqid": "dummy/1", "fields": {}})
+        write(*data, {"type": "create", "fqid": "trigger/1", "fields": {}})

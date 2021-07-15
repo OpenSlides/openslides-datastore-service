@@ -1,10 +1,18 @@
 import json
-from typing import Dict, List
+from typing import Dict
 
 from datastore.shared.di import service_as_singleton
-from datastore.shared.util import META_POSITION, fqfield_from_fqid_and_field, logger
+from datastore.shared.typing import Fqfield
+from datastore.shared.util import (
+    JSON,
+    META_POSITION,
+    Field,
+    Fqid,
+    Position,
+    fqfield_from_fqid_and_field,
+    logger,
+)
 from datastore.writer.core import Messaging
-from datastore.writer.core.db_events import BaseDbEvent
 
 from .connection_handler import ConnectionHandler
 
@@ -19,7 +27,7 @@ class RedisMessagingBackendService(Messaging):
 
     def handle_events(
         self,
-        events_per_position: Dict[int, List[BaseDbEvent]],
+        events_per_position: Dict[Position, Dict[Fqid, Dict[Field, JSON]]],
         log_all_modified_fields: bool = True,
     ) -> None:
         modified_fqfields = self.get_modified_fqfields(events_per_position)
@@ -31,21 +39,14 @@ class RedisMessagingBackendService(Messaging):
         self.connection.xadd(MODIFIED_FIELDS_TOPIC, modified_fqfields)
 
     def get_modified_fqfields(
-        self, events_per_position: Dict[int, List[BaseDbEvent]]
-    ) -> Dict[str, str]:
+        self, events_per_position: Dict[Position, Dict[Fqid, Dict[Field, JSON]]]
+    ) -> Dict[Fqfield, str]:
         modified_fqfields = {}
-        for position, events in events_per_position.items():
-            for event in events:
-                fqfields = self.get_modified_fqfields_from_event(event)
-                modified_fqfields.update(fqfields)
-                meta_position_fqfield = fqfield_from_fqid_and_field(
-                    event.fqid, META_POSITION
-                )
+        for position, models in events_per_position.items():
+            for fqid, fields in models.items():
+                for field, value in fields.items():
+                    fqfield = fqfield_from_fqid_and_field(fqid, field)
+                    modified_fqfields[fqfield] = json.dumps(value)
+                meta_position_fqfield = fqfield_from_fqid_and_field(fqid, META_POSITION)
                 modified_fqfields[meta_position_fqfield] = str(position)
         return modified_fqfields
-
-    def get_modified_fqfields_from_event(self, event: BaseDbEvent) -> Dict[str, str]:
-        return {
-            fqfield_from_fqid_and_field(event.fqid, field): json.dumps(value)
-            for field, value in event.get_modified_fields().items()
-        }

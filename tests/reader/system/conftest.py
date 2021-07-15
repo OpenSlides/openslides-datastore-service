@@ -1,6 +1,6 @@
 import pytest
 
-from datastore.reader.core import setup_di as core_setup_di
+from datastore.reader import setup_di as reader_setup_di
 from datastore.reader.flask_frontend import FlaskFrontend
 from datastore.shared.postgresql_backend import setup_di as postgresql_setup_di
 from datastore.shared.services import setup_di as util_setup_di
@@ -19,7 +19,7 @@ from tests import (  # noqa
 def setup_di(reset_di):  # noqa
     util_setup_di()
     postgresql_setup_di()
-    core_setup_di()
+    reader_setup_di()
 
 
 @pytest.fixture

@@ -3,5 +3,5 @@ class EVENT_TYPES:
     UPDATE = "update"
     DELETE = "delete"
     DELETE_FIELDS = "deletefields"
+    LIST_FIELDS = "listfields"
     RESTORE = "restore"
-    NOOP = "noop"

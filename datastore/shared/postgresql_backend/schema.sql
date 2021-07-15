@@ -11,7 +11,7 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_type') THEN
-        CREATE TYPE event_type AS ENUM ('create', 'update', 'delete', 'deletefields', 'restore', 'noop');
+        CREATE TYPE event_type AS ENUM ('create', 'update', 'delete', 'deletefields', 'listfields', 'restore');
     ELSE
         RAISE NOTICE 'type "event_type" already exists, skipping';
     END IF;
@@ -19,46 +19,81 @@ END$$;
 
 
 CREATE TABLE IF NOT EXISTS positions (
-    position SERIAL PRIMARY KEY,
+    position INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     timestamp TIMESTAMPTZ,
     user_id INTEGER NOT NULL,
-    information JSON
+    information JSON,
+    migration_index INTEGER NOT NULL
 );
 
+-- Note that this schema (and indices, ...) also affect migration_events!
 CREATE TABLE IF NOT EXISTS events (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     position INTEGER REFERENCES positions(position) ON DELETE CASCADE,
     fqid VARCHAR(48) NOT NULL,
     type event_type NOT NULL,
-    data JSONB
+    data JSONB,
+    weight INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS events_fqid_idx ON events (fqid);
+CREATE INDEX IF NOT EXISTS event_fqid_idx ON events (fqid);
 -- TODO: create index for data->>meeting_id for collectionfieldlocks
 
-CREATE TABLE IF NOT EXISTS models_lookup (
-    fqid VARCHAR(48) PRIMARY KEY,
-    deleted BOOLEAN NOT NULL
-);
-
+-- For the `reserve_ids` feature
 CREATE TABLE IF NOT EXISTS id_sequences (
     collection VARCHAR(32) PRIMARY KEY,
     id INTEGER NOT NULL
 );
 
+-- Helper tables
 CREATE TABLE IF NOT EXISTS collectionfields (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     collectionfield VARCHAR(255) UNIQUE NOT NULL,
     position INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS collectionfields_collectionfield_idx on collectionfields (collectionfield);
 
 CREATE TABLE IF NOT EXISTS events_to_collectionfields (
-    event_id BIGINT REFERENCES events(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    collectionfield_id BIGINT REFERENCES collectionfields(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    event_id BIGINT, -- no reference to events(id) here since it is swapped with migration_events on
+    -- each migration. Since the events are append only (except for migrations, but this table is
+    -- cleared there), we does not have to worry about data cosistency. Joining etc. still works, even
+    -- if there is no foreign key relationship.
+    collectionfield_id BIGINT REFERENCES collectionfields(id) ON DELETE CASCADE,
     CONSTRAINT events_to_collectionfields_pkey PRIMARY KEY (event_id, collectionfield_id)
 );
 
+-- TODO: Unite models and models_lookup
 CREATE TABLE IF NOT EXISTS models (
     fqid VARCHAR(48) PRIMARY KEY,
     data JSONB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS models_lookup (
+    fqid VARCHAR(48) PRIMARY KEY,
+    deleted BOOLEAN NOT NULL
+);
+
+-- Migrations
+CREATE TABLE IF NOT EXISTS migration_keyframes (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    position INTEGER REFERENCES positions(position) ON DELETE CASCADE NOT NULL,
+    migration_index INTEGER NOT NULL,
+    UNIQUE (position, migration_index)
+);
+CREATE INDEX IF NOT EXISTS migration_keyframes_idx ON migration_keyframes (position, migration_index);
+
+CREATE TABLE IF NOT EXISTS migration_keyframe_models (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    keyframe_id INTEGER REFERENCES migration_keyframes(id) ON DELETE CASCADE NOT NULL,
+    fqid VARCHAR(48) NOT NULL,
+    data JSONB NOT NULL,
+    deleted BOOLEAN NOT NULL,
+    UNIQUE (keyframe_id, fqid)
+);
+CREATE INDEX IF NOT EXISTS migration_keyframe_models_idx ON migration_keyframe_models (keyframe_id, fqid);
+
+CREATE TABLE IF NOT EXISTS migration_events (LIKE events INCLUDING ALL);
+
+CREATE TABLE IF NOT EXISTS migration_positions (
+    position INTEGER PRIMARY KEY,
+    migration_index INTEGER NOT NULL
 );

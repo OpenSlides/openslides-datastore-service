@@ -111,7 +111,7 @@ endif
 
 # stopping is the same everywhere
 stop:
-	docker-compose down
+	docker-compose down --remove-orphans
 
 stop-dev:
-	docker-compose -f dc.dev.yml down
+	docker-compose -f dc.dev.yml down --remove-orphans

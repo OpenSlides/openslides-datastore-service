@@ -68,7 +68,7 @@ def test_empty_events(json_client, data):
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
 
 
-def test_unknwon_event(json_client, data):
+def test_unknown_event(json_client, data):
     data["events"][0]["type"] = "unknown"
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
@@ -173,8 +173,15 @@ def test_lock_negative_position(json_client, data):
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
 
 
-def test_lock_null_position(json_client, data):
+def test_lock_zero_position(json_client, data):
     data["locked_fields"]["a/1"] = 0
 
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
+
+
+def test_lock_null_position(json_client, data):
+    data["locked_fields"]["a/1"] = None
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)

@@ -6,6 +6,7 @@ from dacite import from_dict
 from dacite.exceptions import MissingValueError, UnionMatchError
 
 from datastore.shared.flask_frontend import InvalidRequest
+from datastore.shared.postgresql_backend import ListUpdatesDict
 from datastore.shared.typing import JSON
 from datastore.shared.util import (
     KEY_TYPE,
@@ -18,8 +19,6 @@ from datastore.shared.util import (
     get_key_type,
     is_reserved_field,
 )
-
-from .db_events import ListUpdatesDict
 
 
 ListFieldsData = TypedDict(

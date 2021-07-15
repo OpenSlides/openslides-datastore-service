@@ -15,6 +15,7 @@ data = {
     "field_2": 42,
     "field_3": [1, 2, 3],
     "meta_position": 1,
+    "meta_deleted": False,
 }
 data_json = json.dumps(data)
 
@@ -119,13 +120,16 @@ def test_mapped_fields_filter_none_values(json_client, db_connection, db_cur):
 
 
 def setup_events_data(connection, cursor):
-    cursor.execute("insert into positions (user_id) values (0), (0), (0), (0), (0)")
     cursor.execute(
-        "insert into events (position, fqid, type, data) values (1, %s, %s, %s)",
+        "insert into positions (user_id, migration_index) values"
+        + " (0, 1), (0, 1), (0, 1), (0, 1), (0, 1)"
+    )
+    cursor.execute(
+        "insert into events (position, fqid, type, data, weight) values (1, %s, %s, %s, 1)",
         [FQID, EVENT_TYPES.CREATE, data_json],
     )
     cursor.execute(
-        "insert into events (position, fqid, type, data) values (2, %s, %s, %s)",
+        "insert into events (position, fqid, type, data, weight) values (2, %s, %s, %s, 2)",
         [FQID, EVENT_TYPES.UPDATE, json.dumps({"field_1": "other"})],
     )
     connection.commit()
@@ -138,10 +142,17 @@ def test_position(json_client, db_connection, db_cur):
     assert response.json == data
 
 
+def test_current_position(json_client, db_connection, db_cur):
+    setup_events_data(db_connection, db_cur)
+    response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 2})
+    assert_success_response(response)
+    assert response.json["field_1"] == "other"
+
+
 def test_position_deleted(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     db_cur.execute(
-        "insert into events (position, fqid, type) values (3, %s, %s)",
+        "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
         [FQID, EVENT_TYPES.DELETE],
     )
     db_connection.commit()
@@ -179,6 +190,39 @@ def test_position_mapped_fields_filter_none_values(json_client, db_connection, d
     )
     assert_success_response(response)
     assert response.json == {}
+
+
+def test_order(json_client, db_connection, db_cur):
+    """
+    4 events within 2 positions - Note that the events are created in reverse
+    (see the weight and position). Make sure, that they are ordered correctly
+    by position and weight.
+    """
+    db_cur.execute(
+        "insert into positions (user_id, migration_index) values" + " (0, 1), (0, 1)"
+    )
+    # Do not reorder - the ids are implicitly chosen form 1-4
+    db_cur.execute(
+        "insert into events (position, fqid, type, data, weight) values (2, %s, %s, %s, 2)",
+        [FQID, EVENT_TYPES.RESTORE, json.dumps(None)],
+    )
+    db_cur.execute(
+        "insert into events (position, fqid, type, data, weight) values (2, %s, %s, %s, 1)",
+        [FQID, EVENT_TYPES.DELETE, json.dumps(None)],
+    )
+    db_cur.execute(
+        "insert into events (position, fqid, type, data, weight) values (1, %s, %s, %s, 2)",
+        [FQID, EVENT_TYPES.UPDATE, json.dumps({"field_1": "other"})],
+    )
+    db_cur.execute(
+        "insert into events (position, fqid, type, data, weight) values (1, %s, %s, %s, 1)",
+        [FQID, EVENT_TYPES.CREATE, data_json],
+    )
+    db_connection.commit()
+
+    response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 2})
+    assert_success_response(response)
+    assert response.json["field_1"] == "other"
 
 
 def test_invalid_fqid(json_client):

@@ -3,7 +3,13 @@ import json
 from datastore.reader.flask_frontend.routes import Route
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.shared.postgresql_backend import EVENT_TYPES
-from datastore.shared.util import DeletedModelsBehaviour, build_fqid
+from datastore.shared.util import (
+    META_DELETED,
+    META_POSITION,
+    DeletedModelsBehaviour,
+    fqid_from_collection_and_id,
+    strip_reserved_fields,
+)
 from tests import assert_error_response
 from tests.util import assert_success_response
 
@@ -15,6 +21,8 @@ data = {
             "field_2": 42,
             "field_3": [1, 2, 3],
             "common_field": 1,
+            META_POSITION: 1,
+            META_DELETED: False,
         },
     },
     "b": {
@@ -23,15 +31,23 @@ data = {
             "field_5": 42,
             "field_6": [1, 2, 3],
             "common_field": 2,
+            META_POSITION: 1,
+            META_DELETED: False,
         },
         "2": {
             "field_4": "data",
             "field_5": 42,
             "field_6": [1, 2, 3],
             "common_field": 3,
+            META_POSITION: 1,
+            META_DELETED: False,
         },
     },
 }
+data_as_deleted = json.loads(json.dumps(data))
+data_as_deleted["a"]["1"][META_DELETED] = True
+data_as_deleted["b"]["1"][META_DELETED] = True
+data_as_deleted["b"]["2"][META_DELETED] = True
 default_request_parts = [
     {"collection": "a", "ids": [1]},
     {"collection": "b", "ids": [1, 2]},
@@ -42,9 +58,11 @@ default_request = {"requests": default_request_parts}
 def setup_data(connection, cursor, deleted=False):
     for collection, models in data.items():
         for id, model in models.items():
-            fqid = build_fqid(collection, id)
+            fqid = fqid_from_collection_and_id(collection, id)
+            model_data = json.loads(json.dumps(model))
+            model_data[META_DELETED] = deleted
             cursor.execute(
-                "insert into models values (%s, %s)", [fqid, json.dumps(model)]
+                "insert into models values (%s, %s)", [fqid, json.dumps(model_data)]
             )
             cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
     connection.commit()
@@ -106,7 +124,7 @@ def test_deleted(json_client, db_connection, db_cur):
     }
     response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
-    assert response.json == data
+    assert response.json == data_as_deleted
 
 
 def test_deleted_not_deleted(json_client, db_connection, db_cur):
@@ -226,19 +244,22 @@ def test_filter_none_values(json_client, db_connection, db_cur):
 
 def setup_events_data(connection, cursor):
     cursor.execute(
-        "insert into positions (user_id) values (0), (0), (0), (0), (0), (0)"
+        "insert into positions (user_id, migration_index) values"
+        + " (0, 1), (0, 1), (0, 1), (0, 1), (0, 1), (0, 1)"
     )
     for collection, models in data.items():
         for id, model in models.items():
-            fqid = build_fqid(collection, id)
+            fqid = fqid_from_collection_and_id(collection, id)
+            model_data = json.loads(json.dumps(model))
+            strip_reserved_fields(model_data)
             cursor.execute(
-                "insert into events (position, fqid, type, data) \
-                values (1, %s, %s, %s)",
-                [fqid, EVENT_TYPES.CREATE, json.dumps(model)],
+                "insert into events (position, fqid, type, data, weight) \
+                values (1, %s, %s, %s, 1)",
+                [fqid, EVENT_TYPES.CREATE, json.dumps(model_data)],
             )
             cursor.execute(
-                "insert into events (position, fqid, type, data) \
-                values (2, %s, %s, %s)",
+                "insert into events (position, fqid, type, data, weight) \
+                values (2, %s, %s, %s, 2)",
                 [fqid, EVENT_TYPES.UPDATE, json.dumps({"common_field": 0})],
             )
     connection.commit()
@@ -260,6 +281,7 @@ def test_position_simple(json_client, db_connection, db_cur):
                 "field_3": [1, 2, 3],
                 "common_field": 1,
                 "meta_position": 1,
+                "meta_deleted": False,
             },
         },
         "b": {
@@ -269,6 +291,7 @@ def test_position_simple(json_client, db_connection, db_cur):
                 "field_6": [1, 2, 3],
                 "common_field": 2,
                 "meta_position": 1,
+                "meta_deleted": False,
             },
             "2": {
                 "field_4": "data",
@@ -276,6 +299,7 @@ def test_position_simple(json_client, db_connection, db_cur):
                 "field_6": [1, 2, 3],
                 "common_field": 3,
                 "meta_position": 1,
+                "meta_deleted": False,
             },
         },
     }
@@ -284,11 +308,11 @@ def test_position_simple(json_client, db_connection, db_cur):
 def test_position_deleted(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     db_cur.execute(
-        "insert into events (position, fqid, type) values (3, %s, %s)",
+        "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
         ["b/1", EVENT_TYPES.DELETE],
     )
     db_cur.execute(
-        "insert into events (position, fqid, type) values (4, %s, %s)",
+        "insert into events (position, fqid, type, weight) values (4, %s, %s, 4)",
         ["b/1", EVENT_TYPES.RESTORE],
     )
     db_connection.commit()
@@ -305,6 +329,7 @@ def test_position_deleted(json_client, db_connection, db_cur):
                 "field_3": [1, 2, 3],
                 "common_field": 0,
                 "meta_position": 2,
+                "meta_deleted": False,
             },
         },
         "b": {
@@ -314,6 +339,7 @@ def test_position_deleted(json_client, db_connection, db_cur):
                 "field_6": [1, 2, 3],
                 "common_field": 0,
                 "meta_position": 2,
+                "meta_deleted": False,
             },
         },
     }
@@ -322,7 +348,7 @@ def test_position_deleted(json_client, db_connection, db_cur):
 def test_position_not_deleted(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     db_cur.execute(
-        "insert into events (position, fqid, type) values (3, %s, %s)",
+        "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
         ["b/1", EVENT_TYPES.DELETE],
     )
     db_connection.commit()
@@ -340,7 +366,8 @@ def test_position_not_deleted(json_client, db_connection, db_cur):
                 "field_5": 42,
                 "field_6": [1, 2, 3],
                 "common_field": 0,
-                "meta_position": 2,
+                "meta_position": 3,
+                "meta_deleted": True,
             },
         },
     }

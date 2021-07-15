@@ -15,7 +15,10 @@ from datastore.writer.core import (
     setup_di as core_setup_di,
 )
 from datastore.writer.flask_frontend.json_handlers import ReserveIdsHandler
-from datastore.writer.postgresql_backend import SqlDatabaseBackendService
+from datastore.writer.postgresql_backend import (
+    EventTranslator,
+    SqlDatabaseBackendService,
+)
 from datastore.writer.postgresql_backend.sql_database_backend_service import (
     COLLECTION_MAX_LEN,
 )
@@ -42,6 +45,7 @@ class FakeConnectionHandler:
 def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, FakeConnectionHandler)
     injector.register_as_singleton(ReadDatabase, MagicMock)
+    injector.register_as_singleton(EventTranslator, MagicMock)
     injector.register(Database, SqlDatabaseBackendService)
     injector.register_as_singleton(OccLocker, MagicMock)
     injector.register_as_singleton(Messaging, MagicMock)

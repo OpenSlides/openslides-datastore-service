@@ -1,15 +1,14 @@
 import threading
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import retry_on_db_failure
+from datastore.shared.services import ReadDatabase
+from datastore.shared.typing import JSON, Field, Fqid
 from datastore.shared.util import logger
 
 from .database import Database
-from .db_events import BaseDbEvent
-from .event_executor import EventExecutor
-from .event_translator import EventTranslator
 from .messaging import Messaging
 from .occ_locker import OccLocker
 from .write_request import BaseRequestEvent, WriteRequest
@@ -21,9 +20,8 @@ class WriterService:
     _lock = threading.Lock()
 
     database: Database
+    read_database: ReadDatabase
     occ_locker: OccLocker
-    event_translator: EventTranslator
-    event_executor: EventExecutor
     messaging: Messaging
 
     @retry_on_db_failure
@@ -31,23 +29,22 @@ class WriterService:
         self,
         write_requests: List[WriteRequest],
         log_all_modified_fields: bool = True,
+        migration_index: Optional[int] = None,
     ) -> None:
         self.write_requests = write_requests
 
         with self._lock:
-            self.position_to_db_events = {}
+            self.position_to_modified_models = {}
             with self.database.get_context():
                 for write_request in self.write_requests:
-                    # Convert request events to db events
-                    db_events = self.event_translator.translate(write_request.events)
-                    position = self.write_with_database_context(
-                        write_request, db_events
+                    position, modified_models = self.write_with_database_context(
+                        write_request, migration_index=migration_index
                     )
-                    self.position_to_db_events[position] = db_events
+                    self.position_to_modified_models[position] = modified_models
 
             # Only propagate updates to redis after the transaction has finished
             self.messaging.handle_events(
-                self.position_to_db_events,
+                self.position_to_modified_models,
                 log_all_modified_fields=log_all_modified_fields,
             )
 
@@ -77,20 +74,22 @@ class WriterService:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
     def write_with_database_context(
-        self, write_request: WriteRequest, db_events: List[BaseDbEvent]
-    ) -> int:
+        self, write_request: WriteRequest, migration_index: Optional[int] = None
+    ) -> Tuple[int, Dict[Fqid, Dict[Field, JSON]]]:
         # Check locked_fields -> Possible LockedError
         self.occ_locker.assert_locked_fields(write_request)
 
         # Insert db events with position data
-        position = self.database.insert_events(
-            db_events, write_request.information, write_request.user_id
+        if migration_index is None:
+            migration_index = self.read_database.get_current_migration_index()
+        position, modified_fqfields = self.database.insert_events(
+            write_request.events,
+            migration_index,
+            write_request.information,
+            write_request.user_id,
         )
 
-        # Store updated models in the Read-DB
-        self.event_executor.update(db_events, position)
-
-        return position
+        return position, modified_fqfields
 
     @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> List[int]:

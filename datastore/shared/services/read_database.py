@@ -100,17 +100,6 @@ class ReadDatabase(Protocol):
         Aggregates the filtered models according to fields_params.
         """
 
-    def create_or_update_models(self, models: Dict[str, Dict[str, Any]]) -> None:
-        """
-        Creates or updates models in the read-DB. The models are given
-        in a map from fqid <-> model
-        """
-
-    def delete_models(self, fqids: List[str]) -> None:
-        """
-        Delete all given models from the read-DB
-        """
-
     def build_model_ignore_deleted(
         self, fqid: str, position: Optional[int] = None
     ) -> Model:
@@ -141,5 +130,11 @@ class ReadDatabase(Protocol):
         position is given, the result refers to the state at the position.
         """
 
-    def get_position(self) -> int:
+    def get_max_position(self) -> int:
         """Returns the current (highest) position of the datastore."""
+
+    def get_current_migration_index(self) -> int:
+        """
+        Returns the maximum migration index from all positions or 1 if there are
+        no positions.
+        """
