@@ -141,7 +141,7 @@ def test_query_arguments_collectionfield(occ_locker, connection):
     occ_locker.get_locked_collectionfields({"a/f": 2, "b/e": 42})
 
     query = qsv.call_args.args[0]
-    assert query.count("(cf.collectionfield=%s and e.position>%s)") == 2
+    assert query.count("(cf.collectionfield=%s and cf.position>%s)") == 2
     args = qsv.call_args.args[1]
     assert (args == ["a/f", 2, "b/e", 42]) or (
         args == ["b/e", 42, "a/f", 2]

@@ -48,3 +48,7 @@ Since the folder structure inside the docker container differs from the real one
 Since `docker-compose` uses the `.env` file in the root of the repository, this file should not also be used by VS Code, so it has to be placed elsewhere.
 
 For other IDEs there are probably similar solutions. Feel free to add them here for your IDE.
+
+## Locking mechanisms
+
+See [Locking](locking.md).
