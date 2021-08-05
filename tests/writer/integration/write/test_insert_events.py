@@ -27,9 +27,9 @@ class FakeConnectionHandler:
         return MagicMock()
 
     def execute(self, statement, arguments):
-        if statement.startswith("insert into positions ("):
+        if statement.strip().startswith("insert into positions ("):
             self.create_position(statement, arguments)
-        if statement.startswith("insert into models_lookup ("):
+        if statement.strip().startswith("insert into models ("):
             self.create_model_lookup(statement, arguments)
 
     def create_position(self, statement, arguments):
@@ -42,9 +42,9 @@ class FakeConnectionHandler:
         print("query", query, arguments, "\n")
         if query == "select max(position) from positions":
             return self.get_max_position()
-        if query.startswith("select exists(select 1"):
+        if query.strip().startswith("select exists(select 1"):
             return self.exists()
-        if query.startswith("insert into events ("):
+        if query.strip().startswith("insert into events ("):
             return self.create_event(query, arguments)
 
     def get_max_position(self):

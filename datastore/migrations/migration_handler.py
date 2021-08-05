@@ -223,8 +223,7 @@ class MigrationHandlerImplementation:
             self.connection.execute("delete from collectionfields", [])
 
     def fill_models_aux_tables(self):
-        # Use the DatabaseMigrationKeyframeModifier to copy all models
-        # into `models_lookup` and `models`
+        # Use the DatabaseMigrationKeyframeModifier to copy all models into `models`
         max_position = self.connection.query_single_value(
             "select max(position) from positions", []
         )
@@ -232,17 +231,10 @@ class MigrationHandlerImplementation:
             self.connection, max_position, self.target_migration_index
         )
         self.connection.execute("delete from models", [])
-        self.connection.execute("delete from models_lookup", [])
 
         self.connection.execute(
-            "insert into models (fqid, data) select fqid, data from migration_keyframe_models where keyframe_id=%s",
-            [keyframe_id],
-        )
-        self.connection.execute(
-            """\
-            insert into models_lookup (fqid, deleted)
-            select fqid, deleted from migration_keyframe_models where keyframe_id=%s
-            """,
+            """insert into models (fqid, data, deleted) select fqid, data, deleted
+            from migration_keyframe_models where keyframe_id=%s""",
             [keyframe_id],
         )
 

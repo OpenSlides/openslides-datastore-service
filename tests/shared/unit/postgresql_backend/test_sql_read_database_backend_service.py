@@ -317,7 +317,7 @@ def test_get_deleted_status(read_database: ReadDatabase, connection: ConnectionH
     connection.query = q = MagicMock(return_value=result)
 
     assert read_database.get_deleted_status([fqid]) == {fqid: deleted}
-    assert "from models_lookup" in q.call_args.args[0]
+    assert "from models " in q.call_args.args[0]
     assert q.call_args.args[1] == [(fqid,)]
 
 

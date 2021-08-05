@@ -78,7 +78,6 @@ class SqlReadDatabaseBackendService:
 
         query = f"""
             select fqid, {mapped_fields_str} from models
-            {"natural join models_lookup" if del_cond else ""}
             where fqid in %s {del_cond}"""
         result = self.connection.query(
             query, mapped_field_args + arguments, unique_mapped_fields
@@ -100,7 +99,6 @@ class SqlReadDatabaseBackendService:
         ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
         query = f"""
             select fqid as __fqid__, {mapped_fields_str} from models
-            {"natural join models_lookup" if del_cond else ""}
             where fqid like %s {del_cond}"""
         models = self.fetch_models(
             query,
@@ -119,7 +117,7 @@ class SqlReadDatabaseBackendService:
         )
         query = f"""
             select fqid as __fqid__, data from models
-            {"natural join models_lookup where " + del_cond if del_cond else ""}"""
+            {"where " + del_cond if del_cond else ""}"""
 
         result = self.connection.query(query, [], [])
         unsorted_data = defaultdict(list)
@@ -291,7 +289,7 @@ class SqlReadDatabaseBackendService:
             return self.get_deleted_status_from_events(fqids, position)
 
     def get_deleted_status_from_read_db(self, fqids: List[str]) -> Dict[str, bool]:
-        query = "select fqid, deleted from models_lookup where fqid in %s"
+        query = "select fqid, deleted from models where fqid in %s"
         result = self.connection.query(query, [tuple(fqids)])
         return {row["fqid"]: row["deleted"] for row in result}
 
