@@ -14,6 +14,7 @@ from datastore.shared.services.read_database import (
     ReadDatabase,
 )
 from datastore.shared.util import (
+    META_DELETED,
     META_POSITION,
     BadCodingError,
     DeletedModelsBehaviour,
@@ -200,53 +201,6 @@ def test_build_models_from_result(
     assert result == {row["fqid"]: row}
 
 
-def test_create_or_update_models(
-    read_database: ReadDatabase, connection: ConnectionHandler
-):
-    fqid1 = MagicMock()
-    model1 = MagicMock()
-    fqid2 = MagicMock()
-    model2 = MagicMock()
-    models = {fqid1: model1, fqid2: model2}
-    connection.execute = e = MagicMock()
-    read_database.json = lambda x: x
-
-    read_database.create_or_update_models(models)
-
-    args = e.call_args.args[1]
-    assert (args == [fqid1, model1, fqid2, model2]) or (
-        args == [fqid2, model2, fqid1, model1]
-    )
-
-
-def test_create_or_update_models_no_models(
-    read_database: ReadDatabase, connection: ConnectionHandler
-):
-    connection.execute = e = MagicMock()
-    read_database.create_or_update_models([])
-    e.assert_not_called()
-
-
-def test_delete_models(read_database: ReadDatabase, connection: ConnectionHandler):
-    fqids = (
-        MagicMock(),
-        MagicMock(),
-    )
-    connection.execute = e = MagicMock()
-
-    read_database.delete_models(fqids)
-
-    assert e.call_args.args[1] == [fqids]
-
-
-def test_delete_models_no_models(
-    read_database: ReadDatabase, connection: ConnectionHandler
-):
-    connection.execute = e = MagicMock()
-    read_database.delete_models([])
-    e.assert_not_called()
-
-
 def test_build_model_ignore_deleted(
     read_database: ReadDatabase, connection: ConnectionHandler
 ):
@@ -321,22 +275,6 @@ def test_build_model_from_events_unknown_event(read_database: ReadDatabase):
         )
 
 
-def test_build_model_from_events_update_event(read_database: ReadDatabase):
-    base_model = MagicMock()
-    base_model.update = u = MagicMock()
-    update_event = MagicMock()
-
-    result = read_database.build_model_from_events(
-        [
-            {"type": EVENT_TYPES.CREATE, "data": base_model},
-            {"type": EVENT_TYPES.UPDATE, "data": update_event, "position": 0},
-        ]
-    )
-
-    u.assert_called_with(update_event)
-    assert result == base_model
-
-
 def test_build_model_from_events_delete_fields_event(read_database: ReadDatabase):
     field = MagicMock()
     base_model = {field: MagicMock}
@@ -353,7 +291,7 @@ def test_build_model_from_events_delete_fields_event(read_database: ReadDatabase
         ]
     )
 
-    assert result == {META_POSITION: 0}
+    assert result == {META_DELETED: False, META_POSITION: 0}
 
 
 def test_is_deleted(read_database: ReadDatabase):
@@ -397,8 +335,8 @@ def test_get_deleted_status_position(
 
 def test_get_position(read_database: ReadDatabase, connection: ConnectionHandler):
     connection.query_single_value = q = MagicMock(return_value=42)
-    assert read_database.get_position() == 42
-    q.asser_called_with("select max(position) from positions", [])
+    assert read_database.get_max_position() == 42
+    q.assert_called_with("select max(position) from positions", [])
 
 
 def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
@@ -408,3 +346,16 @@ def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
 
     assert read_database.json(data) == value
     tj.assert_called_with(data)
+
+
+def test_get_current_migration_index_cached(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
+    connection.query_single_value = qsv = MagicMock(return_value=None)
+    assert read_database.get_current_migration_index() == 1
+    qsv.assert_called_once()
+
+    # second try; now it should be cached
+    connection.query_single_value = qsv = MagicMock(return_value=None)
+    assert read_database.get_current_migration_index() == 1
+    qsv.assert_not_called()

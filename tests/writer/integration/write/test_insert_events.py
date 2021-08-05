@@ -14,7 +14,11 @@ from datastore.writer.core import (
     setup_di as core_setup_di,
 )
 from datastore.writer.flask_frontend.json_handlers import WriteHandler
-from datastore.writer.postgresql_backend import SqlDatabaseBackendService
+from datastore.writer.postgresql_backend import (
+    EventTranslator,
+    SqlDatabaseBackendService,
+)
+from datastore.writer.postgresql_backend.event_translator import EventTranslatorService
 from tests import reset_di  # noqa
 
 
@@ -35,6 +39,7 @@ class FakeConnectionHandler:
         """"""
 
     def query_single_value(self, query, arguments):
+        print("query", query, arguments, "\n")
         if query == "select max(position) from positions":
             return self.get_max_position()
         if query.startswith("select exists(select 1"):
@@ -66,6 +71,7 @@ class FakeConnectionHandler:
 def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, FakeConnectionHandler)
     injector.register_as_singleton(ReadDatabase, MagicMock)
+    injector.register_as_singleton(EventTranslator, EventTranslatorService)
     injector.register(Database, SqlDatabaseBackendService)
     injector.register_as_singleton(OccLocker, lambda: MagicMock(unsafe=True))
     injector.register_as_singleton(Messaging, MagicMock)
@@ -92,7 +98,7 @@ def valid_metadata():
 
 def test_insert_create_event(write_handler, connection_handler, valid_metadata):
     valid_metadata["events"].append(
-        {"type": "create", "fqid": "a/1", "fields": {}}  # this is allowed
+        {"type": "create", "fqid": "a/1", "fields": {"f": 1}}  # this is allowed
     )
     connection_handler.create_position = cp = MagicMock()
     position = MagicMock()

@@ -1,19 +1,19 @@
 import pytest
 
 from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ALL_TABLES
 from datastore.shared.services import EnvironmentService
 from datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
 )
-from datastore.shared.util import ALL_TABLES
 from datastore.writer.flask_frontend.routes import TRUNCATE_DB_URL
 from tests.util import assert_response_code
 
 
 def test_truncate_db(db_connection, db_cur, json_client):
-    db_cur.execute("insert into positions (user_id) values ('1')")
+    db_cur.execute("insert into positions (user_id, migration_index) values (1, 1)")
     db_cur.execute(
-        "insert into events (position, fqid, type) values (1, 'a/1', 'create')"
+        "insert into events (position, fqid, type, weight) values (1, 'a/1', 'create', 1)"
     )
     db_cur.execute("insert into models_lookup values ('a/1', TRUE)")
     db_cur.execute("insert into id_sequences values ('c', 1)")

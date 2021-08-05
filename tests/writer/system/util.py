@@ -1,16 +1,17 @@
-from typing import Set
+from typing import Dict, List, Set
 
 import pytest
 
 from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
+from datastore.shared.postgresql_backend import ALL_TABLES, ConnectionHandler
 from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPES
 from datastore.shared.services import ReadDatabase
+from datastore.shared.typing import Field, Fqid
 from datastore.shared.util import (
-    ALL_TABLES,
     META_DELETED,
     META_POSITION,
     ModelDoesNotExist,
+    fqfield_from_fqid_and_field,
 )
 from datastore.writer.redis_backend.redis_messaging_backend_service import (
     MODIFIED_FIELDS_TOPIC,
@@ -30,11 +31,10 @@ def assert_model(fqid, model, position):
 
         # build model and assert that the last event is not a deleted.
         built_model = read_db.build_model_ignore_deleted(fqid)
-        del model[META_POSITION]
-        del built_model[META_POSITION]
         assert built_model == model
         event_type = connection_handler.query_single_value(
-            "select type from events where fqid=%s order by id desc limit 1", [fqid]
+            "select type from events where fqid=%s order by position desc, weight desc limit 1",
+            [fqid],
         )
         assert (
             isinstance(event_type, str)
@@ -54,7 +54,8 @@ def assert_no_model(fqid):
 
         # assert last event is a deleted one
         event_type = connection_handler.query_single_value(
-            "select type from events where fqid=%s order by id desc limit 1", [fqid]
+            "select type from events where fqid=%s order by position desc, weight desc limit 1",
+            [fqid],
         )
         assert event_type in (EVENT_TYPES.DELETE, None)
 
@@ -65,13 +66,17 @@ def assert_no_db_entry(db_cur):
         assert db_cur.fetchone()[0] == 0
 
 
-def assert_modified_fields(redis_connection, fields_per_fqid, meta_deleted=True):
+def assert_modified_fields(
+    redis_connection, fields_per_fqid: Dict[Fqid, List[Field]], meta_deleted=True
+):
     modified_fields: Set[str] = set()
     for fqid, fields in fields_per_fqid.items():
-        modified_fields.update(fqid + "/" + field for field in fields)
+        modified_fields.update(
+            fqfield_from_fqid_and_field(fqid, field) for field in fields
+        )
         if meta_deleted:
-            modified_fields.add(fqid + "/" + META_DELETED)
-        modified_fields.add(fqid + "/" + META_POSITION)
+            modified_fields.add(fqfield_from_fqid_and_field(fqid, META_DELETED))
+        modified_fields.add(fqfield_from_fqid_and_field(fqid, META_POSITION))
 
     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 1
     response = redis_connection.xread({MODIFIED_FIELDS_TOPIC: 0}, count=1)

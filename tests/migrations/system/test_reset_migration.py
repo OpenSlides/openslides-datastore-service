@@ -1,0 +1,61 @@
+from datastore.migrations import CreateEvent
+
+from ..util import get_lambda_migration, get_noop_migration
+
+
+def test_no_migrations(migration_handler, write, assert_count):
+    write({"type": "create", "fqid": "a/1", "fields": {}})
+    write({"type": "create", "fqid": "a/2", "fields": {}})
+
+    assert_count("migration_keyframes", 0)
+    assert_count("migration_positions", 0)
+    assert_count("migration_events", 0)
+
+    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.reset()
+
+    assert_count("migration_keyframes", 0)
+    assert_count("migration_positions", 0)
+    assert_count("migration_events", 0)
+
+
+def test_ongoing_migrations(migration_handler, write, assert_count):
+    write({"type": "create", "fqid": "a/1", "fields": {}})
+    write({"type": "create", "fqid": "a/2", "fields": {}})
+
+    assert_count("migration_keyframes", 0)
+    assert_count("migration_positions", 0)
+    assert_count("migration_events", 0)
+
+    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.migrate()
+
+    assert_count("migration_keyframes", 2)
+    assert_count("migration_positions", 2)
+    assert_count("migration_events", 2)
+
+    migration_handler.reset()
+
+    assert_count("migration_keyframes", 0)
+    assert_count("migration_positions", 0)
+    assert_count("migration_events", 0)
+
+
+def test_actual_migration(
+    migration_handler, write, read_model, assert_model, query_single_value
+):
+    write({"type": "create", "fqid": "a/1", "fields": {}})
+    previous_model = read_model("a/1")
+
+    event = CreateEvent("a/2", {})
+    migration_handler.register_migrations(get_lambda_migration(lambda _: [event]))
+    migration_handler.migrate()
+    migration_handler.reset()
+
+    migration_handler.migrations_by_target_migration_index = {}
+    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.finalize()
+
+    assert_model("a/1", previous_model)
+    assert query_single_value("select min(migration_index) from positions") == 2
+    assert query_single_value("select max(migration_index) from positions") == 2

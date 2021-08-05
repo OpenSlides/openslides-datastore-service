@@ -5,10 +5,10 @@ import psycopg2
 import pytest
 
 from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ALL_TABLES
 from datastore.shared.postgresql_backend.pg_connection_handler import (
     DATABASE_ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
 )
-from datastore.shared.util import ALL_TABLES
 
 
 def get_env(name):
@@ -91,8 +91,7 @@ def reset_db_schema(setup_db_connection):
 # Flask
 
 
-@pytest.fixture()
-def json_client(client):
+def make_json_client(client):
     old_post = client.post
 
     def post(url, data):
@@ -106,3 +105,8 @@ def json_client(client):
     client.post = post
     yield client
     client.post = old_post
+
+
+@pytest.fixture()
+def json_client(client):
+    yield from make_json_client(client)

@@ -2,8 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from datastore.shared.util import META_DELETED, BadCodingError
-from datastore.writer.core.db_events import (
+from datastore.writer.postgresql_backend import (
     BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
@@ -28,11 +27,9 @@ def test_db_create_event():
 
     assert event.fqid == fqid
     assert "my_key" in event.field_data
-    assert META_DELETED in event.field_data
 
     modified_fields = event.get_modified_fields()
     assert "my_key" in modified_fields
-    assert META_DELETED in modified_fields
 
 
 def test_db_update_event():
@@ -54,10 +51,10 @@ def test_db_list_update_event():
     value = MagicMock()
     add = {"my_key": value}
     remove = {"other_key": value}
+    model = {"other_key": []}
 
-    event = DbListUpdateEvent(fqid, add, remove)
-    # init translated events
-    event.translate_events({})
+    event = DbListUpdateEvent(fqid, add, remove, model)
+    assert model == {"other_key": []}  # do not change
 
     assert event.fqid == fqid
     assert "my_key" in event.add
@@ -68,24 +65,17 @@ def test_db_list_update_event():
     assert "other_key" in modified_fields
 
 
-def test_db_list_update_event_get_translated_events_before_translate():
-    event = DbListUpdateEvent(MagicMock(), {}, {})
-    with pytest.raises(BadCodingError):
-        event.get_translated_events()
+def test_db_list_update_event_nothing_on_empty_remove():
+    fqid = MagicMock()
+    value = MagicMock()
+    remove = {"not_existing": value}
+    model = {}
 
+    event = DbListUpdateEvent(fqid, {}, remove, model)
+    assert model == {}  # do not change
 
-def test_db_list_update_event_translate_events_empty_events():
-    event = DbListUpdateEvent(MagicMock(), {}, {})
-    with pytest.raises(BadCodingError):
-        event.translate_events(MagicMock())
-
-
-def test_db_list_update_event_double_translate_events():
-    event = DbListUpdateEvent(MagicMock(), {}, {})
-    event.calculate_updated_fields = MagicMock(return_value=[MagicMock(), MagicMock()])
-    event.translate_events({})
-    with pytest.raises(BadCodingError):
-        event.translate_events({})
+    modified_fields = event.get_modified_fields()
+    assert modified_fields == {}
 
 
 def test_db_delete_fields_event():
@@ -103,8 +93,7 @@ def test_db_delete_event():
     fqid = MagicMock()
     field = MagicMock()
 
-    event = DbDeleteEvent(fqid)
-    event.fields = [field]
+    event = DbDeleteEvent(fqid, [field])
 
     assert event.fqid == fqid
     assert event.get_modified_fields() == {field: None}
@@ -113,8 +102,7 @@ def test_db_delete_event():
 def test_db_delete_event_set_modified_fields():
     field = MagicMock()
 
-    event = DbDeleteEvent(None)
-    event.set_modified_fields([field])
+    event = DbDeleteEvent(None, [field])
 
     assert event.get_modified_fields() == {field: None}
 
@@ -123,8 +111,7 @@ def test_db_restore_event():
     fqid = MagicMock()
     field = MagicMock()
 
-    event = DbRestoreEvent(fqid)
-    event.fields = [field]
+    event = DbRestoreEvent(fqid, [field])
 
     assert event.fqid == fqid
     assert event.get_modified_fields() == {field: None}
@@ -133,7 +120,6 @@ def test_db_restore_event():
 def test_db_restore_event_set_modified_fields():
     field = MagicMock()
 
-    event = DbRestoreEvent(None)
-    event.set_modified_fields([field])
+    event = DbRestoreEvent(None, [field])
 
     assert event.get_modified_fields() == {field: None}

@@ -1,8 +1,12 @@
 from ..typing import JSON, Collection, Field, Fqid, Id, Model, Position  # noqa
-from .deleted_models_behaviour import DeletedModelsBehaviour  # noqa
+from .deleted_models_behaviour import (  # noqa
+    DeletedModelsBehaviour,
+    get_exception_for_deleted_models_behaviour,
+)
 from .exceptions import (  # noqa
     BadCodingError,
     DatastoreException,
+    InvalidDatastoreState,
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
@@ -23,9 +27,9 @@ from .key_strings import (  # noqa
     META_FIELD_PREFIX,
     META_POSITION,
     is_reserved_field,
+    strip_reserved_fields,
 )
 from .key_transforms import (  # noqa
-    build_fqid,
     collection_and_id_from_fqid,
     collection_from_collectionfield,
     collection_from_fqid,
@@ -33,6 +37,7 @@ from .key_transforms import (  # noqa
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
     fqfield_from_fqid_and_field,
+    fqid_from_collection_and_id,
     id_from_fqid,
 )
 from .key_types import (  # noqa
@@ -49,23 +54,3 @@ from .key_types import (  # noqa
 )
 from .logging import logger  # noqa
 from .self_validating_dataclass import SelfValidatingDataclass  # noqa
-
-
-ALL_TABLES = (
-    "positions",
-    "events",
-    "models_lookup",
-    "id_sequences",
-    "collectionfields",
-    "events_to_collectionfields",
-    "models",
-)
-
-
-def get_exception_for_deleted_models_behaviour(
-    fqid: str, get_deleted_models: DeletedModelsBehaviour
-) -> DatastoreException:
-    if get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED:
-        return ModelNotDeleted(fqid)
-    else:
-        return ModelDoesNotExist(fqid)

@@ -1,5 +1,4 @@
 from datastore.shared.util import (
-    build_fqid,
     collection_and_id_from_fqid,
     collection_from_collectionfield,
     collection_from_fqid,
@@ -7,6 +6,7 @@ from datastore.shared.util import (
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
     fqfield_from_fqid_and_field,
+    fqid_from_collection_and_id,
     id_from_fqid,
 )
 from datastore.shared.util.key_transforms import field_from_fqfield, fqid_from_fqfield
@@ -74,8 +74,8 @@ def test_collection_from_collectionfield():
     assert collection_from_collectionfield(collectionfield) == "a"
 
 
-def test_build_fqid():
+def test_fqid_from_collection_and_id():
     collection = "collection"
     id = "1"
 
-    assert build_fqid(collection, id) == "collection/1"
+    assert fqid_from_collection_and_id(collection, id) == "collection/1"

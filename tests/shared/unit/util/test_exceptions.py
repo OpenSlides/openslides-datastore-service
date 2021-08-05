@@ -1,4 +1,5 @@
 from datastore.shared.util import (
+    InvalidDatastoreState,
     InvalidFormat,
     ModelDoesNotExist,
     ModelExists,
@@ -30,3 +31,8 @@ def test_model_not_deleted():
 def test_model_locked():
     e = ModelLocked(["key"])
     assert e.keys == ["key"]
+
+
+def test_invalid_datastore_state():
+    e = InvalidDatastoreState("msg")
+    assert e.msg == "msg"

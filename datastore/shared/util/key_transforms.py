@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 
 from .key_strings import KEYSEPARATOR
 
@@ -45,5 +45,5 @@ def collection_from_collectionfield(collectionfield: str) -> str:
     return collectionfield.split(KEYSEPARATOR)[0]
 
 
-def build_fqid(collection: str, id: str) -> str:
+def fqid_from_collection_and_id(collection: str, id: Union[str, int]) -> str:
     return f"{collection}{KEYSEPARATOR}{id}"

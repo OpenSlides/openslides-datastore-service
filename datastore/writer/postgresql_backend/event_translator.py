@@ -1,9 +1,18 @@
 from typing import Dict, List, Protocol
 
 from datastore.shared.di import service_as_singleton, service_interface
+from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON
-from datastore.shared.util import BadCodingError
-from datastore.writer.core.db_events import (
+from datastore.shared.util import BadCodingError, DeletedModelsBehaviour
+from datastore.writer.core import (
+    BaseRequestEvent,
+    RequestCreateEvent,
+    RequestDeleteEvent,
+    RequestRestoreEvent,
+    RequestUpdateEvent,
+)
+
+from .db_events import (
     BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
@@ -13,18 +22,10 @@ from datastore.writer.core.db_events import (
     DbUpdateEvent,
 )
 
-from .write_request import (
-    BaseRequestEvent,
-    RequestCreateEvent,
-    RequestDeleteEvent,
-    RequestRestoreEvent,
-    RequestUpdateEvent,
-)
-
 
 @service_interface
 class EventTranslator(Protocol):
-    def translate(self, request_events: List[BaseRequestEvent]) -> List[BaseDbEvent]:
+    def translate(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
         """
         Translates request events into db events
         """
@@ -32,21 +33,29 @@ class EventTranslator(Protocol):
 
 @service_as_singleton
 class EventTranslatorService:
-    def translate(self, request_events: List[BaseRequestEvent]) -> List[BaseDbEvent]:
-        translated_events: List[BaseDbEvent] = []
-        for event in request_events:
-            translated_events += self.translate_single(event)
-        return translated_events
 
-    def translate_single(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
+    read_database: ReadDatabase
+
+    def translate(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
         if isinstance(request_event, RequestCreateEvent):
             return [DbCreateEvent(request_event.fqid, request_event.fields)]
+
         if isinstance(request_event, RequestUpdateEvent):
             return self.create_update_events(request_event)
+
         if isinstance(request_event, RequestDeleteEvent):
-            return [DbDeleteEvent(request_event.fqid)]
+            model_fields = list(self.read_database.get(request_event.fqid).keys())
+            return [DbDeleteEvent(request_event.fqid, model_fields)]
+
         if isinstance(request_event, RequestRestoreEvent):
-            return [DbRestoreEvent(request_event.fqid)]
+            model_fields = list(
+                self.read_database.get(
+                    request_event.fqid,
+                    get_deleted_models=DeletedModelsBehaviour.ONLY_DELETED,
+                ).keys()
+            )
+            return [DbRestoreEvent(request_event.fqid, model_fields)]
+
         raise BadCodingError()
 
     def create_update_events(
@@ -74,6 +83,9 @@ class EventTranslatorService:
         add = request_update_event.list_fields.get("add", {})
         remove = request_update_event.list_fields.get("remove", {})
         if add or remove:
-            db_events.append(DbListUpdateEvent(request_update_event.fqid, add, remove))
+            model = self.read_database.get(request_update_event.fqid)
+            db_events.append(
+                DbListUpdateEvent(request_update_event.fqid, add, remove, model)
+            )
 
         return db_events

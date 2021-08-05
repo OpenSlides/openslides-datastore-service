@@ -3,20 +3,23 @@ from textwrap import dedent
 from typing import Any, ContextManager, Dict, List, Optional
 
 from datastore.shared.di import service_as_singleton
+from datastore.shared.postgresql_backend import apply_fields
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from datastore.shared.services.read_database import (
     BaseAggregateFilterQueryFieldsParameters,
     MappedFieldsFilterQueryFieldsParameters,
 )
-from datastore.shared.typing import Model
+from datastore.shared.typing import Fqid, Model
 from datastore.shared.util import (
+    META_DELETED,
     META_POSITION,
     BadCodingError,
     DeletedModelsBehaviour,
     Filter,
+    InvalidDatastoreState,
     ModelDoesNotExist,
-    build_fqid,
     collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
     get_exception_for_deleted_models_behaviour,
     id_from_fqid,
 )
@@ -25,11 +28,16 @@ from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPES
 
 
+MIGRATION_INDEX_NOT_INITIALIZED = -2
+
+
 @service_as_singleton
 class SqlReadDatabaseBackendService:
 
     connection: ConnectionHandler
     query_helper: SqlQueryHelper
+
+    current_migration_index: int = MIGRATION_INDEX_NOT_INITIALIZED
 
     def get_context(self) -> ContextManager[None]:
         return self.connection.get_connection_context()
@@ -96,7 +104,7 @@ class SqlReadDatabaseBackendService:
             where fqid like %s {del_cond}"""
         models = self.fetch_models(
             query,
-            mapped_field_args + [build_fqid(collection, "%")],
+            mapped_field_args + [fqid_from_collection_and_id(collection, "%")],
             mapped_fields,
             mapped_fields,
         )
@@ -192,30 +200,6 @@ class SqlReadDatabaseBackendService:
 
         return result_map
 
-    def create_or_update_models(self, models: Dict[str, Model]) -> None:
-        if not models:
-            return
-
-        arguments: List[Any] = []
-        value_placeholders = []
-        for fqid, model in models.items():
-            arguments.extend((fqid, self.json(model)))
-            value_placeholders.append("(%s, %s)")
-        values = ",".join(value_placeholders)
-
-        statement = f"""
-            insert into models (fqid, data) values {values}
-            on conflict(fqid) do update set data=excluded.data;"""
-        self.connection.execute(statement, arguments)
-
-    def delete_models(self, fqids: List[str]) -> None:
-        if not fqids:
-            return
-
-        arguments = [tuple(fqids)]
-        query = "delete from models where fqid in %s"
-        self.connection.execute(query, arguments)
-
     def build_model_ignore_deleted(
         self, fqid: str, position: Optional[int] = None
     ) -> Model:
@@ -228,10 +212,6 @@ class SqlReadDatabaseBackendService:
     def build_models_ignore_deleted(
         self, fqids: List[str], position: Optional[int] = None
     ) -> Dict[str, Model]:
-        # building a model (and ignoring the latest delete/restore) is easy:
-        # Get all events and skip any delete, restore or noop event. Then just
-        # build the model: First the create, than a series of update events
-        # and delete_fields events.
         # Optionally only builds the models up to the specified position.
         # TODO: There might be a speedup: Get the model from the readdb first.
         # If the model exists there, read the position from it, use the model
@@ -244,28 +224,19 @@ class SqlReadDatabaseBackendService:
             pos_cond = ""
             pos_args = []
 
-        included_types = dedent(
-            f"""\
-            ('{EVENT_TYPES.CREATE}',
-            '{EVENT_TYPES.UPDATE}',
-            '{EVENT_TYPES.DELETE_FIELDS}')"""
-        )
         query = dedent(
             f"""\
             select fqid, type, data, position from events e
-            where fqid in %s and type in {included_types} {pos_cond}
-            order by id asc"""
+            where fqid in %s {pos_cond}
+            order by position asc, weight asc"""
         )
 
         args: List[Any] = [tuple(fqids)]
         db_events = self.connection.query(query, args + pos_args)
 
-        events_per_fqid = {}
+        events_per_fqid: Dict[Fqid, List[Dict[str, Any]]] = defaultdict(list)
         for event in db_events:
-            if event["fqid"] not in events_per_fqid:
-                events_per_fqid[event["fqid"]] = [event]
-            else:
-                events_per_fqid[event["fqid"]] += [event]
+            events_per_fqid[event["fqid"]].append(event)
 
         models = {}
         for fqid, events in events_per_fqid.items():
@@ -279,7 +250,7 @@ class SqlReadDatabaseBackendService:
 
         create_event = events[0]
         assert create_event["type"] == EVENT_TYPES.CREATE
-        model = create_event["data"]
+        model: Model = {**create_event["data"], META_DELETED: False}
 
         # apply all other update/delete_fields
         for event in events[1:]:
@@ -289,6 +260,15 @@ class SqlReadDatabaseBackendService:
                 for field in event["data"]:
                     if field in model:
                         del model[field]
+            elif event["type"] == EVENT_TYPES.LIST_FIELDS:
+                for field, value in apply_fields(
+                    model, event["data"]["add"], event["data"]["remove"]
+                ).items():
+                    model[field] = value
+            elif event["type"] == EVENT_TYPES.DELETE:
+                model[META_DELETED] = True
+            elif event["type"] == EVENT_TYPES.RESTORE:
+                model[META_DELETED] = False
             else:
                 raise BadCodingError()
 
@@ -310,6 +290,11 @@ class SqlReadDatabaseBackendService:
         else:
             return self.get_deleted_status_from_events(fqids, position)
 
+    def get_deleted_status_from_read_db(self, fqids: List[str]) -> Dict[str, bool]:
+        query = "select fqid, deleted from models_lookup where fqid in %s"
+        result = self.connection.query(query, [tuple(fqids)])
+        return {row["fqid"]: row["deleted"] for row in result}
+
     def get_deleted_status_from_events(
         self, fqids: List[str], position: int
     ) -> Dict[str, bool]:
@@ -324,20 +309,35 @@ class SqlReadDatabaseBackendService:
                     select fqid, max(position) as position from events
                     where type in {included_types} and position <= {position}
                     and fqid in %s group by fqid
-                ) t natural join events
+                ) t natural join events order by position asc, weight asc
                 """
         result = self.connection.query(query, [tuple(fqids)])
         return {row["fqid"]: row["type"] == EVENT_TYPES.DELETE for row in result}
 
-    def get_deleted_status_from_read_db(self, fqids: List[str]) -> Dict[str, bool]:
-        query = "select fqid, deleted from models_lookup where fqid in %s"
-        result = self.connection.query(query, [tuple(fqids)])
-        return {row["fqid"]: row["deleted"] for row in result}
-
-    def get_position(self) -> int:
+    def get_max_position(self) -> int:
         return self.connection.query_single_value(
             "select max(position) from positions", []
         )
+
+    def get_current_migration_index(self) -> int:
+        if self.current_migration_index == MIGRATION_INDEX_NOT_INITIALIZED:
+            max_migration_index = self.connection.query_single_value(
+                "select max(migration_index) from positions", []
+            )
+            if max_migration_index is not None:  # at least one position exists
+                # Sanity check: There must not exist a position with a different migration index
+                if self.connection.query_single_value(
+                    "select exists(select position from positions where migration_index!=%s)",
+                    [max_migration_index],
+                ):
+                    raise InvalidDatastoreState(
+                        "There exist positions with a migration index "
+                        + f"different to {max_migration_index}"
+                    )
+            else:
+                max_migration_index = 1
+            self.current_migration_index = max_migration_index
+        return self.current_migration_index
 
     def json(self, data):
         return self.connection.to_json(data)
