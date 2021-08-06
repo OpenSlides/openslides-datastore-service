@@ -66,3 +66,8 @@ class MinMaxRequest(SelfValidatingDataclass):
     filter: Filter
     field: Field
     type: str = VALID_AGGREGATE_CAST_TARGETS[0]
+
+
+@dataclass
+class HistoryInformationRequest(SelfValidatingDataclass):
+    fqids: List[Fqid]

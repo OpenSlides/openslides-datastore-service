@@ -66,7 +66,7 @@ def test_writer_distribution(writer, database, occ_locker, read_database, messag
         "c/2/f": 4,
         "c/f": 5,
     }
-    write_request = WriteRequest(events, {}, 1, locked_fields)
+    write_request = WriteRequest(events, ["content"], 1, locked_fields)
     database.insert_events = MagicMock(return_value=(MagicMock(), MagicMock()))
     migration_index = MagicMock()
     read_database.get_current_migration_index = gcmi = MagicMock(
@@ -78,7 +78,7 @@ def test_writer_distribution(writer, database, occ_locker, read_database, messag
 
     database.get_context.assert_called()
     occ_locker.assert_locked_fields.assert_called_with(write_request)
-    database.insert_events.assert_called_with(events, migration_index, {}, 1)
+    database.insert_events.assert_called_with(events, migration_index, ["content"], 1)
     gcmi.assert_called_once()
     he.assert_called_once()
 

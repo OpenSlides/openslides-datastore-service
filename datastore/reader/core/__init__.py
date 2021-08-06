@@ -7,6 +7,7 @@ from .requests import (  # noqa
     GetManyRequest,
     GetManyRequestPart,
     GetRequest,
+    HistoryInformationRequest,
     MinMaxRequest,
 )
 

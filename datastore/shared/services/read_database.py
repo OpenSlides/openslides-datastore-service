@@ -1,9 +1,16 @@
 from dataclasses import dataclass
-from typing import Any, ContextManager, Dict, List, Optional, Protocol
+from typing import Any, ContextManager, Dict, List, Optional, Protocol, TypedDict
 
 from datastore.shared.di import service_interface
-from datastore.shared.typing import Model
+from datastore.shared.typing import JSON, Collection, Field, Fqid, Id, Model, Position
 from datastore.shared.util import DeletedModelsBehaviour, Filter
+
+
+class HistoryInformation(TypedDict):
+    position: Position
+    timestamp: int  # unixtime
+    user_id: int
+    information: JSON
 
 
 class BaseFilterQueryFieldsParameters:
@@ -41,8 +48,8 @@ class ReadDatabase(Protocol):
 
     def get(
         self,
-        fqid: str,
-        mapped_fields: List[str] = [],
+        fqid: Fqid,
+        mapped_fields: List[Field] = [],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         """
@@ -52,10 +59,10 @@ class ReadDatabase(Protocol):
 
     def get_many(
         self,
-        fqids: List[str],
-        mapped_fields_per_fqid: Dict[str, List[str]] = {},
+        fqids: List[Fqid],
+        mapped_fields_per_fqid: Dict[Fqid, List[Field]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[str, Model]:
+    ) -> Dict[Fqid, Model]:
         """
         Returns all requested models in a lookup-able fashion mapped the
         fqid <-> model from the read-DB. If a fqid could not be found, the
@@ -64,10 +71,10 @@ class ReadDatabase(Protocol):
 
     def get_all(
         self,
-        collection: str,
-        mapped_fields: List[str],
+        collection: Collection,
+        mapped_fields: List[Field],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[int, Model]:
+    ) -> Dict[Id, Model]:
         """
         Returns all models of the given collection. WARNING: May result in a huge
         amount of data. Use with caution!
@@ -76,15 +83,15 @@ class ReadDatabase(Protocol):
     def get_everything(
         self,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[str, List[Model]]:
+    ) -> Dict[Collection, List[Model]]:
         """
         Returns all models of the given collection. WARNING: May result in a huge
         amount of data. Use with caution!
         """
 
     def filter(
-        self, collection: str, filter: Filter, mapped_fields: List[str]
-    ) -> Dict[int, Model]:
+        self, collection: Collection, filter: Filter, mapped_fields: List[Field]
+    ) -> Dict[Id, Model]:
         """
         Returns all models of the given collection that satisfy the filter criteria.
         May result in a huge amount of data when used with wide filters.
@@ -92,7 +99,7 @@ class ReadDatabase(Protocol):
 
     def aggregate(
         self,
-        collection: str,
+        collection: Collection,
         filter: Filter,
         fields_params: BaseAggregateFilterQueryFieldsParameters,
     ) -> Any:
@@ -101,7 +108,7 @@ class ReadDatabase(Protocol):
         """
 
     def build_model_ignore_deleted(
-        self, fqid: str, position: Optional[int] = None
+        self, fqid: Fqid, position: Optional[Position] = None
     ) -> Model:
         """
         Calls `build_models_ignore_deleted` to build a single model.
@@ -109,28 +116,35 @@ class ReadDatabase(Protocol):
         """
 
     def build_models_ignore_deleted(
-        self, fqids: List[str], position: Optional[int] = None
-    ) -> Dict[str, Model]:
+        self, fqids: List[Fqid], position: Optional[Position] = None
+    ) -> Dict[Fqid, Model]:
         """
         Builds the given models, optionally only up to the given position.
         It does not append META_POSITION to the model.
         """
 
-    def is_deleted(self, fqid: str, position: Optional[int] = None) -> bool:
+    def is_deleted(self, fqid: Fqid, position: Optional[Position] = None) -> bool:
         """
         Calls `get_deleted_status` to retrieve the deleted state of a single model.
         Raises ModelDoesNotExist if the model does not exist.
         """
 
     def get_deleted_status(
-        self, fqids: List[str], position: Optional[int] = None
-    ) -> Dict[str, bool]:
+        self, fqids: List[Fqid], position: Optional[Position] = None
+    ) -> Dict[Fqid, bool]:
         """
         Returns a map indicating if the models with the given fqids are deleted. If
         position is given, the result refers to the state at the position.
         """
 
-    def get_max_position(self) -> int:
+    def get_history_information(
+        self, fqids: List[Fqid]
+    ) -> Dict[Fqid, List[HistoryInformation]]:
+        """
+        Returns a list of position data for all fqids.
+        """
+
+    def get_max_position(self) -> Position:
         """Returns the current (highest) position of the datastore."""
 
     def get_current_migration_index(self) -> int:

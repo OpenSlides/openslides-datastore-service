@@ -1,5 +1,5 @@
 from .environment_service import EnvironmentService, EnvironmentVariableMissing  # noqa
-from .read_database import ReadDatabase  # noqa
+from .read_database import HistoryInformation, ReadDatabase  # noqa
 from .shutdown_service import ShutdownService
 
 
