@@ -8,7 +8,6 @@ from .sql_query_helper import SqlQueryHelper
 ALL_TABLES = (
     "positions",
     "events",
-    "models_lookup",
     "id_sequences",
     "collectionfields",
     "events_to_collectionfields",

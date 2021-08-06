@@ -28,9 +28,9 @@ other_models = {
 
 def setup_data(connection, cursor, deleted=999):
     for i, (fqid, model) in enumerate(list(data.items()) + list(other_models.items())):
-        cursor.execute("insert into models values (%s, %s)", [fqid, json.dumps(model)])
         cursor.execute(
-            "insert into models_lookup values (%s, %s)", [fqid, (i + 1) % deleted == 0]
+            "insert into models (fqid, data, deleted) values (%s, %s, %s)",
+            [fqid, json.dumps(model), (i + 1) % deleted == 0],
         )
     connection.commit()
 

@@ -15,13 +15,12 @@ def test_truncate_db(db_connection, db_cur, json_client):
     db_cur.execute(
         "insert into events (position, fqid, type, weight) values (1, 'a/1', 'create', 1)"
     )
-    db_cur.execute("insert into models_lookup values ('a/1', TRUE)")
     db_cur.execute("insert into id_sequences values ('c', 1)")
     db_cur.execute(
         "insert into collectionfields (collectionfield, position) values ('c/f', 1)"
     )
     db_cur.execute("insert into events_to_collectionfields values (1, 1)")
-    db_cur.execute("insert into models values ('c/1', '{}')")
+    db_cur.execute("insert into models values ('c/1', '{}', TRUE)")
     db_connection.commit()
 
     response = json_client.post(TRUNCATE_DB_URL, {})

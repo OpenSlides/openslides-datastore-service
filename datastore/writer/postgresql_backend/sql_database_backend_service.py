@@ -141,9 +141,6 @@ class SqlDatabaseBackendService:
         model[META_DELETED] = False
         self._set_model(fqid, model, position)
 
-        statement = "insert into models_lookup (fqid, deleted) values (%s, %s)"
-        self.connection.execute(statement, [fqid, False])
-
     def update_model(
         self,
         fqid: Fqid,
@@ -159,17 +156,8 @@ class SqlDatabaseBackendService:
                 model[field] = value
         self._set_model(fqid, model, position)
 
-    def _set_model(self, fqid: str, model: Model, position: Position) -> None:
-        model[META_POSITION] = position
-        statement = """
-            insert into models (fqid, data) values (%s, %s)
-            on conflict(fqid) do update set data=excluded.data;"""
-        self.connection.execute(statement, [fqid, self.json(model)])
-
     def delete_model(self, fqid: str, position: Position) -> None:
         self.update_model(fqid, {META_DELETED: True}, position)
-        update_statement = "update models_lookup set deleted=%s where fqid=%s"
-        self.connection.execute(update_statement, [True, fqid])
 
     def restore_model(self, fqid: str, position: Position) -> None:
         self.update_model(
@@ -178,13 +166,21 @@ class SqlDatabaseBackendService:
             position,
             get_deleted_models=DeletedModelsBehaviour.ONLY_DELETED,
         )
-        update_statement = "update models_lookup set deleted=%s where fqid=%s"
-        self.connection.execute(update_statement, [False, fqid])
+
+    def _set_model(self, fqid: str, model: Model, position: Position) -> None:
+        """META_DELETED must be in `model`"""
+        model[META_POSITION] = position
+        statement = """
+            insert into models (fqid, data, deleted) values (%s, %s, %s)
+            on conflict(fqid) do update set data=excluded.data, deleted=excluded.deleted;"""
+        self.connection.execute(
+            statement, [fqid, self.json(model), model[META_DELETED]]
+        )
 
     def insert_create_event(
         self, create_event: DbCreateEvent, position: Position, event_weight: int
     ) -> None:
-        if self.exists_query("models_lookup", "fqid=%s", [create_event.fqid]):
+        if self.exists_query("models", "fqid=%s", [create_event.fqid]):
             raise ModelExists(create_event.fqid)
 
         # update max collection id if neccessary
@@ -291,7 +287,7 @@ class SqlDatabaseBackendService:
         self, restore_event, position: Position, event_weight: int
     ) -> None:
         if not self.exists_query(
-            "models_lookup", "fqid=%s and deleted=%s", [restore_event.fqid, True]
+            "models", "fqid=%s and deleted=%s", [restore_event.fqid, True]
         ):
             raise ModelNotDeleted(restore_event.fqid)
 
@@ -307,9 +303,7 @@ class SqlDatabaseBackendService:
         self.restore_model(restore_event.fqid, position)
 
     def assert_exists(self, fqid):
-        if not self.exists_query(
-            "models_lookup", "fqid=%s and deleted=%s", [fqid, False]
-        ):
+        if not self.exists_query("models", "fqid=%s and deleted=%s", [fqid, False]):
             raise ModelDoesNotExist(fqid)
 
     def exists_query(self, table, conditions, arguments):

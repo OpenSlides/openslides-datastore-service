@@ -23,6 +23,8 @@ def setup_data(connection, cursor, models, deleted=False):
                 weight,
             ],
         )
-        cursor.execute("insert into models values (%s, %s)", [fqid, json.dumps(model)])
-        cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
+        cursor.execute(
+            "insert into models (fqid, data, deleted) values (%s, %s, %s)",
+            [fqid, json.dumps(model), deleted],
+        )
     connection.commit()

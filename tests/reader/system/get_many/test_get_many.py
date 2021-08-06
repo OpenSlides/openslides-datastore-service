@@ -62,9 +62,9 @@ def setup_data(connection, cursor, deleted=False):
             model_data = json.loads(json.dumps(model))
             model_data[META_DELETED] = deleted
             cursor.execute(
-                "insert into models values (%s, %s)", [fqid, json.dumps(model_data)]
+                "insert into models (fqid, data, deleted) values (%s, %s, %s)",
+                [fqid, json.dumps(model_data), deleted],
             )
-            cursor.execute("insert into models_lookup values (%s, %s)", [fqid, deleted])
     connection.commit()
 
 

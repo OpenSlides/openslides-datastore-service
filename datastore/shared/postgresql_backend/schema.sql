@@ -61,14 +61,9 @@ CREATE TABLE IF NOT EXISTS events_to_collectionfields (
     CONSTRAINT events_to_collectionfields_pkey PRIMARY KEY (event_id, collectionfield_id)
 );
 
--- TODO: Unite models and models_lookup
 CREATE TABLE IF NOT EXISTS models (
     fqid VARCHAR(48) PRIMARY KEY,
-    data JSONB NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS models_lookup (
-    fqid VARCHAR(48) PRIMARY KEY,
+    data JSONB NOT NULL,
     deleted BOOLEAN NOT NULL
 );
 

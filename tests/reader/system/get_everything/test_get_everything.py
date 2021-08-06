@@ -35,9 +35,9 @@ data = {
 def setup_data(connection, cursor):
     # a/2 is deleted
     for fqid, model in data.items():
-        cursor.execute("insert into models values (%s, %s)", [fqid, json.dumps(model)])
         cursor.execute(
-            "insert into models_lookup values (%s, %s)", [fqid, fqid == "a/2"]
+            "insert into models (fqid, data, deleted) values (%s, %s, %s)",
+            [fqid, json.dumps(model), fqid == "a/2"],
         )
     connection.commit()
 
