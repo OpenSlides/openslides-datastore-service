@@ -11,13 +11,13 @@ from datastore.reader.core.reader import (
 from datastore.reader.core.requests import GetManyRequestPart
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler, retry_on_db_failure
-from datastore.shared.services import ReadDatabase
+from datastore.shared.services import HistoryInformation, ReadDatabase
 from datastore.shared.services.read_database import (
     AggregateFilterQueryFieldsParameters,
     BaseAggregateFilterQueryFieldsParameters,
     CountFilterQueryFieldsParameters,
 )
-from datastore.shared.typing import Model
+from datastore.shared.typing import Collection, Fqid, Id, Model
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
@@ -38,6 +38,7 @@ from .requests import (
     GetEverythingRequest,
     GetManyRequest,
     GetRequest,
+    HistoryInformationRequest,
     MinMaxRequest,
 )
 
@@ -75,7 +76,7 @@ class ReaderService:
         return model
 
     @retry_on_db_failure
-    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
+    def get_many(self, request: GetManyRequest) -> Dict[Collection, Dict[Id, Model]]:
         mapped_fields_per_fqid: Dict[str, List[str]] = {}
         if isinstance(request.requests[0], GetManyRequestPart):
             requests = cast(List[GetManyRequestPart], request.requests)
@@ -123,13 +124,15 @@ class ReaderService:
         return final
 
     @retry_on_db_failure
-    def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
+    def get_all(self, request: GetAllRequest) -> Dict[Id, Model]:
         return self.database.get_all(
             request.collection, request.mapped_fields, request.get_deleted_models
         )
 
     @retry_on_db_failure
-    def get_everything(self, request: GetEverythingRequest) -> Dict[str, List[Model]]:
+    def get_everything(
+        self, request: GetEverythingRequest
+    ) -> Dict[Collection, List[Model]]:
         return self.database.get_everything(request.get_deleted_models)
 
     @retry_on_db_failure
@@ -213,3 +216,9 @@ class ReaderService:
             fqid: self.apply_mapped_fields(model, mapped_fields_per_fqid.get(fqid, []))
             for fqid, model in models.items()
         }
+
+    @retry_on_db_failure
+    def history_information(
+        self, request: HistoryInformationRequest
+    ) -> Dict[Fqid, List[HistoryInformation]]:
+        return self.database.get_history_information(request.fqids)

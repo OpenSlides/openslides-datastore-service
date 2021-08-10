@@ -1,6 +1,7 @@
 from typing import ContextManager, Dict, List, Protocol, TypedDict
 
-from datastore.shared.typing import Model
+from datastore.shared.services import HistoryInformation
+from datastore.shared.typing import Collection, Fqid, Id, Model
 
 from .requests import (
     AggregateRequest,
@@ -9,6 +10,7 @@ from .requests import (
     GetEverythingRequest,
     GetManyRequest,
     GetRequest,
+    HistoryInformationRequest,
     MinMaxRequest,
 )
 
@@ -47,16 +49,18 @@ class Reader(Protocol):
     def get(self, request: GetRequest) -> Model:
         """Gets the specified model."""
 
-    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
+    def get_many(self, request: GetManyRequest) -> Dict[Collection, Dict[Id, Model]]:
         """Gets multiple models."""
 
-    def get_all(self, request: GetAllRequest) -> Dict[int, Model]:
+    def get_all(self, request: GetAllRequest) -> Dict[Id, Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.
         """
 
-    def get_everything(self, request: GetEverythingRequest) -> Dict[str, List[Model]]:
+    def get_everything(
+        self, request: GetEverythingRequest
+    ) -> Dict[Collection, List[Model]]:
         """
         Returns all models In the form of the example data: Collections mapped to
         lists of models.
@@ -81,4 +85,11 @@ class Reader(Protocol):
         """
         Returns the maximum value of the given field for all models that satisfy the
         given filter.
+        """
+
+    def history_information(
+        self, request: HistoryInformationRequest
+    ) -> Dict[Fqid, List[HistoryInformation]]:
+        """
+        Returns history information for multiple models.
         """

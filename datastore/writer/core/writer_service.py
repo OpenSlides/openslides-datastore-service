@@ -82,10 +82,11 @@ class WriterService:
         # Insert db events with position data
         if migration_index is None:
             migration_index = self.read_database.get_current_migration_index()
+        information = write_request.information if write_request.information else None
         position, modified_fqfields = self.database.insert_events(
             write_request.events,
             migration_index,
-            write_request.information,
+            information,
             write_request.user_id,
         )
 

@@ -7,9 +7,10 @@ from datastore.shared.postgresql_backend import apply_fields
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from datastore.shared.services.read_database import (
     BaseAggregateFilterQueryFieldsParameters,
+    HistoryInformation,
     MappedFieldsFilterQueryFieldsParameters,
 )
-from datastore.shared.typing import Fqid, Model
+from datastore.shared.typing import Collection, Field, Fqid, Id, Model, Position
 from datastore.shared.util import (
     META_DELETED,
     META_POSITION,
@@ -44,8 +45,8 @@ class SqlReadDatabaseBackendService:
 
     def get(
         self,
-        fqid: str,
-        mapped_fields: List[str] = [],
+        fqid: Fqid,
+        mapped_fields: List[Field] = [],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         models = self.get_many([fqid], {fqid: mapped_fields}, get_deleted_models)
@@ -56,10 +57,10 @@ class SqlReadDatabaseBackendService:
 
     def get_many(
         self,
-        fqids: List[str],
-        mapped_fields_per_fqid: Dict[str, List[str]] = {},
+        fqids: List[Fqid],
+        mapped_fields_per_fqid: Dict[Fqid, List[Field]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[str, Model]:
+    ) -> Dict[Fqid, Model]:
         if not fqids:
             return {}
 
@@ -88,10 +89,10 @@ class SqlReadDatabaseBackendService:
 
     def get_all(
         self,
-        collection: str,
-        mapped_fields: List[str],
+        collection: Collection,
+        mapped_fields: List[Field],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[int, Model]:
+    ) -> Dict[Id, Model]:
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
         (
             mapped_fields_str,
@@ -111,7 +112,7 @@ class SqlReadDatabaseBackendService:
     def get_everything(
         self,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[str, List[Model]]:
+    ) -> Dict[Collection, List[Model]]:
         del_cond = self.query_helper.get_deleted_condition(
             get_deleted_models, prepend_and=False
         )
@@ -133,8 +134,8 @@ class SqlReadDatabaseBackendService:
         return data
 
     def filter(
-        self, collection: str, filter: Filter, mapped_fields: List[str]
-    ) -> Dict[int, Model]:
+        self, collection: Collection, filter: Filter, mapped_fields: List[Field]
+    ) -> Dict[Id, Model]:
         fields_params = MappedFieldsFilterQueryFieldsParameters(mapped_fields)
         query, arguments, sql_params = self.query_helper.build_filter_query(
             collection, filter, fields_params, select_fqid=True
@@ -144,7 +145,7 @@ class SqlReadDatabaseBackendService:
 
     def aggregate(
         self,
-        collection: str,
+        collection: Collection,
         filter: Filter,
         fields_params: BaseAggregateFilterQueryFieldsParameters,
     ) -> Any:
@@ -199,7 +200,7 @@ class SqlReadDatabaseBackendService:
         return result_map
 
     def build_model_ignore_deleted(
-        self, fqid: str, position: Optional[int] = None
+        self, fqid: Fqid, position: Optional[Position] = None
     ) -> Model:
         models = self.build_models_ignore_deleted([fqid], position)
         try:
@@ -208,8 +209,8 @@ class SqlReadDatabaseBackendService:
             raise ModelDoesNotExist(fqid)
 
     def build_models_ignore_deleted(
-        self, fqids: List[str], position: Optional[int] = None
-    ) -> Dict[str, Model]:
+        self, fqids: List[Fqid], position: Optional[Position] = None
+    ) -> Dict[Fqid, Model]:
         # Optionally only builds the models up to the specified position.
         # TODO: There might be a speedup: Get the model from the readdb first.
         # If the model exists there, read the position from it, use the model
@@ -273,7 +274,7 @@ class SqlReadDatabaseBackendService:
         model[META_POSITION] = events[-1]["position"]
         return model
 
-    def is_deleted(self, fqid: str, position: Optional[int] = None) -> bool:
+    def is_deleted(self, fqid: Fqid, position: Optional[Position] = None) -> bool:
         result = self.get_deleted_status([fqid], position)
         try:
             return result[fqid]
@@ -281,21 +282,21 @@ class SqlReadDatabaseBackendService:
             raise ModelDoesNotExist(fqid)
 
     def get_deleted_status(
-        self, fqids: List[str], position: Optional[int] = None
-    ) -> Dict[str, bool]:
+        self, fqids: List[Fqid], position: Optional[Position] = None
+    ) -> Dict[Fqid, bool]:
         if not position:
             return self.get_deleted_status_from_read_db(fqids)
         else:
             return self.get_deleted_status_from_events(fqids, position)
 
-    def get_deleted_status_from_read_db(self, fqids: List[str]) -> Dict[str, bool]:
+    def get_deleted_status_from_read_db(self, fqids: List[Fqid]) -> Dict[Fqid, bool]:
         query = "select fqid, deleted from models where fqid in %s"
         result = self.connection.query(query, [tuple(fqids)])
         return {row["fqid"]: row["deleted"] for row in result}
 
     def get_deleted_status_from_events(
-        self, fqids: List[str], position: int
-    ) -> Dict[str, bool]:
+        self, fqids: List[Fqid], position: Position
+    ) -> Dict[Fqid, bool]:
         included_types = dedent(
             f"""\
             ('{EVENT_TYPES.CREATE}',
@@ -312,7 +313,27 @@ class SqlReadDatabaseBackendService:
         result = self.connection.query(query, [tuple(fqids)])
         return {row["fqid"]: row["type"] == EVENT_TYPES.DELETE for row in result}
 
-    def get_max_position(self) -> int:
+    def get_history_information(
+        self, fqids: List[Fqid]
+    ) -> Dict[Fqid, List[HistoryInformation]]:
+        positions = self.connection.query(
+            """select fqid, position, timestamp, user_id, information from positions natural join events
+            where fqid in %s and information::text<>%s::text order by position asc""",
+            [tuple(fqids), self.json(None)],
+        )
+        history_information = defaultdict(list)
+        for position in positions:
+            history_information[position["fqid"]].append(
+                HistoryInformation(
+                    position=position["position"],
+                    timestamp=position["timestamp"].timestamp(),
+                    user_id=position["user_id"],
+                    information=position["information"],
+                )
+            )
+        return history_information
+
+    def get_max_position(self) -> Position:
         return self.connection.query_single_value(
             "select max(position) from positions", []
         )

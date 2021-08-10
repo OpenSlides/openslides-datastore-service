@@ -11,6 +11,7 @@ from datastore.reader.core.requests import (
     GetEverythingRequest,
     GetManyRequest,
     GetRequest,
+    HistoryInformationRequest,
     MinMaxRequest,
 )
 from datastore.shared.flask_frontend import InvalidRequest, unify_urls
@@ -33,6 +34,7 @@ class Route(str, Enum):
     COUNT = "count"
     MIN = "min"
     MAX = "max"
+    HISTORY_INFORMATION = "history_information"
 
     @property
     def URL(self):
@@ -169,6 +171,17 @@ minmax_schema = fastjsonschema.compile(
     }
 )
 
+history_information_schema = fastjsonschema.compile(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "fqids": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["fqids"],
+    }
+)
+
 
 def handle_filter_schema_error(e: fastjsonschema.JsonSchemaException) -> None:
     if e.rule == "anyOf":
@@ -222,5 +235,9 @@ route_configurations: Dict[Route, RouteConfiguration] = {
         schema=minmax_schema,
         request_class=MinMaxRequest,
         schema_error_handler=handle_filter_schema_error,
+    ),
+    Route.HISTORY_INFORMATION: RouteConfiguration(
+        schema=history_information_schema,
+        request_class=HistoryInformationRequest,
     ),
 }
