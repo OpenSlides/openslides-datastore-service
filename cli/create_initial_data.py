@@ -58,7 +58,10 @@ def main():
             migration_index = models
             continue
 
-        for model in models:
+        for id_, model in models.items():
+            if id_ != str(model["id"]):
+                print(f"Invalid format. The object {collection}/{id_} must have a property 'id' with the same identifier (as integer).")
+                return 3
             fqid = fqid_from_collection_and_id(collection, model["id"])
             event = RequestCreateEvent(fqid, model)
             events.append(event)
