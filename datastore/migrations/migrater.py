@@ -39,8 +39,11 @@ class RawPosition:
 class Migrater(Protocol):
     def migrate(
         self, target_migration_index: int, migrations: Dict[int, BaseMigration]
-    ) -> None:
-        """Runs the actual migrations of the datastore up to the target migration index."""
+    ) -> bool:
+        """
+        Runs the actual migrations of the datastore up to the target migration index.
+        Returns true, if finalizing is needed.
+        """
 
 
 @service_as_factory
@@ -53,7 +56,7 @@ class MigraterImplementation:
 
     def migrate(
         self, target_migration_index: int, migrations: Dict[int, BaseMigration]
-    ) -> None:
+    ) -> bool:
         self.target_migration_index = target_migration_index
         self.migrations = migrations
 
@@ -82,6 +85,7 @@ class MigraterImplementation:
                 or 0
             )
 
+        finalizing_needed = False
         if min_mi_positions == self.target_migration_index:
             self.logger.info(
                 "No migrations to apply. The productive database is up to date. "
@@ -95,6 +99,7 @@ class MigraterImplementation:
                 "No migrations to apply, but finalizing is still needed. "
                 + f"Current migration index: {self.target_migration_index}"
             )
+            finalizing_needed = True
         elif min_mi_positions < 1 or min_mi_migration_positions < 1:
             raise MismatchingMigrationIndicesException(
                 "Datastore has an invalid migration index: MI of positions table="
@@ -103,6 +108,9 @@ class MigraterImplementation:
             )
         else:
             self.run_actual_migrations()
+            finalizing_needed = True
+
+        return finalizing_needed
 
     def run_actual_migrations(self) -> None:
         # TODO: paginate and use "client-side cursor". We cannot use a server-side cursor since

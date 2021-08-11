@@ -52,14 +52,10 @@ class BaseMigration:
                 event, old_accessor, new_accessor, position_data
             )
             if translated_events is None:
-                translated_events = [event]  # noop
+                translated_events = [old_event]  # noop
 
-            print("apply to old", old_event.fqid, old_event.get_data())
             old_accessor.apply_event(old_event)
             for translated_event in translated_events:
-                print(
-                    "apply to new", translated_event.fqid, translated_event.get_data()
-                )
                 new_accessor.apply_event(translated_event)
 
             new_events.extend(translated_events)

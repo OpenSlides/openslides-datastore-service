@@ -132,3 +132,23 @@ def test_less_events(
 
     assert_count("events", 2)
     assert_model("a/1", {"f": 1, "f2": 2, "meta_deleted": False, "meta_position": 2})
+
+
+def test_return_none_with_modifications(
+    migration_handler,
+    assert_count,
+    write,
+    assert_model,
+    read_model,
+):
+    write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+    previous_model = read_model("a/1")
+
+    def handler(event):
+        event.data["f2"] = "Hi"
+        return None
+
+    migration_handler.register_migrations(get_lambda_migration(handler))
+    migration_handler.finalize()
+
+    assert_model("a/1", previous_model)
