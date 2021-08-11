@@ -20,7 +20,7 @@ def test_to_event_unknown_event():
         to_event(row)
 
 
-class TestCreate:
+class TestCreateNewEvent:
     @pytest.fixture()
     def execute(self, migration_handler, write):
         write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
@@ -242,6 +242,47 @@ class TestListUpdate:
         )
         with pytest.raises(BadEventException, match="Model a/1 is deleted"):
             migration_handler.migrate()
+
+
+class TestListUpdateModify:
+    @pytest.fixture()
+    def execute(self, migration_handler, write):
+        write({"type": "create", "fqid": "a/1", "fields": {"f": [1]}})
+        write(
+            {"type": "update", "fqid": "a/1", "list_fields": {"add": {"f": [2]}}}
+        )  # will be converted to a listfields event
+
+        def _execute(event_fn, match):
+            migration_handler.register_migrations(
+                get_lambda_migration(
+                    lambda e: [event_fn(e)] if e.type == "listfields" else [e]
+                )
+            )
+            with pytest.raises(BadEventException, match=match):
+                migration_handler.migrate()
+
+        yield _execute
+
+    def test_fqid(self, execute):
+        def handle(event):
+            event.fqid = "xyz"
+            return event
+
+        execute(handle, match="xyz")
+
+    def test_meta_fields(self, execute):
+        def handle(event):
+            event.add = {"meta_something": [2]}
+            return event
+
+        execute(handle, "meta_something")
+
+    def test_not_a_field(self, execute):
+        def handle(event):
+            event.add = {"not_%_a_field": [2]}
+            return event
+
+        execute(handle, "not_%_a_field")
 
 
 class TestDelete:

@@ -83,10 +83,11 @@ class MigrationHandlerImplementation:
         self.logger.info("Running migrations.")
         if self.run_checks():
             return
-        self.run_migrations()
+        if self.run_migrations():
+            self.logger.info("Done. Finalizing is still be needed.")
 
-    def run_migrations(self) -> None:
-        self.migrater.migrate(
+    def run_migrations(self) -> bool:
+        return self.migrater.migrate(
             self.target_migration_index, self.migrations_by_target_migration_index
         )
 
@@ -159,7 +160,8 @@ class MigrationHandlerImplementation:
         self.logger.info("Finalize migrations.")
         if self.run_checks():
             return
-        self.run_migrations()
+        if not self.run_migrations():
+            return
 
         self.delete_collectionfield_aux_tables()
 
@@ -307,20 +309,23 @@ class MigrationHandlerImplementation:
                 or 1
             )
             if (
-                min_mi_positions != max_mi_positions
-                and min_mi_positions != self.target_migration_index
+                min_mi_positions != max_mi_migration_positions
+                or min_mi_positions != self.target_migration_index
             ):
                 if (
                     count_positions == count_migration_positions
                     and max_mi_migration_positions == self.target_migration_index
                 ):
                     migration_action = "Finalization needed."
+                    positions_to_migrate = 0
                 else:
                     migration_action = "Migration and finalization needed."
+                    positions_to_migrate = (
+                        count_positions - count_migration_positions_full
+                    )
             else:
                 migration_action = "No action needed."
-
-            positions_to_migrate = count_positions - count_migration_positions_full
+                positions_to_migrate = 0
 
         self.logger.info(
             f"""\

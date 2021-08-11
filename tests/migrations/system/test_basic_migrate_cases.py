@@ -23,7 +23,7 @@ def test_no_migrations_to_apply(
 
     i.assert_called()
     assert (
-        "No migrations to apply. The productive database is up to date"
+        "No migrations to apply. The productive database is up to date."
         in i.call_args[0][0]
     )
 
@@ -41,7 +41,30 @@ def test_finalizing_needed(
     migration_handler.migrate()
 
     i.assert_called()
-    assert "No migrations to apply, but finalizing is still needed" in i.call_args[0][0]
+    assert (
+        "No migrations to apply, but finalizing is still needed."
+        in i.call_args_list[1][0][0]
+    )
+    assert "Done. Finalizing is still be needed." in i.call_args_list[2][0][0]
+
+
+def test_finalizing_not_needed(
+    migration_handler,
+    write,
+):
+    write({"type": "create", "fqid": "a/1", "fields": {}})
+
+    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.finalize()
+
+    migration_handler.logger.info = i = MagicMock()
+    migration_handler.finalize()
+
+    i.assert_called()
+    assert (
+        "No migrations to apply. The productive database is up to date."
+        in i.call_args[0][0]
+    )
 
 
 def test_invalid_migration_index(

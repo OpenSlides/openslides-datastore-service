@@ -57,12 +57,10 @@ class _ModelEvent(BaseEvent):
 
 class CreateEvent(_ModelEvent):
     type = EVENT_TYPES.CREATE
-    pass
 
 
 class UpdateEvent(_ModelEvent):
     type = EVENT_TYPES.UPDATE
-    pass
 
 
 class DeleteFieldsEvent(BaseEvent):
