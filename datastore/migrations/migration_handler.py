@@ -2,7 +2,6 @@ from typing import Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
-from datastore.shared.services import ReadDatabase
 from datastore.shared.util import KEYSEPARATOR
 
 from .base_migration import BaseMigration
@@ -51,7 +50,6 @@ class MigrationHandler(Protocol):
 @service_as_factory
 class MigrationHandlerImplementation:
 
-    read_database: ReadDatabase
     connection: ConnectionHandler
     migrater: Migrater
     logger: MigrationLogger
