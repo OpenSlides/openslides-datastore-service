@@ -1,12 +1,6 @@
 from typing import List, Optional
 
-from datastore.migrations import (
-    BaseEvent,
-    BaseMigration,
-    CreateEvent,
-    MigrationKeyframeAccessor,
-    PositionData,
-)
+from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
 
 from ..util import get_lambda_migration, get_noop_migration
 
@@ -49,9 +43,6 @@ def test_second_position_access_old_and_new_data(
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             if event.fqid == "a/1":
                 # explicitly modify the event instead of creating a new one
@@ -59,8 +50,8 @@ def test_second_position_access_old_and_new_data(
                 del event.data["f"]
                 return [event]
             else:
-                old = old_accessor.get_model("a/1")
-                new = new_accessor.get_model("a/1")
+                old = self.old_accessor.get_model("a/1")
+                new = self.new_accessor.get_model("a/1")
                 assert "f" in old
                 assert "f_new" in new
                 assert old["f"] == new["f_new"]

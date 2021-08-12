@@ -1,11 +1,6 @@
 from typing import List, Optional
 
-from datastore.migrations import (
-    BaseEvent,
-    BaseMigration,
-    MigrationKeyframeAccessor,
-    PositionData,
-)
+from datastore.migrations import BaseEvent, BaseMigration
 
 
 def get_noop_migration(target_migration_index: Optional[int]):
@@ -18,9 +13,6 @@ def get_noop_migration(target_migration_index: Optional[int]):
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             return None
 
@@ -36,9 +28,6 @@ def get_lambda_migration(fn, target_migration_index=2):
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             return fn(event)
 

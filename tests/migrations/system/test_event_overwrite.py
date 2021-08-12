@@ -1,4 +1,6 @@
-from datastore.migrations import CreateEvent, UpdateEvent
+from typing import List, Optional
+
+from datastore.migrations import BaseEvent, BaseMigration, CreateEvent, UpdateEvent
 from datastore.shared.di import injector
 from datastore.shared.services import ReadDatabase
 
@@ -152,3 +154,38 @@ def test_return_none_with_modifications(
     migration_handler.finalize()
 
     assert_model("a/1", previous_model)
+
+
+def test_additional_events(
+    migration_handler,
+    connection_handler,
+    assert_count,
+    write,
+    assert_model,
+    exists_model,
+):
+    write({"type": "create", "fqid": "a/1", "fields": {}})
+
+    class TestMigration(BaseMigration):
+        target_migration_index = 2
+
+        def migrate_event(
+            self,
+            event: BaseEvent,
+        ) -> Optional[List[BaseEvent]]:
+            return None
+
+        def get_additional_events(self) -> Optional[List[BaseEvent]]:
+            """
+            Here, additional events can be returned that are appended to the position after
+            the migrated events. Return None if there are no such additional events. This is
+            also the default behavior.
+            """
+            return [CreateEvent(f"a/{i}", {}) for i in (2, 3, 4)]
+
+    migration_handler.register_migrations(TestMigration)
+    migration_handler.finalize()
+
+    assert_count("events", 4)
+    for i in range(4):
+        assert_model(f"a/{i+1}", {"meta_deleted": False, "meta_position": 1})
