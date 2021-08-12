@@ -6,8 +6,6 @@ from datastore.migrations import (
     CreateEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
-    MigrationKeyframeAccessor,
-    PositionData,
     RestoreEvent,
     UpdateEvent,
 )
@@ -30,9 +28,6 @@ class RenameField(BaseMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-        old_accessor: MigrationKeyframeAccessor,
-        new_accessor: MigrationKeyframeAccessor,
-        position_data: PositionData,
     ) -> Optional[List[BaseEvent]]:
         if isinstance(event, CreateEvent) or isinstance(event, UpdateEvent):
             self.modify(event.data)
@@ -107,9 +102,6 @@ def test_move_id(
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             collection, id = collection_and_id_from_fqid(event.fqid)
             event.fqid = fqid_from_collection_and_id(collection, id + 1)
@@ -155,9 +147,6 @@ def test_remove_field(
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             if isinstance(event, CreateEvent) or isinstance(event, UpdateEvent):
                 event.data.pop("f", None)
@@ -195,9 +184,6 @@ def test_add_required_field_based_on_migrated_data(
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             if isinstance(event, CreateEvent):
                 event.data["g"] = event.data["f_new"] * 2
@@ -223,12 +209,9 @@ def test_create_additional_model(
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
             if isinstance(event, CreateEvent) and event.fqid == "a/1":
-                config = new_accessor.get_model("config/1")
+                config = self.new_accessor.get_model("config/1")
                 if config["create_b"]:
                     return [event, CreateEvent("b/1", {})]
             return None
@@ -257,19 +240,14 @@ def test_access_field_after_rename(
         def migrate_event(
             self,
             event: BaseEvent,
-            old_accessor: MigrationKeyframeAccessor,
-            new_accessor: MigrationKeyframeAccessor,
-            position_data: PositionData,
         ) -> Optional[List[BaseEvent]]:
-            events = super().migrate_event(
-                event, old_accessor, new_accessor, position_data
-            )
+            events = super().migrate_event(event)
 
             if not isinstance(event, CreateEvent) and not isinstance(
                 event, RestoreEvent
             ):
-                old = old_accessor.get_model("a/1")
-                new = new_accessor.get_model("a/1")
+                old = self.old_accessor.get_model("a/1")
+                new = self.new_accessor.get_model("a/1")
                 assert "f" in old
                 assert "f_new" in new
                 assert old["f"] == new["f_new"]

@@ -5,11 +5,9 @@ import pytest
 from datastore.migrations import (
     BaseEvent,
     BaseMigration,
-    MigrationKeyframeAccessor,
     MigrationKeyframeModelDeleted,
     MigrationKeyframeModelDoesNotExist,
     MigrationKeyframeModelNotDeleted,
-    PositionData,
 )
 from datastore.shared.typing import Position
 
@@ -36,13 +34,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_model("a/1")
-                    new = new_accessor.get_model("a/1")
+                    old = inner_self.old_accessor.get_model("a/1")
+                    new = inner_self.new_accessor.get_model("a/1")
                     assert old == new
                     assert old == {
                         "f": 1,
@@ -63,15 +58,12 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
                     with pytest.raises(MigrationKeyframeModelDoesNotExist):
-                        old_accessor.get_model("a/1")
+                        inner_self.old_accessor.get_model("a/1")
                     with pytest.raises(MigrationKeyframeModelDoesNotExist):
-                        new_accessor.get_model("a/1")
+                        inner_self.new_accessor.get_model("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -89,15 +81,12 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
                     with pytest.raises(MigrationKeyframeModelDeleted):
-                        old_accessor.get_model("a/1")
+                        inner_self.old_accessor.get_model("a/1")
                     with pytest.raises(MigrationKeyframeModelDeleted):
-                        new_accessor.get_model("a/1")
+                        inner_self.new_accessor.get_model("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -115,13 +104,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_deleted_model("a/1")
-                    new = new_accessor.get_deleted_model("a/1")
+                    old = inner_self.old_accessor.get_deleted_model("a/1")
+                    new = inner_self.new_accessor.get_deleted_model("a/1")
                     assert old == new
                     assert old == {
                         "f": 1,
@@ -142,15 +128,12 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
                     with pytest.raises(MigrationKeyframeModelDoesNotExist):
-                        old_accessor.get_deleted_model("a/1")
+                        inner_self.old_accessor.get_deleted_model("a/1")
                     with pytest.raises(MigrationKeyframeModelDoesNotExist):
-                        new_accessor.get_deleted_model("a/1")
+                        inner_self.new_accessor.get_deleted_model("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -165,15 +148,12 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
                     with pytest.raises(MigrationKeyframeModelNotDeleted):
-                        old_accessor.get_deleted_model("a/1")
+                        inner_self.old_accessor.get_deleted_model("a/1")
                     with pytest.raises(MigrationKeyframeModelNotDeleted):
-                        new_accessor.get_deleted_model("a/1")
+                        inner_self.new_accessor.get_deleted_model("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -191,13 +171,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_model_ignore_deleted("a/1")
-                    new = new_accessor.get_model_ignore_deleted("a/1")
+                    old = inner_self.old_accessor.get_model_ignore_deleted("a/1")
+                    new = inner_self.new_accessor.get_model_ignore_deleted("a/1")
                     assert old == new
                     assert old == (
                         {
@@ -221,13 +198,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_model_ignore_deleted("a/1")
-                    new = new_accessor.get_model_ignore_deleted("a/1")
+                    old = inner_self.old_accessor.get_model_ignore_deleted("a/1")
+                    new = inner_self.new_accessor.get_model_ignore_deleted("a/1")
                     assert old == new
                     assert old == (
                         {
@@ -253,15 +227,12 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
                     with pytest.raises(MigrationKeyframeModelDoesNotExist):
-                        old_accessor.get_model_ignore_deleted("a/1")
+                        inner_self.old_accessor.get_model_ignore_deleted("a/1")
                     with pytest.raises(MigrationKeyframeModelDoesNotExist):
-                        new_accessor.get_model_ignore_deleted("a/1")
+                        inner_self.new_accessor.get_model_ignore_deleted("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -276,13 +247,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    assert old_accessor.model_exists("a/1")
-                    assert new_accessor.model_exists("a/1")
+                    assert inner_self.old_accessor.model_exists("a/1")
+                    assert inner_self.new_accessor.model_exists("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -297,13 +265,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    assert not old_accessor.model_exists("a/1")
-                    assert not new_accessor.model_exists("a/1")
+                    assert not inner_self.old_accessor.model_exists("a/1")
+                    assert not inner_self.new_accessor.model_exists("a/1")
                 return None
 
         migration_handler.register_migrations(MyMigration)
@@ -324,13 +289,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_all_ids_for_collection("a")
-                    new = new_accessor.get_all_ids_for_collection("a")
+                    old = inner_self.old_accessor.get_all_ids_for_collection("a")
+                    new = inner_self.new_accessor.get_all_ids_for_collection("a")
                     assert old == new
                     assert old == set([1, 1337, 2, 42, 128])
                 return None
@@ -347,13 +309,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_all_ids_for_collection("a")
-                    new = new_accessor.get_all_ids_for_collection("a")
+                    old = inner_self.old_accessor.get_all_ids_for_collection("a")
+                    new = inner_self.new_accessor.get_all_ids_for_collection("a")
                     assert old == new
                     assert old == set([1])
                 return None
@@ -372,13 +331,10 @@ class BaseTest:
             def migrate_event(
                 inner_self,
                 event: BaseEvent,
-                old_accessor: MigrationKeyframeAccessor,
-                new_accessor: MigrationKeyframeAccessor,
-                position_data: PositionData,
             ) -> Optional[List[BaseEvent]]:
                 if event.fqid == "trigger/1":
-                    old = old_accessor.get_all_ids_for_collection("a")
-                    new = new_accessor.get_all_ids_for_collection("a")
+                    old = inner_self.old_accessor.get_all_ids_for_collection("a")
+                    new = inner_self.new_accessor.get_all_ids_for_collection("a")
                     assert old == new
                     assert old == set()
                 return None
