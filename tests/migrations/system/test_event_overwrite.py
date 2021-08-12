@@ -7,8 +7,11 @@ from datastore.shared.services import ReadDatabase
 from ..util import get_lambda_migration, get_noop_migration
 
 
-def test_returning_original_events(migration_handler, connection_handler, write):
+def test_returning_original_events(
+    migration_handler, connection_handler, write, set_migration_index_to_1
+):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+    set_migration_index_to_1()
 
     with connection_handler.get_connection_context():
         original_events = connection_handler.query(
@@ -26,12 +29,14 @@ def test_returning_original_events(migration_handler, connection_handler, write)
 def test_new_events(
     migration_handler,
     connection_handler,
-    assert_count,
     write,
+    set_migration_index_to_1,
+    assert_count,
     assert_model,
     exists_model,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
 
     new_events = [CreateEvent(f"a/{i}", {}) for i in (2, 3, 4)]
     migration_handler.register_migrations(get_lambda_migration(lambda e: new_events))
@@ -48,13 +53,15 @@ def test_new_events(
 def test_new_events_multiple_positions(
     migration_handler,
     connection_handler,
-    assert_count,
     write,
+    set_migration_index_to_1,
+    assert_count,
     assert_model,
     exists_model,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "b/1", "fields": {}})
+    set_migration_index_to_1()
 
     a_new_events = [CreateEvent(f"a/{i}", {}) for i in (2, 3)]
     b_new_events = [CreateEvent(f"b/{i}", {}) for i in (2, 3)]
@@ -78,12 +85,14 @@ def test_new_events_rebuilding_order(
     migration_handler,
     connection_handler,
     write,
+    set_migration_index_to_1,
     assert_model,
     exists_model,
     assert_count,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": 2}})
+    set_migration_index_to_1()
 
     create_new_events = [
         CreateEvent("a/1", {"f": 4}),
@@ -114,11 +123,13 @@ def test_less_events(
     migration_handler,
     assert_count,
     write,
+    set_migration_index_to_1,
     assert_model,
     exists_model,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": None, "f2": 2}})
+    set_migration_index_to_1()
     assert_count("events", 3)
 
     migration_handler.register_migrations(
@@ -140,10 +151,12 @@ def test_return_none_with_modifications(
     migration_handler,
     assert_count,
     write,
+    set_migration_index_to_1,
     assert_model,
     read_model,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+    set_migration_index_to_1()
     previous_model = read_model("a/1")
 
     def handler(event):
@@ -161,10 +174,12 @@ def test_additional_events(
     connection_handler,
     assert_count,
     write,
+    set_migration_index_to_1,
     assert_model,
     exists_model,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
 
     class TestMigration(BaseMigration):
         target_migration_index = 2

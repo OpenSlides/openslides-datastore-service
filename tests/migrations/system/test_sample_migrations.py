@@ -19,6 +19,7 @@ from datastore.shared.util import (
 def test_move_id(
     migration_handler,
     write,
+    set_migration_index_to_1,
     assert_model,
     exists_model,
     query_single_value,
@@ -38,6 +39,7 @@ def test_move_id(
     write({"type": "update", "fqid": "a/1", "fields": {"f": None}})
     write({"type": "delete", "fqid": "a/1"})
     write({"type": "restore", "fqid": "a/1"})
+    set_migration_index_to_1()
 
     class MoveId(BaseMigration):
         target_migration_index = 2
@@ -75,7 +77,12 @@ def test_move_id(
 
 
 def test_remove_field(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    query_single_value,
+    assert_finalized,
 ):
     """remove f"""
     write({"type": "create", "fqid": "a/1", "fields": {"f": [1]}})
@@ -83,6 +90,7 @@ def test_remove_field(
     write({"type": "update", "fqid": "a/1", "list_fields": {"add": {"f": [3]}}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": None}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": "Hello"}})
+    set_migration_index_to_1()
 
     class RemoveField(BaseMigration):
         target_migration_index = 2
@@ -116,10 +124,16 @@ def test_remove_field(
 
 
 def test_add_required_field_based_on_migrated_data(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    query_single_value,
+    assert_finalized,
 ):
     """First, rename f->f_new. Second migration adds `g`, which is f_new*2"""
     write({"type": "create", "fqid": "a/1", "fields": {"f": 3}})
+    set_migration_index_to_1()
 
     class RenameField(RenameFieldMigration):
         target_migration_index = 2
@@ -146,11 +160,17 @@ def test_add_required_field_based_on_migrated_data(
 
 
 def test_create_additional_model(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    query_single_value,
+    assert_finalized,
 ):
     """Also a setup-for-tests scenario here."""
     write({"type": "create", "fqid": "config/1", "fields": {"create_b": True}})
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
 
     class CreateModel(BaseMigration):
         target_migration_index = 2
@@ -173,7 +193,12 @@ def test_create_additional_model(
 
 
 def test_access_field_after_rename(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    query_single_value,
+    assert_finalized,
 ):
     """First rename f->f_new. In a second migration access both fields via both accessors"""
     write({"type": "create", "fqid": "a/1", "fields": {"f": [1]}})
@@ -182,6 +207,7 @@ def test_access_field_after_rename(
     write({"type": "update", "fqid": "a/1", "fields": {"f": "Hello"}})
     write({"type": "delete", "fqid": "a/1"})
     write({"type": "restore", "fqid": "a/1"})
+    set_migration_index_to_1()
 
     class RenameField(RenameFieldMigration):
         target_migration_index = 2

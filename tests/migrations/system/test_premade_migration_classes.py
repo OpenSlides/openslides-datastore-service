@@ -2,7 +2,12 @@ from datastore.migrations import AddFieldMigration, RenameFieldMigration
 
 
 def test_rename_field(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    query_single_value,
+    assert_finalized,
 ):
     """f -> f_new"""
     write({"type": "create", "fqid": "a/1", "fields": {"f": [1]}})
@@ -11,6 +16,7 @@ def test_rename_field(
     write({"type": "update", "fqid": "a/1", "list_fields": {"add": {"f": [3]}}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": None}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": "Hello"}})
+    set_migration_index_to_1()
 
     class RenameField(RenameFieldMigration):
         target_migration_index = 2
@@ -41,11 +47,17 @@ def test_rename_field(
 
 
 def test_add_field_with_default(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    query_single_value,
+    assert_finalized,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 3}})
     write({"type": "create", "fqid": "b/1", "fields": {"x": 42}})
     write({"type": "update", "fqid": "a/1", "fields": {"f": 5, "g": 127}})
+    set_migration_index_to_1()
 
     class AddField(AddFieldMigration):
         target_migration_index = 2

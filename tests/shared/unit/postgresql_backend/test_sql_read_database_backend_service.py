@@ -130,7 +130,7 @@ def test_get_everything(read_database: ReadDatabase, connection: ConnectionHandl
     )
 
     f.assert_called()
-    assert models == {"a": [{"id": 1}, {"id": 2}]}
+    assert models == {"a": {1: {"id": 1}, 2: {"id": 2}}}
 
 
 def test_filter(read_database: ReadDatabase):
@@ -358,10 +358,10 @@ def test_get_current_migration_index_cached(
     read_database: ReadDatabase, connection: ConnectionHandler
 ):
     connection.query_single_value = qsv = MagicMock(return_value=None)
-    assert read_database.get_current_migration_index() == 1
+    assert read_database.get_current_migration_index() == -1
     qsv.assert_called_once()
 
     # second try; now it should be cached
     connection.query_single_value = qsv = MagicMock(return_value=None)
-    assert read_database.get_current_migration_index() == 1
+    assert read_database.get_current_migration_index() == -1
     qsv.assert_not_called()

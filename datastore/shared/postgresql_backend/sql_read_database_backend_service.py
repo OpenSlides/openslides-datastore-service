@@ -112,25 +112,22 @@ class SqlReadDatabaseBackendService:
     def get_everything(
         self,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[Collection, List[Model]]:
+    ) -> Dict[Collection, Dict[Id, Model]]:
         del_cond = self.query_helper.get_deleted_condition(
             get_deleted_models, prepend_and=False
         )
         query = f"""
             select fqid as __fqid__, data from models
             {"where " + del_cond if del_cond else ""}"""
-
         result = self.connection.query(query, [], [])
-        unsorted_data = defaultdict(list)
+
+        data: Dict[Collection, Dict[Id, Model]] = defaultdict(dict)
         for row in result:
             collection, id = collection_and_id_from_fqid(row["__fqid__"])
             model = row["data"]
             model["id"] = id
-            unsorted_data[collection].append(model)
+            data[collection][id] = model
 
-        data = {}
-        for collection, models in unsorted_data.items():
-            data[collection] = sorted(models, key=lambda model: model["id"])
         return data
 
     def filter(
@@ -359,7 +356,7 @@ class SqlReadDatabaseBackendService:
                         + f"different to {max_migration_index}"
                     )
             else:
-                max_migration_index = 1
+                max_migration_index = -1
             self.current_migration_index = max_migration_index
         return self.current_migration_index
 
