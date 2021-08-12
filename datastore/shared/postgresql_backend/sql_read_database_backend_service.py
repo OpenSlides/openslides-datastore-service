@@ -122,6 +122,7 @@ class SqlReadDatabaseBackendService:
 
         result = self.connection.query(query, [], [])
         unsorted_data = defaultdict(list)
+
         for row in result:
             collection, id = collection_and_id_from_fqid(row["__fqid__"])
             model = row["data"]
@@ -359,7 +360,7 @@ class SqlReadDatabaseBackendService:
                         + f"different to {max_migration_index}"
                     )
             else:
-                max_migration_index = 1
+                max_migration_index = -1
             self.current_migration_index = max_migration_index
         return self.current_migration_index
 

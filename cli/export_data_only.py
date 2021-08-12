@@ -9,6 +9,7 @@ from datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
     EnvironmentService,
 )
+from datastore.shared.util import is_reserved_field
 
 
 def main():
@@ -26,7 +27,7 @@ def main():
     for collection, models in response.items():
         for model in models:
             for field in list(model.keys()):
-                if field.startswith("meta_"):
+                if is_reserved_field(field):
                     del model[field]
 
     response["_migration_index"] = cast(Any, migration_index)

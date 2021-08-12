@@ -12,47 +12,62 @@ from ..util import get_noop_migration
 def test_no_migrations_to_apply(
     migration_handler,
     write,
+    set_migration_index_to_1,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
 
     migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.logger.info = i = MagicMock()
     migration_handler.finalize()
 
-    migration_handler.logger.info = i = MagicMock()
+    i.assert_called()
+    assert "Position 1 from MI 1 to MI 2" in i.call_args_list[1].args[0]
+
+    i.reset_mock()
     migration_handler.migrate()
 
     i.assert_called()
     assert (
         "No migrations to apply. The productive database is up to date."
-        in i.call_args[0][0]
+        in i.call_args.args[0]
     )
 
 
 def test_finalizing_needed(
     migration_handler,
     write,
+    set_migration_index_to_1,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
 
     migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.logger.info = i = MagicMock()
     migration_handler.migrate()
 
-    migration_handler.logger.info = i = MagicMock()
+    i.assert_called()
+    assert "Position 1 from MI 1 to MI 2" in i.call_args_list[1].args[0]
+    assert "Done. Finalizing is still be needed." in i.call_args.args[0]
+
+    i.reset_mock()
     migration_handler.migrate()
 
     i.assert_called()
     assert (
         "No migrations to apply, but finalizing is still needed."
-        in i.call_args_list[1][0][0]
+        in i.call_args_list[1].args[0]
     )
-    assert "Done. Finalizing is still be needed." in i.call_args_list[2][0][0]
+    assert "Done. Finalizing is still be needed." in i.call_args.args[0]
 
 
 def test_finalizing_not_needed(
     migration_handler,
     write,
+    set_migration_index_to_1,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
 
     migration_handler.register_migrations(get_noop_migration(2))
     migration_handler.finalize()
@@ -72,17 +87,12 @@ def test_invalid_migration_index(
     connection_handler,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
-
-    with connection_handler.get_connection_context():
-        connection_handler.execute(
-            "update positions set migration_index=%s",
-            [-1],
-        )
+    # DS MI is -1
 
     migrater = injector.get(Migrater)
 
     with pytest.raises(MismatchingMigrationIndicesException) as e:
-        migrater.migrate(2, get_noop_migration(2)())
+        migrater.migrate(2, {2: get_noop_migration(2)()})
 
     assert (
         str(e.value)
@@ -94,9 +104,11 @@ def test_raising_migration_index(
     migration_handler,
     write,
     connection_handler,
+    set_migration_index_to_1,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
+    set_migration_index_to_1()
 
     with connection_handler.get_connection_context():
         connection_handler.execute(
