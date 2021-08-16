@@ -109,6 +109,7 @@ class WriteRequest:
         information: JSON,
         user_id: int,
         locked_fields: Dict[str, LockedFieldsJSON],
+        migration_index: Optional[int] = None,
     ) -> None:
         self.events = events
         self.information = information
@@ -116,6 +117,7 @@ class WriteRequest:
         if len(events) <= 0:
             raise InvalidFormat("No events were given")
         self.parse_locked_fields(locked_fields)
+        self.migration_index = migration_index
 
     def parse_locked_fields(self, locked_fields: Dict[str, LockedFieldsJSON]) -> None:
         self.locked_fqids: Dict[str, int] = {}

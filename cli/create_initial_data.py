@@ -63,12 +63,10 @@ def main():
             event = RequestCreateEvent(fqid, model)
             events.append(event)
 
-    write_request = WriteRequest(events, None, 0, {})
+    write_request = WriteRequest(events, None, 0, {}, migration_index)
 
     print("Write events")
-    writer.write(
-        [write_request], log_all_modified_fields=False, migration_index=migration_index
-    )
+    writer.write([write_request], log_all_modified_fields=False)
 
     print(
         f"Wrote {len(events)} events to the datastore with migration index {migration_index}."

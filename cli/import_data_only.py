@@ -40,10 +40,8 @@ def main():
             event = RequestCreateEvent(fqid, model)
             events.append(event)
 
-    write_request = WriteRequest(events, None, 0, {})
-    writer.write(
-        [write_request], log_all_modified_fields=False, migration_index=migration_index
-    )
+    write_request = WriteRequest(events, None, 0, {}, migration_index)
+    writer.write([write_request], log_all_modified_fields=False)
 
 
 if __name__ == "__main__":

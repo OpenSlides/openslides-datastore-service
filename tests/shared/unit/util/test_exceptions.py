@@ -1,4 +1,5 @@
 from datastore.shared.util import (
+    DatastoreNotEmpty,
     InvalidDatastoreState,
     InvalidFormat,
     ModelDoesNotExist,
@@ -35,4 +36,9 @@ def test_model_locked():
 
 def test_invalid_datastore_state():
     e = InvalidDatastoreState("msg")
+    assert e.msg == "msg"
+
+
+def test_datastore_not_empty():
+    e = DatastoreNotEmpty("msg")
     assert e.msg == "msg"

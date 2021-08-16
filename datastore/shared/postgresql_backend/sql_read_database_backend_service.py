@@ -333,6 +333,11 @@ class SqlReadDatabaseBackendService:
             )
         return history_information
 
+    def is_empty(self) -> bool:
+        return not self.connection.query_single_value(
+            "select exists(select * from positions)", []
+        )
+
     def get_max_position(self) -> Position:
         return self.connection.query_single_value(
             "select max(position) from positions", []

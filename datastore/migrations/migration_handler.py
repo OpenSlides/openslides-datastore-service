@@ -2,6 +2,7 @@ from typing import Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
+from datastore.shared.services import ReadDatabase
 from datastore.shared.util import KEYSEPARATOR
 
 from .base_migration import BaseMigration
@@ -50,6 +51,7 @@ class MigrationHandler(Protocol):
 @service_as_factory
 class MigrationHandlerImplementation:
 
+    read_database: ReadDatabase
     connection: ConnectionHandler
     migrater: Migrater
     logger: MigrationLogger
@@ -101,10 +103,7 @@ class MigrationHandlerImplementation:
         return False
 
     def check_datastore_empty(self) -> bool:
-        number_of_positions = self.connection.query_single_value(
-            "select count(*) from positions", []
-        )
-        if number_of_positions == 0:
+        if self.read_database.is_empty():
             self.logger.info("Datastore is empty, nothing to do.")
             return True
         return False

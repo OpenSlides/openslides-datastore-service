@@ -339,6 +339,12 @@ def test_get_position(read_database: ReadDatabase, connection: ConnectionHandler
     q.assert_called_with("select max(position) from positions", [])
 
 
+def test_is_empty(read_database: ReadDatabase, connection: ConnectionHandler):
+    connection.query_single_value = q = MagicMock(return_value=True)
+    assert read_database.is_empty() is False
+    q.assert_called_with("select exists(select * from positions)", [])
+
+
 def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
     value = MagicMock()
     connection.to_json = tj = MagicMock(return_value=value)

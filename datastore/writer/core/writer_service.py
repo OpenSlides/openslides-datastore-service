@@ -1,12 +1,12 @@
 import threading
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import retry_on_db_failure
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Field, Fqid
-from datastore.shared.util import logger
+from datastore.shared.util import DatastoreNotEmpty, logger
 
 from .database import Database
 from .messaging import Messaging
@@ -29,7 +29,6 @@ class WriterService:
         self,
         write_requests: List[WriteRequest],
         log_all_modified_fields: bool = True,
-        migration_index: Optional[int] = None,
     ) -> None:
         self.write_requests = write_requests
 
@@ -38,7 +37,7 @@ class WriterService:
             with self.database.get_context():
                 for write_request in self.write_requests:
                     position, modified_models = self.write_with_database_context(
-                        write_request, migration_index=migration_index
+                        write_request
                     )
                     self.position_to_modified_models[position] = modified_models
 
@@ -74,14 +73,22 @@ class WriterService:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
     def write_with_database_context(
-        self, write_request: WriteRequest, migration_index: Optional[int] = None
+        self, write_request: WriteRequest
     ) -> Tuple[int, Dict[Fqid, Dict[Field, JSON]]]:
+        # get migration index
+        if write_request.migration_index is None:
+            migration_index = self.read_database.get_current_migration_index()
+        else:
+            if not self.read_database.is_empty():
+                raise DatastoreNotEmpty(
+                    f"Passed a migration index of {write_request.migration_index}, but the datastore is not empty."
+                )
+            migration_index = write_request.migration_index
+
         # Check locked_fields -> Possible LockedError
         self.occ_locker.assert_locked_fields(write_request)
 
         # Insert db events with position data
-        if migration_index is None:
-            migration_index = self.read_database.get_current_migration_index()
         information = write_request.information if write_request.information else None
         position, modified_fqfields = self.database.insert_events(
             write_request.events,

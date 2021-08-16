@@ -32,6 +32,11 @@ class InvalidDatastoreState(DatastoreException):
         self.msg = msg
 
 
+class DatastoreNotEmpty(DatastoreException):
+    def __init__(self, msg):
+        self.msg = msg
+
+
 class BadCodingError(RuntimeError):
     """
     Should be thrown for errors that theoretically should never happen, except when the
