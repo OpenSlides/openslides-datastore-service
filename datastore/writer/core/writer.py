@@ -1,4 +1,4 @@
-from typing import List, Optional, Protocol
+from typing import List, Protocol
 
 from .write_request import WriteRequest
 
@@ -10,7 +10,6 @@ class Writer(Protocol):
         self,
         write_requests: List[WriteRequest],
         log_all_modified_fields: bool = True,
-        migration_index: Optional[int] = None,
     ) -> None:
         """Writes into the DB."""
 

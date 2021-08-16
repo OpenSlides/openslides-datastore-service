@@ -51,6 +51,7 @@ class TestWriteHandler:
                         {"type": "delete", "fqid": "some_fqid"},
                         {"type": "restore", "fqid": "some_fqid"},
                     ],
+                    "migration_index": 3,
                 }
             )
             wr.assert_called_once()
@@ -60,6 +61,7 @@ class TestWriteHandler:
                 [None, True],
                 -2,
                 {"some_string": 1},
+                3,
             )
 
         w.assert_called_once()

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, TypedDict, cast
+from typing import Any, Dict, List, Optional, TypedDict, cast
 
 import fastjsonschema
 
@@ -62,6 +62,7 @@ write_schema = fastjsonschema.compile(
                     "required": ["type", "fqid"],
                 },
             },
+            "migration_index": {"type": "integer", "minimum": 1},
         },
         "required": ["user_id", "information", "locked_fields", "events"],
     }
@@ -110,6 +111,7 @@ class WriteRequestJSON(TypedDict):
     information: JSON
     locked_fields: Dict[str, LockedFieldsJSON]
     events: List[Dict[str, Any]]
+    migration_index: Optional[int]
 
 
 class WriteHandler:
@@ -134,8 +136,11 @@ class WriteHandler:
         information = parsed_data["information"]
         locked_fields = parsed_data["locked_fields"]
         events = self.parse_events(parsed_data["events"])
+        migration_index = parsed_data.get("migration_index")
 
-        return WriteRequest(events, information, user_id, locked_fields)
+        return WriteRequest(
+            events, information, user_id, locked_fields, migration_index
+        )
 
     def parse_events(self, events: List[Dict[str, Any]]) -> List[BaseRequestEvent]:
         request_events = []

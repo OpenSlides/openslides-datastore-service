@@ -144,6 +144,11 @@ class ReadDatabase(Protocol):
         Returns a list of position data for all fqids.
         """
 
+    def is_empty(self) -> bool:
+        """
+        Returns true, if there are no positions in the database
+        """
+
     def get_max_position(self) -> Position:
         """Returns the current (highest) position of the datastore."""
 

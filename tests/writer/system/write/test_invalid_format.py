@@ -185,3 +185,24 @@ def test_lock_null_position(json_client, data):
 
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_migration_index_string(json_client, data):
+    data["migration_index"] = "should be int"
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_migration_index_zero(json_client, data):
+    data["migration_index"] = 0
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_migration_index_negative(json_client, data):
+    data["migration_index"] = -1
+
+    response = json_client.post(WRITE_URL, data)
+    assert_error_response(response, ERROR_CODES.INVALID_REQUEST)

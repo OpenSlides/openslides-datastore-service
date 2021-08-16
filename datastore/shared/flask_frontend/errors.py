@@ -6,6 +6,7 @@ from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import DatabaseError
 from datastore.shared.services import EnvironmentService
 from datastore.shared.util import (
+    DatastoreNotEmpty,
     InvalidDatastoreState,
     InvalidFormat,
     ModelDoesNotExist,
@@ -27,6 +28,7 @@ class ERROR_CODES:
     MODEL_NOT_DELETED = 5
     MODEL_LOCKED = 6
     INVALID_DATASTORE_STATE = 7
+    DATASTORE_NOT_EMPTY = 8
 
 
 def handle_internal_errors(fn):
@@ -77,6 +79,12 @@ def handle_internal_errors(fn):
                 "type": ERROR_CODES.INVALID_DATASTORE_STATE,
                 "msg": e.msg,
                 "type_verbose": "INVALID_DATASTORE_STATE",
+            }
+        except DatastoreNotEmpty as e:
+            error_dict = {
+                "type": ERROR_CODES.DATASTORE_NOT_EMPTY,
+                "msg": e.msg,
+                "type_verbose": "DATASTORE_NOT_EMPTY",
             }
         except Exception as e:
             print(e, type(e))

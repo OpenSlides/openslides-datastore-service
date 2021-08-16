@@ -6,6 +6,7 @@ from .deleted_models_behaviour import (  # noqa
 from .exceptions import (  # noqa
     BadCodingError,
     DatastoreException,
+    DatastoreNotEmpty,
     InvalidDatastoreState,
     InvalidFormat,
     ModelDoesNotExist,
