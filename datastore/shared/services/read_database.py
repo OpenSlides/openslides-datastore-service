@@ -83,7 +83,7 @@ class ReadDatabase(Protocol):
     def get_everything(
         self,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> Dict[Collection, List[Model]]:
+    ) -> Dict[Collection, Dict[Id, Model]]:
         """
         Returns all models of the given collection. WARNING: May result in a huge
         amount of data. Use with caution!

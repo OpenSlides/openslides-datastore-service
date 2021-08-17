@@ -132,7 +132,7 @@ class ReaderService:
     @retry_on_db_failure
     def get_everything(
         self, request: GetEverythingRequest
-    ) -> Dict[Collection, List[Model]]:
+    ) -> Dict[Collection, Dict[Id, Model]]:
         return self.database.get_everything(request.get_deleted_models)
 
     @retry_on_db_failure

@@ -35,8 +35,8 @@ def main():
             migration_index = models
             continue
 
-        for model in models:
-            fqid = fqid_from_collection_and_id(collection, model["id"])
+        for id, model in models.items():
+            fqid = fqid_from_collection_and_id(collection, id)
             event = RequestCreateEvent(fqid, model)
             events.append(event)
 
