@@ -3,9 +3,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from datastore.migrations import MigrationHandler, MigrationSetupException
-from datastore.migrations.migrater import Migrater, MigraterImplementation
-from datastore.migrations.migration_handler import MigrationHandlerImplementation
-from datastore.migrations.migration_logger import (
+from datastore.migrations.core.migrater import Migrater, MigraterImplementation
+from datastore.migrations.core.migration_handler import MigrationHandlerImplementation
+from datastore.migrations.core.migration_logger import (
     MigrationLogger,
     MigrationLoggerImplementation,
 )

@@ -6,6 +6,7 @@ from datastore.migrations import (
     CreateEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
+    RenameFieldMigration,
     RestoreEvent,
     UpdateEvent,
 )
@@ -13,64 +14,6 @@ from datastore.shared.util import (
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
 )
-
-
-class RenameField(BaseMigration):
-    """f -> f_new"""
-
-    target_migration_index = 2
-
-    def modify(self, object):
-        if "f" in object:
-            object["f_new"] = object["f"]
-            del object["f"]
-
-    def migrate_event(
-        self,
-        event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
-        if isinstance(event, CreateEvent) or isinstance(event, UpdateEvent):
-            self.modify(event.data)
-
-        if isinstance(event, DeleteFieldsEvent):
-            if "f" in event.data:
-                event.data.remove("f")
-                event.data.append("f_new")
-
-        if isinstance(event, ListUpdateEvent):
-            self.modify(event.add)
-            self.modify(event.remove)
-
-        return [event]
-
-
-def test_rename_field(
-    migration_handler, write, assert_model, query_single_value, assert_finalized
-):
-    """f -> f_new"""
-    write({"type": "create", "fqid": "a/1", "fields": {"f": [1]}})
-    write({"type": "update", "fqid": "a/1", "fields": {"f": [2]}})
-    write({"type": "update", "fqid": "a/1", "list_fields": {"add": {"f": [3]}}})
-    write({"type": "update", "fqid": "a/1", "fields": {"f": None}})
-    write({"type": "update", "fqid": "a/1", "fields": {"f": "Hello"}})
-
-    migration_handler.register_migrations(RenameField)
-    migration_handler.finalize()
-
-    assert_finalized()
-    assert_model(
-        "a/1", {"f_new": [1], "meta_deleted": False, "meta_position": 1}, position=1
-    )
-    assert_model(
-        "a/1", {"f_new": [2], "meta_deleted": False, "meta_position": 2}, position=2
-    )
-    assert_model(
-        "a/1", {"f_new": [2, 3], "meta_deleted": False, "meta_position": 3}, position=3
-    )
-    assert_model("a/1", {"meta_deleted": False, "meta_position": 4}, position=4)
-    assert_model(
-        "a/1", {"f_new": "Hello", "meta_deleted": False, "meta_position": 5}, position=5
-    )
 
 
 def test_move_id(
@@ -178,6 +121,12 @@ def test_add_required_field_based_on_migrated_data(
     """First, rename f->f_new. Second migration adds `g`, which is f_new*2"""
     write({"type": "create", "fqid": "a/1", "fields": {"f": 3}})
 
+    class RenameField(RenameFieldMigration):
+        target_migration_index = 2
+        collection = "a"
+        old_field = "f"
+        new_field = "f_new"
+
     class AddField(BaseMigration):
         target_migration_index = 3
 
@@ -234,8 +183,11 @@ def test_access_field_after_rename(
     write({"type": "delete", "fqid": "a/1"})
     write({"type": "restore", "fqid": "a/1"})
 
-    class RenameMigration(RenameField):
+    class RenameField(RenameFieldMigration):
         target_migration_index = 2
+        collection = "a"
+        old_field = "f"
+        new_field = "f_new"
 
         def migrate_event(
             self,
@@ -253,7 +205,7 @@ def test_access_field_after_rename(
                 assert old["f"] == new["f_new"]
             return events
 
-    migration_handler.register_migrations(RenameMigration)
+    migration_handler.register_migrations(RenameField)
     migration_handler.finalize()
 
     assert_finalized()

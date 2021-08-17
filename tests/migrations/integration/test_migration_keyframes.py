@@ -2,11 +2,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from datastore.migrations import BaseEvent
-from datastore.migrations.migration_keyframes import (
+from datastore.migrations import BaseEvent, MigrationKeyframeAccessor
+from datastore.migrations.core.migration_keyframes import (
     DatabaseMigrationKeyframeModifier,
     InitialMigrationKeyframeModifier,
-    MigrationKeyframeAccessor,
     MigrationKeyframeModifier,
 )
 from datastore.shared.util import BadCodingError

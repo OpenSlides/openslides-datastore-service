@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from datastore.migrations import MismatchingMigrationIndicesException
-from datastore.migrations.migrater import Migrater
+from datastore.migrations.core.migrater import Migrater
 from datastore.shared.di import injector
 
 from ..util import get_noop_migration

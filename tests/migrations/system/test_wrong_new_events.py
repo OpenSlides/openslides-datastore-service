@@ -9,7 +9,7 @@ from datastore.migrations import (
     RestoreEvent,
     UpdateEvent,
 )
-from datastore.migrations.events import to_event
+from datastore.migrations.core.events import to_event
 
 from ..util import get_lambda_migration
 
