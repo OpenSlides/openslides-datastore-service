@@ -8,13 +8,8 @@ def test_set_latest_migrate(
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
-    with connection_handler.get_connection_context():
-        connection_handler.execute(
-            "update positions set migration_index=%s",
-            [-1],
-        )
-    migration_handler.run_migrations = rm = MagicMock()
 
+    migration_handler.run_migrations = rm = MagicMock()
     migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
     migration_handler.migrate()
 
@@ -28,13 +23,8 @@ def test_migration_index_too_high_finalize(
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
-    with connection_handler.get_connection_context():
-        connection_handler.execute(
-            "update positions set migration_index=%s",
-            [-1],
-        )
-    migration_handler.run_migrations = rm = MagicMock()
 
+    migration_handler.run_migrations = rm = MagicMock()
     migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
     migration_handler.finalize()
 

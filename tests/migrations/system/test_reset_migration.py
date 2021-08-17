@@ -3,9 +3,12 @@ from datastore.migrations import CreateEvent
 from ..util import get_lambda_migration, get_noop_migration
 
 
-def test_no_migrations(migration_handler, write, assert_count):
+def test_no_migrations(
+    migration_handler, write, set_migration_index_to_1, assert_count
+):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
+    set_migration_index_to_1()
 
     assert_count("migration_keyframes", 0)
     assert_count("migration_positions", 0)
@@ -19,9 +22,12 @@ def test_no_migrations(migration_handler, write, assert_count):
     assert_count("migration_events", 0)
 
 
-def test_ongoing_migrations(migration_handler, write, assert_count):
+def test_ongoing_migrations(
+    migration_handler, write, set_migration_index_to_1, assert_count
+):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
+    set_migration_index_to_1()
 
     assert_count("migration_keyframes", 0)
     assert_count("migration_positions", 0)
@@ -42,9 +48,15 @@ def test_ongoing_migrations(migration_handler, write, assert_count):
 
 
 def test_actual_migration(
-    migration_handler, write, read_model, assert_model, query_single_value
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    read_model,
+    assert_model,
+    query_single_value,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
     previous_model = read_model("a/1")
 
     event = CreateEvent("a/2", {})

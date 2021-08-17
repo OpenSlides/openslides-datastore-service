@@ -26,12 +26,19 @@ def fail_handler(event):
 
 
 def test_failing_migration(
-    migration_handler, write, read_model, assert_model, assert_finalized
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    read_model,
+    assert_model,
+    assert_finalized,
 ):
+    write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+    set_migration_index_to_1()
+    previous_model = read_model("a/1")
+
     fail_migration = get_lambda_migration(do_raise(AbortException()))
     migration_handler.register_migrations(fail_migration)
-    write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
-    previous_model = read_model("a/1")
 
     with pytest.raises(AbortException):
         migration_handler.migrate()
@@ -50,16 +57,19 @@ def test_failing_migration_multi_positions(
     connection_handler,
     migration_handler,
     write,
+    set_migration_index_to_1,
     read_model,
     assert_model,
     assert_finalized,
     assert_count,
 ):
-    migration_handler.register_migrations(get_lambda_migration(fail_handler))
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
     write({"type": "create", "fqid": "a/2", "fields": {"f": 1}})
     write({"type": "create", "fqid": "a/3", "fields": {"f": 1}})
+    set_migration_index_to_1()
     previous_models = (read_model("a/1"), read_model("a/2"), read_model("a/3"))
+
+    migration_handler.register_migrations(get_lambda_migration(fail_handler))
 
     with pytest.raises(AbortException):
         migration_handler.migrate()
@@ -87,17 +97,20 @@ def test_failing_migration_multi_positions_new_migration_after_fail(
     connection_handler,
     migration_handler,
     write,
+    set_migration_index_to_1,
     read_model,
     assert_model,
     assert_finalized,
     assert_count,
     query_single_value,
 ):
-    migration_handler.register_migrations(get_lambda_migration(fail_handler))
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
     write({"type": "create", "fqid": "a/2", "fields": {"f": 1}})
     write({"type": "create", "fqid": "a/3", "fields": {"f": 1}})
+    set_migration_index_to_1()
     previous_models = (read_model("a/1"), read_model("a/2"), read_model("a/3"))
+
+    migration_handler.register_migrations(get_lambda_migration(fail_handler))
 
     with pytest.raises(AbortException):
         migration_handler.migrate()
@@ -129,6 +142,7 @@ def test_use_basemigration(
     connection_handler,
     migration_handler,
     write,
+    set_migration_index_to_1,
     read_model,
     assert_model,
     assert_finalized,
@@ -136,6 +150,7 @@ def test_use_basemigration(
     query_single_value,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+    set_migration_index_to_1()
 
     class MyBaseMigration(BaseMigration):
         target_migration_index = 2

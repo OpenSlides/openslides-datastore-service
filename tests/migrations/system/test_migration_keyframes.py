@@ -19,9 +19,10 @@ class BaseTest:
         raise NotImplementedError()
 
     @pytest.fixture()
-    def write_data(self, write):
+    def write_data(self, write, set_migration_index_to_1):
         def _write_data(*data):
             self._write(write, *data)
+            set_migration_index_to_1()
 
         yield _write_data
 

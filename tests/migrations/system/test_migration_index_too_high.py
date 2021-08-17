@@ -7,8 +7,11 @@ from datastore.migrations import MismatchingMigrationIndicesException
 from ..util import get_noop_migration
 
 
-def test_migration_index_too_high_migrate(migration_handler, write, query_single_value):
+def test_migration_index_too_high_migrate(
+    migration_handler, write, set_migration_index_to_1, query_single_value
+):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
     migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
     migration_handler.migrate()
 
@@ -25,9 +28,10 @@ def test_migration_index_too_high_migrate(migration_handler, write, query_single
 
 
 def test_migration_index_too_high_finalize(
-    migration_handler, write, query_single_value
+    migration_handler, write, set_migration_index_to_1, query_single_value
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
     migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
     migration_handler.finalize()
 
@@ -43,8 +47,11 @@ def test_migration_index_too_high_finalize(
     rm.assert_not_called()
 
 
-def test_migration_index_too_high_reset(migration_handler, write, query_single_value):
+def test_migration_index_too_high_reset(
+    migration_handler, write, set_migration_index_to_1, query_single_value
+):
     write({"type": "create", "fqid": "a/1", "fields": {}})
+    set_migration_index_to_1()
     migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
     migration_handler.finalize()
 

@@ -12,15 +12,18 @@ class Base:
         self,
         migration_handler,
         write,
+        set_migration_index_to_1,
         read_model,
         assert_model,
         query_single_value,
         assert_finalized,
     ):
         def _readback(*data):
-            migration_handler.register_migrations(get_noop_migration(2))
             self.write_data(write, *data)
+            set_migration_index_to_1()
             previous_model = read_model("a/1")
+
+            migration_handler.register_migrations(get_noop_migration(2))
             migration_handler.finalize()
 
             assert_model("a/1", previous_model)

@@ -34,7 +34,7 @@ def test_initial_migration_index(
 
     db_cur.execute("select migration_index from positions where position=%s", [1])
     migration_index = db_cur.fetchone()[0]
-    assert migration_index == 1
+    assert migration_index == -1
 
 
 def test_use_current_migration_index(
@@ -106,4 +106,4 @@ def test_send_migration_index_not_empty(
 
     db_cur.execute("select migration_index from positions where position=%s", [1])
     migration_index = db_cur.fetchone()[0]
-    assert migration_index == 1
+    assert migration_index == -1
