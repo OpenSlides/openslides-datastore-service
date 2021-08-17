@@ -1,5 +1,5 @@
-from .base_migration import BaseMigration, PositionData  # noqa
-from .events import (  # noqa
+from .core.base_migration import BaseMigration, PositionData  # noqa
+from .core.events import (  # noqa
     BadEventException,
     BaseEvent,
     CreateEvent,
@@ -9,17 +9,19 @@ from .events import (  # noqa
     RestoreEvent,
     UpdateEvent,
 )
-from .exceptions import (  # noqa
+from .core.exceptions import (  # noqa
     MigrationException,
     MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
-from .migration_handler import MigrationHandler  # noqa
-from .migration_keyframes import (  # noqa
+from .core.migration_handler import MigrationHandler  # noqa
+from .core.migration_keyframes import (  # noqa
     BaseMigrationKeyframeException,
     MigrationKeyframeAccessor,
     MigrationKeyframeModelDeleted,
     MigrationKeyframeModelDoesNotExist,
     MigrationKeyframeModelNotDeleted,
 )
-from .setup import setup  # noqa
+from .core.setup import setup  # noqa
+from .migrations.add_field_migration import AddFieldMigration  # noqa
+from .migrations.rename_field_migration import RenameFieldMigration  # noqa

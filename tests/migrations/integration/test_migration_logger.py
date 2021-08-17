@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from datastore.migrations.migration_logger import (
+from datastore.migrations.core.migration_logger import (
     MigrationLogger,
     MigrationLoggerImplementation,
 )
