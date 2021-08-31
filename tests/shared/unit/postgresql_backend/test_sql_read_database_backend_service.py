@@ -130,7 +130,7 @@ def test_get_everything(read_database: ReadDatabase, connection: ConnectionHandl
     )
 
     f.assert_called()
-    assert models == {"a": [{"id": 1}, {"id": 2}]}
+    assert models == {"a": {1: {"id": 1}, 2: {"id": 2}}}
 
 
 def test_filter(read_database: ReadDatabase):

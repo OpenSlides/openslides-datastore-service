@@ -60,7 +60,7 @@ class Reader(Protocol):
 
     def get_everything(
         self, request: GetEverythingRequest
-    ) -> Dict[Collection, List[Model]]:
+    ) -> Dict[Collection, Dict[Id, Model]]:
         """
         Returns all models In the form of the example data: Collections mapped to
         lists of models.

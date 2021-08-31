@@ -53,8 +53,8 @@ def test_simple(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_EVERYTHING.URL, {})
     assert_success_response(response)
     assert response.json == {
-        "a": [get_data_with_id("a/1")],
-        "b": [get_data_with_id("b/1")],
+        "a": {"1": get_data_with_id("a/1")},
+        "b": {"1": get_data_with_id("b/1")},
     }
 
 
@@ -65,7 +65,7 @@ def test_only_deleted(json_client, db_connection, db_cur):
         {"get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
     )
     assert_success_response(response)
-    assert response.json == {"a": [get_data_with_id("a/2")]}
+    assert response.json == {"a": {"2": get_data_with_id("a/2")}}
 
 
 def test_deleted_all_models(json_client, db_connection, db_cur):
@@ -76,8 +76,8 @@ def test_deleted_all_models(json_client, db_connection, db_cur):
     )
     assert_success_response(response)
     assert response.json == {
-        "a": [get_data_with_id("a/1"), get_data_with_id("a/2")],
-        "b": [get_data_with_id("b/1")],
+        "a": {"1": get_data_with_id("a/1"), "2": get_data_with_id("a/2")},
+        "b": {"1": get_data_with_id("b/1")},
     }
 
 

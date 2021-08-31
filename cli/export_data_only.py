@@ -25,7 +25,7 @@ def main():
 
     # strip meta fields
     for collection, models in response.items():
-        for model in models:
+        for model in models.values():
             for field in list(model.keys()):
                 if is_reserved_field(field):
                     del model[field]
