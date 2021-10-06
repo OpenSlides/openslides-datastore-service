@@ -21,7 +21,11 @@ class AddFieldMigration(BaseMigration):
     ) -> Optional[List[BaseEvent]]:
         collection = collection_from_fqid(event.fqid)
         if collection == self.collection and isinstance(event, CreateEvent):
-            event.data[self.field] = self.default
+            event.data[self.field] = self.get_default(event)
             return [event]
         else:
             return None
+
+    def get_default(self, event: BaseEvent) -> JSON:
+        """Can be overwritten for custom default values."""
+        return self.default
