@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 import requests
+
 from datastore.shared.services import EnvironmentService
 from datastore.writer.flask_frontend.routes import TRUNCATE_DB_URL
 
