@@ -1,8 +1,8 @@
 import pytest
 import requests
-
 from datastore.reader.flask_frontend.routes import Route
 from datastore.writer.flask_frontend.routes import WRITE_URL
+
 from tests import assert_response_code
 
 

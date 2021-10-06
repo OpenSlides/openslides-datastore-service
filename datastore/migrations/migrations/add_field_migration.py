@@ -25,7 +25,7 @@ class AddFieldMigration(BaseMigration):
             return [event]
         else:
             return None
-        
+
     def get_default(self, event: BaseEvent) -> JSON:
-        """ Can be overwritten for custom default values. """
+        """Can be overwritten for custom default values."""
         return self.default

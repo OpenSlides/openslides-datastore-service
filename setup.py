@@ -1,8 +1,8 @@
 import setuptools
-    
+
 # "datastore@git+https://github.com/OpenSlides/openslides-datastore-service",
 
-with open('requirements/requirements-general.txt') as requirements_production:
+with open("requirements/requirements-general.txt") as requirements_production:
     install_requires = [x.strip() for x in requirements_production.readlines()]
 
 setuptools.setup(
