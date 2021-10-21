@@ -299,16 +299,13 @@ class MigrationHandlerImplementation:
                 count_migration_positions - count_migration_positions_full
             )
 
-            max_mi_migration_positions = (
-                self.connection.query_single_value(
-                    "select max(migration_index) from migration_positions", []
-                )
-                or 1
+            max_mi_migration_positions = self.connection.query_single_value(
+                "select max(migration_index) from migration_positions", []
             )
             if (
-                min_mi_positions != max_mi_migration_positions
-                or min_mi_positions != self.target_migration_index
-            ):
+                max_mi_migration_positions
+                and min_mi_positions != max_mi_migration_positions
+            ) or min_mi_positions != self.target_migration_index:
                 if (
                     count_positions == count_migration_positions
                     and max_mi_migration_positions == self.target_migration_index
