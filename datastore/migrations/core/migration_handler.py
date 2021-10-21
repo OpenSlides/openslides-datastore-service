@@ -303,9 +303,9 @@ class MigrationHandlerImplementation:
                 "select max(migration_index) from migration_positions", []
             )
             if (
-                (max_mi_migration_positions and min_mi_positions != max_mi_migration_positions)
-                or min_mi_positions != self.target_migration_index
-            ):
+                max_mi_migration_positions
+                and min_mi_positions != max_mi_migration_positions
+            ) or min_mi_positions != self.target_migration_index:
                 if (
                     count_positions == count_migration_positions
                     and max_mi_migration_positions == self.target_migration_index
