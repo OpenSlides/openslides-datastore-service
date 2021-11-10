@@ -191,6 +191,14 @@ class MigrationKeyframeModifier(MigrationKeyframeAccessor):
             [position, migration_index],
         )
 
+    def get_next_position(self) -> Position:
+        """
+        Searches for the next existent position and returns it.
+        """
+        return self.connection.query_single_value(
+            "select min(position) from positions where position > %s", [self.position]
+        )
+
     def move_to_next_position(self) -> None:
         """Takes this keyframe and move all data to the next position. Do not use
         this keyframe afterwards!"""
@@ -243,7 +251,7 @@ class InitialMigrationKeyframeModifier(MigrationKeyframeModifier):
             self.collection_ids[collection].add(id)
 
     def move_to_next_position(self) -> None:
-        new_position = self.position + 1
+        new_position = self.get_next_position()
         # 1. Check, if there already exists a keyframe. If so, do nothing.
         if self.keyframe_exists(new_position, self.migration_index):
             return
@@ -377,7 +385,7 @@ class DatabaseMigrationKeyframeModifier(MigrationKeyframeModifier):
         if not self.persistent:
             raise BadCodingError()
 
-        new_position = self.position + 1
+        new_position = self.get_next_position()
         # Check, if there already exists a keyframe. If so, delete this one, since it is not needed anymore.
         if self.keyframe_exists(new_position, self.migration_index):
             self.connection.execute(

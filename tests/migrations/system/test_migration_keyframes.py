@@ -9,6 +9,8 @@ from datastore.migrations import (
     MigrationKeyframeModelDoesNotExist,
     MigrationKeyframeModelNotDeleted,
 )
+from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.typing import Position
 
 
@@ -357,3 +359,17 @@ class TestDatabaseMigrationKeyframeModifier(BaseTest):
     def _write(self, write, *data):
         write({"type": "create", "fqid": "dummy/1", "fields": {}})
         write(*data, {"type": "create", "fqid": "trigger/1", "fields": {}})
+
+
+class TestSkippedPositionMigrationKeyframeModifier(BaseTest):
+    meta_position = 3
+
+    def _write(self, write, *data):
+        write({"type": "create", "fqid": "dummy/1", "fields": {}})
+        # manually skip position 2
+        connection_handler = injector.get(ConnectionHandler)
+        with connection_handler.get_connection_context():
+            connection_handler.execute(
+                "ALTER SEQUENCE positions_position_seq RESTART WITH 3", []
+            )
+        write(*data, {"type": "create", "fqid": "trigger/1", "fields": {"f": 1}})
