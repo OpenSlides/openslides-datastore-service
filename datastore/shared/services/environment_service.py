@@ -37,3 +37,16 @@ class EnvironmentService:
     def is_dev_mode(self) -> bool:
         value = self.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR)
         return value is not None and value.lower() in ("1", "on", "yes", "true")
+
+    def get_from_file(self, name: str) -> str:
+        if name not in self.cache:
+            path = os.environ.get(name + "_FILE", None)
+            if path is not None:
+                with open(path) as file_:
+                    self.cache[name] = file_.read()
+            else:
+                if self.is_dev_mode():
+                    self.cache[name] = os.environ.get(name, None)
+                else:
+                    raise EnvironmentVariableMissing(name + "_FILE")
+        return cast(str, self.cache[name])

@@ -18,6 +18,10 @@ ENV PYTHONPATH /app/
 ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_ENV=development
 
+RUN mkdir -p /run/secrets
+RUN echo -n openslides >/run/secrets/datastore_database_user_file
+RUN echo -n openslides >/run/secrets/datastore_database_password_file
+
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)
 ENV PORT=$PORT
