@@ -17,8 +17,8 @@ COPY datastore datastore
 COPY tests tests
 
 RUN mkdir -p /run/secrets
-RUN echo -n openslides >/run/secrets/datastore_database_user_file
-RUN echo -n openslides >/run/secrets/datastore_database_password_file
+RUN echo -n openslides >/run/secrets/datastore_postgres_user
+RUN echo -n openslides >/run/secrets/datastore_postgres_password
 
 ARG CHOWN
 RUN chown -R $CHOWN /app
