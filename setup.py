@@ -13,6 +13,7 @@ setuptools.setup(
     description="Package for OS4 to provide direct access to the datastore",
     packages=setuptools.find_packages(),
     install_requires=install_requires,
+    package_data={"datastore": ["py.typed"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
