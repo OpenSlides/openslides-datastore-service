@@ -44,9 +44,8 @@ class EnvironmentService:
             if path is not None:
                 with open(path) as file_:
                     self.cache[name] = file_.read()
+            elif self.is_dev_mode():
+                self.cache[name] = os.environ.get(name, None)
             else:
-                if self.is_dev_mode():
-                    self.cache[name] = os.environ.get(name, None)
-                else:
-                    raise EnvironmentVariableMissing(name + "_FILE")
+                raise EnvironmentVariableMissing(name + "_FILE")
         return cast(str, self.cache[name])
