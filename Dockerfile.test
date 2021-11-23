@@ -12,9 +12,5 @@ RUN pip install -U -r requirements-testing.txt
 COPY scripts/* scripts/system/* tests/entrypoint.sh ./
 COPY scripts/ci/* ./ci/
 
-RUN mkdir -p /run/secrets
-RUN echo -n openslides >/run/secrets/datastore_postgres_user
-RUN echo -n openslides >/run/secrets/datastore_postgres_password
-
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["pytest"]

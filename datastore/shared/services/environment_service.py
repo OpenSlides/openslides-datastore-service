@@ -5,6 +5,7 @@ from datastore.shared.di import service_as_singleton
 
 
 DATASTORE_DEV_MODE_ENVIRONMENT_VAR = "DATASTORE_ENABLE_DEV_ENVIRONMENT"
+DEV_SECRET = "openslides"
 
 
 class EnvironmentVariableMissing(Exception):
@@ -39,13 +40,10 @@ class EnvironmentService:
         return value is not None and value.lower() in ("1", "on", "yes", "true")
 
     def get_from_file(self, name: str) -> str:
-        if name not in self.cache:
-            path = os.environ.get(name + "_FILE", None)
-            if path is not None:
-                with open(path) as file_:
-                    self.cache[name] = file_.read()
-            elif self.is_dev_mode():
-                self.cache[name] = os.environ.get(name, None)
-            else:
-                raise EnvironmentVariableMissing(name + "_FILE")
-        return cast(str, self.cache[name])
+        path = os.environ.get(name + "_FILE", None)
+        if self.is_dev_mode():
+            self.cache[name] = DEV_SECRET
+        elif path is not None:
+            with open(path) as file_:
+                self.cache[name] = file_.read()
+        return self.get(name)

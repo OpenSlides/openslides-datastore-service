@@ -1,3 +1,4 @@
+from tempfile import NamedTemporaryFile
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -118,8 +119,16 @@ def test_get_from_file_dev_mode(environment_service):
         get.return_value = None
 
         environment_service.cache = {DATASTORE_DEV_MODE_ENVIRONMENT_VAR: "1"}
-        assert environment_service.get_from_file("TEST") is None
+        assert environment_service.get_from_file("TEST") == "openslides"
 
-        environment_service.cache = {DATASTORE_DEV_MODE_ENVIRONMENT_VAR: "0"}
-        with pytest.raises(EnvironmentVariableMissing):
-            environment_service.get_from_file("TEST")
+
+def test_get_from_file_non_dev(environment_service):
+    with NamedTemporaryFile() as secret_file:
+        secret_file.write(b"test")
+        secret_file.seek(0)
+        with patch(
+            "datastore.shared.services.environment_service.os.environ.get"
+        ) as get:
+            get.return_value = secret_file.name
+            environment_service.cache = {DATASTORE_DEV_MODE_ENVIRONMENT_VAR: "0"}
+            assert environment_service.get_from_file("TEST") == "test"
