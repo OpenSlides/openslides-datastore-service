@@ -117,8 +117,10 @@ class PgConnectionHandlerService:
                 self.environment.try_get(DATABASE_ENVIRONMENT_VARIABLES.PORT) or 5432
             ),
             "database": self.environment.get(DATABASE_ENVIRONMENT_VARIABLES.NAME),
-            "user": self.environment.get(DATABASE_ENVIRONMENT_VARIABLES.USER),
-            "password": self.environment.get(DATABASE_ENVIRONMENT_VARIABLES.PASSWORD),
+            "user": self.environment.get_from_file(DATABASE_ENVIRONMENT_VARIABLES.USER),
+            "password": self.environment.get_from_file(
+                DATABASE_ENVIRONMENT_VARIABLES.PASSWORD
+            ),
             "cursor_factory": DictCursor,
         }
 

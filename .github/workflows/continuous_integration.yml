@@ -1,8 +1,6 @@
 name: Continuous Integration
 
-on:
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
   test-prod:
@@ -14,8 +12,14 @@ jobs:
     - name: Build container
       run: make build
     
-    - name: Start container 
-      run: source .env; make run
+    - name: Copy environment 
+      run: cp -v .env database.env .github/startup-test
+
+    - name: Start container
+      working-directory: .github/startup-test
+      run: |
+          source .env
+          docker-compose up -d
     
     - name: wait for container
       run: sleep 10
