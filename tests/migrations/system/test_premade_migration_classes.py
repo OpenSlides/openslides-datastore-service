@@ -1,4 +1,8 @@
-from datastore.migrations import AddFieldMigration, RenameFieldMigration, RemoveFieldMigration
+from datastore.migrations import (
+    AddFieldMigration,
+    RenameFieldMigration,
+    RemoveFieldMigration,
+)
 
 
 def test_rename_field(
@@ -81,6 +85,7 @@ def test_add_field_with_default(
         "a/1", {"f": 5, "g": 127, "meta_deleted": False, "meta_position": 3}, position=3
     )
 
+
 def test_remove_field(
     migration_handler,
     write,
@@ -89,8 +94,12 @@ def test_remove_field(
     query_single_value,
     assert_finalized,
 ):
-    write({"type": "create", "fqid": "a/1", "fields": {"a": 5, "r": 3}})
-    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": 20}})
+    write({"type": "create", "fqid": "a/1", "fields": {"a": 5, "r": [3]}})
+    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20]}})
+    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20]}})
+    write({"type": "update", "fqid": "a/1", "list_fields": {"add": {"r": [3]}, "remove": {"r": [20]}}})
+    write({"type": "delete", "fqid": "a/1"})
+    write({"type": "restore", "fqid": "a/1"})
 
     set_migration_index_to_1()
 
@@ -108,6 +117,8 @@ def test_remove_field(
         {"a": 5, "meta_deleted": False, "meta_position": 1},
         position=1,
     )
-    assert_model(
-        "a/1", {"a": 6, "meta_deleted": False, "meta_position": 2}, position=2
-    )
+    assert_model("a/1", {"a": 6, "meta_deleted": False, "meta_position": 2}, position=2)
+    assert_model("a/1", {"a": 6, "meta_deleted": False, "meta_position": 3}, position=3)
+    assert_model("a/1", {"a": 6, "meta_deleted": False, "meta_position": 4}, position=4)
+    assert_model("a/1", {"a": 6, "meta_deleted": True, "meta_position": 5}, position=5)
+    assert_model("a/1", {"a": 6, "meta_deleted": False, "meta_position": 6}, position=6)
