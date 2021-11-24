@@ -97,7 +97,13 @@ def test_remove_field(
     write({"type": "create", "fqid": "a/1", "fields": {"a": 5, "r": [3]}})
     write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20]}})
     write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20]}})
-    write({"type": "update", "fqid": "a/1", "list_fields": {"add": {"r": [3]}, "remove": {"r": [20]}}})
+    write(
+        {
+            "type": "update",
+            "fqid": "a/1",
+            "list_fields": {"add": {"r": [3]}, "remove": {"r": [20]}},
+        }
+    )
     write({"type": "delete", "fqid": "a/1"})
     write({"type": "restore", "fqid": "a/1"})
 
