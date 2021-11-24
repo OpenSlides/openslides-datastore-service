@@ -24,4 +24,5 @@ from .core.migration_keyframes import (  # noqa
 )
 from .core.setup import setup  # noqa
 from .migrations.add_field_migration import AddFieldMigration  # noqa
+from .migrations.remove_field_migration import RemoveFieldMigration  # noqa
 from .migrations.rename_field_migration import RenameFieldMigration  # noqa

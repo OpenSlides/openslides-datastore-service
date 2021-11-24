@@ -124,7 +124,7 @@ def test_writer_single_thread(writer):
     assert not writer.locks[1].locked()
 
     writer.locks[0].release()
-    thread1.join(0.05)
-    thread2.join(0.05)
+    thread1.join(0.10)
+    thread2.join(0.10)
     assert not thread1.is_alive()
     assert not thread2.is_alive()
