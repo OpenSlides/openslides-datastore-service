@@ -132,4 +132,6 @@ def test_remove_field(
     assert_model("a/1", {"a": 6, "meta_deleted": True, "meta_position": 5}, position=5)
     assert_model("a/1", {"a": 6, "meta_deleted": False, "meta_position": 6}, position=6)
     assert_model("a/1", {"a": 7, "meta_deleted": False, "meta_position": 7}, position=7)
-    assert_model("b/1", {"a": 5, "r": [3], "meta_deleted": False, "meta_position": 8}, position=8)
+    assert_model(
+        "b/1", {"a": 5, "r": [3], "meta_deleted": False, "meta_position": 8}, position=8
+    )
