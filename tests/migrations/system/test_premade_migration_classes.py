@@ -106,8 +106,9 @@ def test_remove_field(
     )
     write({"type": "delete", "fqid": "a/1"})
     write({"type": "restore", "fqid": "a/1"})
-    # Tests update-event ("a":7) and deletefields/deleteFieldsEvent-event by setting "r" to None
+    # Test update-event ("a":7) and deletefields/deleteFieldsEvent-event by setting "r" to None
     write({"type": "update", "fqid": "a/1", "fields": {"a": 7, "r": None}})
+    write({"type": "create", "fqid": "b/1", "fields": {"a": 5, "r": [3]}})
 
     set_migration_index_to_1()
 
@@ -131,3 +132,4 @@ def test_remove_field(
     assert_model("a/1", {"a": 6, "meta_deleted": True, "meta_position": 5}, position=5)
     assert_model("a/1", {"a": 6, "meta_deleted": False, "meta_position": 6}, position=6)
     assert_model("a/1", {"a": 7, "meta_deleted": False, "meta_position": 7}, position=7)
+    assert_model("b/1", {"a": 5, "r": [3], "meta_deleted": False, "meta_position": 8}, position=8)
