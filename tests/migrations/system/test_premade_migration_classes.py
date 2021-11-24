@@ -1,7 +1,7 @@
 from datastore.migrations import (
     AddFieldMigration,
-    RenameFieldMigration,
     RemoveFieldMigration,
+    RenameFieldMigration,
 )
 
 
