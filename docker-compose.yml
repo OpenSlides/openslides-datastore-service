@@ -7,14 +7,11 @@ services:
         environment:
             - PORT=${OPENSLIDES_DATASTORE_READER_PORT}
             - NUM_WORKERS=8
-            - DATASTORE_DATABASE_USER=/run/secrets/datastore_postgres_user
-            - DATASTORE_DATABASE_PASSWORD=/run/secrets/datastore_postgres_password
         depends_on:
             - postgresql
         networks:
             - postgresql
         secrets:
-            - datastore_postgres_user
             - datastore_postgres_password
     writer:
         image: openslides-datastore-writer
@@ -22,8 +19,6 @@ services:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
         environment:
             - PORT=${OPENSLIDES_DATASTORE_WRITER_PORT}
-            - DATASTORE_DATABASE_USER=/run/secrets/datastore_postgres_user
-            - DATASTORE_DATABASE_PASSWORD=/run/secrets/datastore_postgres_password
         depends_on:
             - postgresql
             - redis
@@ -31,7 +26,6 @@ services:
             - postgresql
             - redis
         secrets:
-            - datastore_postgres_user
             - datastore_postgres_password
     postgresql:
         image: postgres:11
@@ -48,7 +42,5 @@ networks:
     postgresql:
     redis:
 secrets:
-    datastore_postgres_user:
-        file: ./secrets/datastore_postgres_user
     datastore_postgres_password:
         file: ./secrets/datastore_postgres_password

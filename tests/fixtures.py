@@ -9,6 +9,7 @@ from datastore.shared.postgresql_backend import ALL_TABLES
 from datastore.shared.postgresql_backend.pg_connection_handler import (
     DATABASE_ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
 )
+from datastore.shared.services.environment_service import DEV_SECRET
 
 
 def get_env(name):
@@ -44,7 +45,7 @@ def setup_db_connection():
         port=int(get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.PORT) or 5432),
         database=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.NAME),
         user=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.USER),
-        password=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.PASSWORD),
+        password=DEV_SECRET,
     )
     _db_connection.autocommit = False
     yield _db_connection

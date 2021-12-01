@@ -12,8 +12,8 @@ jobs:
     - name: Build container
       run: make build
     
-    - name: Copy environment 
-      run: cp -v .env database.env .github/startup-test
+    - name: Create secret
+      run: mkdir secrets && echo -n "openslides" > secrets/datastore_postgres_password
 
     - name: Start container
       working-directory: .github/startup-test
@@ -22,7 +22,7 @@ jobs:
           docker-compose up -d
     
     - name: wait for container
-      run: sleep 10
+      run: docker-compose exec -T reader wait-for-it -t 0 "localhost:9010"
     
     - name: Test that reader is up and running
       run: curl -I http://localhost:9010/
