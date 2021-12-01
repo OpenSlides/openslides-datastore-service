@@ -1,13 +1,20 @@
-from typing import Protocol
+from typing import Protocol, Callable, Any
 
 from datastore.shared.di import service_as_singleton, service_interface
+
+
+PrintFunction = Callable[[str], None]
 
 
 @service_interface
 class MigrationLogger(Protocol):
     def set_verbose(self, verbose: bool) -> None:
         """
-        Set, if verbose message should be logged.
+        Set if verbose message should be logged.
+        """
+    def set_print_fn(self, print_fn: PrintFunction) -> None:
+        """
+        Sets the print function to be used for logging.
         """
 
     def info(self, message: str) -> None:
@@ -17,7 +24,7 @@ class MigrationLogger(Protocol):
 
     def debug(self, message: str) -> None:
         """
-        Logs the message, if verbose is true.
+        Logs the message if verbose is true.
         """
 
 
@@ -25,13 +32,17 @@ class MigrationLogger(Protocol):
 class MigrationLoggerImplementation:
     def __init__(self):
         self.verbose: bool = False
+        self.print_fn = print
 
     def set_verbose(self, verbose: bool) -> None:
         self.verbose = verbose
 
+    def set_print_fn(self, print_fn: PrintFunction) -> None:
+        self.print_fn = print_fn
+
     def info(self, message: str) -> None:
-        print(message)
+        self.print_fn(message)
 
     def debug(self, message: str) -> None:
         if self.verbose:
-            print(message)
+            self.print_fn(message)
