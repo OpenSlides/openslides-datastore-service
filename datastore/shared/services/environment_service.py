@@ -37,7 +37,7 @@ class EnvironmentService:
 
     def is_dev_mode(self) -> bool:
         value = self.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR)
-        return value is not None and value.lower() in ("1", "on", "yes", "true")
+        return value is not None and value.lower() in ("1", "on", "true")
 
     def get_from_file(self, name: str) -> str:
         path = os.environ.get(name + "_FILE", None)

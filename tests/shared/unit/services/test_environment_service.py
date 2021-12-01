@@ -108,7 +108,7 @@ def test_is_dev_mode_not_set(environment_service):
 
 
 def test_is_dev_mode(environment_service):
-    for value in ("1", "true", "True", "TRUE", "on", "On", "ON", "yes", "Yes", "YES"):
+    for value in ("1", "true", "True", "TRUE", "on", "On", "ON"):
         environment_service.cache = {DATASTORE_DEV_MODE_ENVIRONMENT_VAR: value}
 
         assert environment_service.is_dev_mode()

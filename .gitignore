@@ -6,3 +6,5 @@ htmlcov/
 .vscode/
 *.code-workspace
 vandelay-py.js
+
+secrets/
