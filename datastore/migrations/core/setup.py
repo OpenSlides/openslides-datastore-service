@@ -6,6 +6,7 @@ from datastore.writer import setup_di as writer_setup_di
 from datastore.writer.redis_backend import setup_di as redis_setup_di
 
 from .migration_handler import MigrationHandler
+from .migration_logger import MigrationLogger, PrintFunction
 
 
 def register_services():
@@ -24,10 +25,9 @@ def register_services():
     injector.register(MigrationHandler, MigrationHandlerImplementation)
 
 
-def setup(verbose: bool = False) -> MigrationHandler:
+def setup(verbose: bool = False, print_fn: PrintFunction = print) -> MigrationHandler:
     register_services()
-    from .migration_logger import MigrationLogger
-
     logger = injector.get(MigrationLogger)
     logger.set_verbose(verbose)
+    logger.set_print_fn(print_fn)
     return injector.get(MigrationHandler)
