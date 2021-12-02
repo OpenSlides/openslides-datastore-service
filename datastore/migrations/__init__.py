@@ -22,7 +22,7 @@ from .core.migration_keyframes import (  # noqa
     MigrationKeyframeModelDoesNotExist,
     MigrationKeyframeModelNotDeleted,
 )
-from .core.migration_logger import PrintFunction # noqa
+from .core.migration_logger import PrintFunction  # noqa
 from .core.setup import setup  # noqa
 from .migrations.add_field_migration import AddFieldMigration  # noqa
 from .migrations.remove_field_migration import RemoveFieldMigration  # noqa

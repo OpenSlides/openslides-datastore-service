@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -18,22 +18,25 @@ def migration_logger(reset_di):  # noqa
 
 def test_print_info(migration_logger):
     message = MagicMock()
-    with patch("builtins.print") as print_patch:
-        migration_logger.info(message)
-    print_patch.assert_called_with(message)
+    print_mock = MagicMock()
+    migration_logger.set_print_fn(print_mock)
+    migration_logger.info(message)
+    print_mock.assert_called_with(message)
 
 
 def test_print_debug_verbose(migration_logger):
     migration_logger.set_verbose(True)
     message = MagicMock()
-    with patch("builtins.print") as print_patch:
-        migration_logger.debug(message)
-    print_patch.assert_called_with(message)
+    print_mock = MagicMock()
+    migration_logger.set_print_fn(print_mock)
+    migration_logger.debug(message)
+    print_mock.assert_called_with(message)
 
 
 def test_print_debug_not_verbose(migration_logger):
     migration_logger.set_verbose(False)
     message = MagicMock()
-    with patch("builtins.print") as print_patch:
-        migration_logger.debug(message)
-    print_patch.assert_not_called()
+    print_mock = MagicMock()
+    migration_logger.set_print_fn(print_mock)
+    migration_logger.debug(message)
+    print_mock.assert_not_called()

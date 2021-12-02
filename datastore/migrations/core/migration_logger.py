@@ -1,9 +1,9 @@
-from typing import Protocol, Callable, Any
+from typing import Callable, Protocol
 
 from datastore.shared.di import service_as_singleton, service_interface
 
 
-PrintFunction = Callable[[str], None]
+PrintFunction = Callable[..., None]
 
 
 @service_interface
@@ -12,6 +12,7 @@ class MigrationLogger(Protocol):
         """
         Set if verbose message should be logged.
         """
+
     def set_print_fn(self, print_fn: PrintFunction) -> None:
         """
         Sets the print function to be used for logging.
