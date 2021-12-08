@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Literal, Union
+from typing import Any, Literal, Sequence, Union
 
 from datastore.shared.typing import Field
 
@@ -20,12 +20,12 @@ class Not:
 
 @dataclass
 class And:
-    and_filter: List["Filter"]
+    and_filter: Sequence["Filter"]
 
 
 @dataclass
 class Or:
-    or_filter: List["Filter"]
+    or_filter: Sequence["Filter"]
 
 
 Filter = Union[And, Or, Not, FilterOperator]
