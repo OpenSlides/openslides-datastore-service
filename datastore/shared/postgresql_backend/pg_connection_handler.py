@@ -52,7 +52,7 @@ class DATABASE_ENVIRONMENT_VARIABLES:
     PORT = "DATASTORE_DATABASE_PORT"
     NAME = "DATASTORE_DATABASE_NAME"
     USER = "DATASTORE_DATABASE_USER"
-    PASSWORD = "DATASTORE_DATABASE_PASSWORD"
+    PASSWORD_FILE = "DATASTORE_DATABASE_PASSWORD_FILE"
 
 
 class ConnectionContext:
@@ -119,7 +119,7 @@ class PgConnectionHandlerService:
             "database": self.environment.get(DATABASE_ENVIRONMENT_VARIABLES.NAME),
             "user": self.environment.get(DATABASE_ENVIRONMENT_VARIABLES.USER),
             "password": self.environment.get_from_file(
-                DATABASE_ENVIRONMENT_VARIABLES.PASSWORD
+                DATABASE_ENVIRONMENT_VARIABLES.PASSWORD_FILE
             ),
             "cursor_factory": DictCursor,
         }

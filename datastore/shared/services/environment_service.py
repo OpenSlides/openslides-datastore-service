@@ -4,7 +4,7 @@ from typing import Dict, Optional, cast
 from datastore.shared.di import service_as_singleton
 
 
-DATASTORE_DEV_MODE_ENVIRONMENT_VAR = "DATASTORE_ENABLE_DEV_ENVIRONMENT"
+DATASTORE_DEV_MODE_ENVIRONMENT_VAR = "OPENSLIDES_DEVELOPMENT"
 DEV_SECRET = "openslides"
 
 
@@ -39,11 +39,8 @@ class EnvironmentService:
         value = self.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR)
         return value is not None and value.lower() in ("1", "on", "true")
 
-    def get_from_file(self, name: str) -> str:
-        path = os.environ.get(name + "_FILE", None)
-        if self.is_dev_mode():
-            self.cache[name] = DEV_SECRET
-        elif path is not None:
-            with open(path) as file_:
-                self.cache[name] = file_.read()
-        return self.get(name)
+    def get_from_file(self, name: str, use_default_secret: bool = True) -> str:
+        if self.is_dev_mode() and use_default_secret:
+            return DEV_SECRET
+        with open(self.get(name)) as file_:
+            return file_.read()

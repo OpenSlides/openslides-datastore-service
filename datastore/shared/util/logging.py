@@ -11,7 +11,9 @@ logger = logging.getLogger("datastore")
 
 def init_logging(reference_logger_name=None, flask_logger=None):
     env_service = injector.get(EnvironmentService)
-    level = env_service.try_get("DATASTORE_LOG_LEVEL") or "DEBUG"
+    level = env_service.try_get("DATASTORE_LOG_LEVEL")
+    if not level:
+        level = "DEBUG" if env_service.is_dev_mode() else "INFO"
     logger.setLevel(level)
 
     if not logger.handlers:

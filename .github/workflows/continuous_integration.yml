@@ -13,7 +13,7 @@ jobs:
       run: make build
     
     - name: Create secret
-      run: mkdir secrets && echo -n "openslides" > secrets/datastore_postgres_password
+      run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
     - name: Start container
       run: |

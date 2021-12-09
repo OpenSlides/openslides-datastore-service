@@ -31,7 +31,9 @@ This will not work if the database is not empty. In this case, you can make use 
 
 ## Development-exclusive tools
 
-If the variable `DATASTORE_ENABLE_DEV_ENVIRONMENT` is set inside the docker container, the datastore runs in development mode. This is the case by default if you use the `dc.dev.yml` setup (see the `environment` section for the `writer`). Again, this currently has only an influence on the writer.
+If the variable `OPENSLIDES_DEVELOPMENT` is set inside the docker container, the datastore runs in development mode. This is the case by default if you use the `dc.dev.yml` setup (see the `environment` section for the `writer`). Again, this currently has only an influence on the writer.
+
+In development mode, all passwords (e.g. for the database) default to `openslides`.
 
 In development mode, the route `truncate_db` is available in the writer. <b>This will truncate the entire database and erase all data without confirmation, so use with caution.</b> Example curl call:
 

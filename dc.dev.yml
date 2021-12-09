@@ -8,7 +8,7 @@ services:
         ports:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
         environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - OPENSLIDES_DEVELOPMENT=1
         depends_on:
             - postgresql
         networks:
@@ -24,7 +24,7 @@ services:
         ports:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
         environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - OPENSLIDES_DEVELOPMENT=1
             - COMMAND=create_initial_data
             - DATASTORE_INITIAL_DATA_FILE=https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/example-data.json
         depends_on:
