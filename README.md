@@ -52,6 +52,7 @@ The datastore can be configured with the following environment variables:
   mode and `INFO` otherwise.
 - `DATASTORE_DATABASE_HOST`: Host of the underlying database. Default: `postgresql`
 - `DATASTORE_DATABASE_PORT`: Port of the underlying database. Default: `5432`
+- `DATASTORE_DATABASE_NAME`: Name of the underlying database. Default: `openslides`
 - `DATASTORE_DATABASE_USER`: User to use to login to the database. Default: `openslides`
 - `DATASTORE_DATABASE_PASSWORD_FILE`: Secret file provided by the docker setup which contains the password for the
   datastore. In development mode, this is not needed and the password defaults to `openslides`. In productive mode, this
