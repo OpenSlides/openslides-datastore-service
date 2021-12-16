@@ -8,7 +8,7 @@ services:
             - ./tests:/app/tests
             - ./cli:/app/cli
         environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - OPENSLIDES_DEVELOPMENT=1
         depends_on:
             - postgresql
             - redis

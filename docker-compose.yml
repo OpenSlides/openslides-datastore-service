@@ -12,7 +12,7 @@ services:
         networks:
             - postgresql
         secrets:
-            - datastore_postgres_password
+            - postgres_password
     writer:
         image: openslides-datastore-writer
         ports:
@@ -26,7 +26,7 @@ services:
             - postgresql
             - redis
         secrets:
-            - datastore_postgres_password
+            - postgres_password
     postgresql:
         image: postgres:11
         env_file: database.env
@@ -42,5 +42,5 @@ networks:
     postgresql:
     redis:
 secrets:
-    datastore_postgres_password:
-        file: ./secrets/datastore_postgres_password
+    postgres_password:
+        file: ./secrets/postgres_password
