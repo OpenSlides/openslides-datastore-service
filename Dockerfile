@@ -26,5 +26,10 @@ COPY $MODULE/entrypoint.sh scripts/system/* ./
 
 ENV NUM_WORKERS=1
 
+LABEL org.opencontainers.image.title="OpenSlides Datastore Service"
+LABEL org.opencontainers.image.description="Service for OpenSlides which wraps the database, which includes reader and writer functionality."
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-datastore-service"
+
 ENTRYPOINT ["./entrypoint.sh"]
 CMD gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application
