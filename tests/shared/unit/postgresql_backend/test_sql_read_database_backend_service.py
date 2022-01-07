@@ -186,19 +186,10 @@ def test_fetch_models_mapped_fields(
 def test_build_models_from_result(
     read_database: ReadDatabase, query_helper: SqlQueryHelper
 ):
-    row = MagicMock()
-    row["fqid"] = MagicMock()
-    row.copy = lambda: row
-    row.keys = MagicMock(return_value=[MagicMock()])
-    mfpc = MagicMock()
-    mfpc.__getitem__ = MagicMock(return_value=[MagicMock()])
-    mfpc.__contains__ = MagicMock(return_value=True)
-
-    query_helper.mapped_fields_map_has_empty_entry = MagicMock(return_value=False)
-
+    row = {"fqid": "a/1", "field": "a"}
+    mfpc = {"a/1": ["field"]}
     result = read_database.build_models_from_result([row], mfpc)
-
-    assert result == {row["fqid"]: row}
+    assert result == {row["fqid"]: {"field": "a"}}
 
 
 def test_build_model_ignore_deleted(

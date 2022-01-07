@@ -177,21 +177,23 @@ class SqlReadDatabaseBackendService:
         self, result, mapped_fields_per_fqid: Dict[str, List[str]]
     ) -> Dict[str, Model]:
         result_map = {}
+        has_empty_entries = self.query_helper.mapped_fields_map_has_empty_entry(
+            mapped_fields_per_fqid
+        )
         for row in result:
             fqid = row["fqid"]
 
-            if self.query_helper.mapped_fields_map_has_empty_entry(
-                mapped_fields_per_fqid
-            ):
-                # at least one collection needs all fields, so we just selected data
-                model = row["data"]
-            else:
-                model = row.copy()
+            if has_empty_entries:
+                # at least one collection needs all fields, so we need to select data
+                row = row["data"]
 
             if fqid in mapped_fields_per_fqid and len(mapped_fields_per_fqid[fqid]) > 0:
-                for key in list(model.keys()):
-                    if key not in mapped_fields_per_fqid[fqid] or model[key] is None:
-                        del model[key]
+                model = {}
+                for field in mapped_fields_per_fqid[fqid]:
+                    if row.get(field) is not None:
+                        model[field] = row[field]
+            else:
+                model = row
             result_map[fqid] = model
 
         return result_map
