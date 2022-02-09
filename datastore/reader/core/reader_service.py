@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import Any, ContextManager, Dict, List, cast
 
+
 from datastore.reader.core.reader import (
     CountResult,
     ExistsResult,
@@ -18,6 +19,7 @@ from datastore.shared.services.read_database import (
     CountFilterQueryFieldsParameters,
 )
 from datastore.shared.typing import Collection, Fqid, Id, Model
+from datastore.shared.util.otel import make_span
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
@@ -54,78 +56,88 @@ class ReaderService:
 
     @retry_on_db_failure
     def get(self, request: GetRequest) -> Model:
-        if request.position:
-            # if a position is given, first test if the model is in the correct
-            # state to prevent the unnecessary building of the model if it's not
-            fqids = self.filter_fqids_by_deleted_status(
-                [request.fqid], request.position, request.get_deleted_models
-            )
-            if not len(fqids):
-                raise get_exception_for_deleted_models_behaviour(
-                    request.fqid, request.get_deleted_models
-                )
+        with make_span("get request") as span:
+            if request.position:
+                # if a position is given, first test if the model is in the correct
+                # state to prevent the unnecessary building of the model if it's not
+                with make_span("test model") as span_test:
+                    fqids = self.filter_fqids_by_deleted_status(
+                        [request.fqid], request.position, request.get_deleted_models
+                    )
+                    if not len(fqids):
+                        raise get_exception_for_deleted_models_behaviour(
+                            request.fqid, request.get_deleted_models
+                        )
 
-            model = self.database.build_model_ignore_deleted(
-                request.fqid, request.position
-            )
-            model = self.apply_mapped_fields(model, request.mapped_fields)
-        else:
-            model = self.database.get(
-                request.fqid, request.mapped_fields, request.get_deleted_models
-            )
+                    model = self.database.build_model_ignore_deleted(
+                        request.fqid, request.position
+                    )
+                with make_span("apply mapped fields"):
+                    model = self.apply_mapped_fields(model, request.mapped_fields)
+            else:
+                with make_span("get from database"):
+                    model = self.database.get(
+                        request.fqid, request.mapped_fields, request.get_deleted_models
+                    )
         return model
 
     @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> Dict[Collection, Dict[Id, Model]]:
-        mapped_fields_per_fqid: Dict[str, List[str]] = defaultdict(list)
-        if isinstance(request.requests[0], GetManyRequestPart):
-            requests = cast(List[GetManyRequestPart], request.requests)
-            for part in requests:
-                for id in part.ids:
-                    fqid = fqid_from_collection_and_id(part.collection, str(id))
-                    mapped_fields_per_fqid[fqid].extend(
-                        part.mapped_fields + request.mapped_fields
+        with make_span("get_many request") as span:
+            mapped_fields_per_fqid: Dict[str, List[str]] = {}
+            if isinstance(request.requests[0], GetManyRequestPart):
+                requests = cast(List[GetManyRequestPart], request.requests)
+                for part in requests:
+                    for id in part.ids:
+                        fqid = fqid_from_collection_and_id(part.collection, str(id))
+                        mapped_fields_per_fqid.setdefault(fqid, []).extend(
+                            part.mapped_fields + request.mapped_fields
+                        )
+            else:
+                fqfield_requests = cast(List[str], request.requests)
+                for fqfield in fqfield_requests:
+                    fqid = fqid_from_fqfield(fqfield)
+                    mapped_fields_per_fqid.setdefault(fqid, []).append(
+                        field_from_fqfield(fqfield)
                     )
-        else:
-            fqfield_requests = cast(List[str], request.requests)
-            for fqfield in fqfield_requests:
-                fqid = fqid_from_fqfield(fqfield)
-                mapped_fields_per_fqid[fqid].append(field_from_fqfield(fqfield))
 
-        fqids = list(mapped_fields_per_fqid.keys())
+            fqids = list(mapped_fields_per_fqid.keys())
 
-        if request.position:
-            fqids = self.filter_fqids_by_deleted_status(
-                fqids, request.position, request.get_deleted_models
-            )
-            result = self.database.build_models_ignore_deleted(fqids, request.position)
-            result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
-        else:
-            result = self.database.get_many(
-                fqids,
-                mapped_fields_per_fqid,
-                request.get_deleted_models,
-            )
+            with make_span("call database"):
+                if request.position:
+                    fqids = self.filter_fqids_by_deleted_status(
+                        fqids, request.position, request.get_deleted_models
+                    )
+                    result = self.database.build_models_ignore_deleted(fqids, request.position)
+                    result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
+                else:
+                    result = self.database.get_many(
+                        fqids,
+                        mapped_fields_per_fqid,
+                        request.get_deleted_models,
+                    )
 
-        # change mapping fqid->model to collection->id->model
-        final: Dict[str, Dict[int, Model]] = defaultdict(dict)
-        for fqid, model in result.items():
-            collection, id = collection_and_id_from_fqid(fqid)
-            final[collection][id] = model
+            with make_span("change mapping"):
+                # change mapping fqid->model to collection->id->model
+                final: Dict[str, Dict[int, Model]] = defaultdict(dict)
+                for fqid, model in result.items():
+                    collection, id = collection_and_id_from_fqid(fqid)
+                    final[collection][id] = model
 
-        # add back empty collections
-        for fqid in mapped_fields_per_fqid.keys():
-            collection = collection_from_fqid(fqid)
-            if not final[collection]:
-                final[collection] = {}
-
+                # add back empty collections
+                for fqid in mapped_fields_per_fqid.keys():
+                    collection = collection_from_fqid(fqid)
+                    if not final[collection]:
+                        final[collection] = {}
         return final
 
     @retry_on_db_failure
     def get_all(self, request: GetAllRequest) -> Dict[Id, Model]:
-        return self.database.get_all(
-            request.collection, request.mapped_fields, request.get_deleted_models
-        )
+        with make_span("get_all request") as span:
+            models = self.database.get_all(
+                request.collection, request.mapped_fields, request.get_deleted_models
+            )
+        return models
 
     @retry_on_db_failure
     def get_everything(

@@ -16,8 +16,6 @@ from datastore.writer.core import Messaging
 
 from .connection_handler import ConnectionHandler
 
-from opentelemetry.trace import get_current_span
-
 
 MODIFIED_FIELDS_TOPIC = "ModifiedFields"
 
@@ -38,13 +36,6 @@ class RedisMessagingBackendService(Messaging):
                 f"written fqfields into {MODIFIED_FIELDS_TOPIC}: "
                 + json.dumps(modified_fqfields)
             )
-
-        span_context = get_current_span().get_span_context()
-        trace_id_hex = span_context.trace_id.to_bytes(((span_context.trace_id.bit_length() + 7) // 8),"big").hex()
-        span_id_hex = span_context.span_id.to_bytes((( span_context.span_id.bit_length() + 7) // 8),"big").hex()
-        span_data = f"{trace_id_hex}:{span_id_hex}:{span_context.trace_flags}"
-        modified_fqfields["span"] = span_data
-
         
         self.connection.xadd(MODIFIED_FIELDS_TOPIC, modified_fqfields)
 
