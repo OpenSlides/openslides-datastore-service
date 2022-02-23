@@ -1,6 +1,6 @@
 from datastore.migrations import (
     AddFieldMigration,
-    RemoveFieldMigration,
+    RemoveFieldsMigration,
     RenameFieldMigration,
 )
 
@@ -94,9 +94,9 @@ def test_remove_field(
     query_single_value,
     assert_finalized,
 ):
-    write({"type": "create", "fqid": "a/1", "fields": {"a": 5, "r": [3]}})
-    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20]}})
-    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20]}})
+    write({"type": "create", "fqid": "a/1", "fields": {"a": 5, "r": [3], "r2": "a"}})
+    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20], "r2": "b"}})
+    write({"type": "update", "fqid": "a/1", "fields": {"a": 6, "r": [20], "r2": "b"}})
     write(
         {
             "type": "update",
@@ -109,13 +109,43 @@ def test_remove_field(
     # Test update-event ("a":7) and deletefields/deleteFieldsEvent-event by setting "r" to None
     write({"type": "update", "fqid": "a/1", "fields": {"a": 7, "r": None}})
     write({"type": "create", "fqid": "b/1", "fields": {"a": 5, "r": [3]}})
+    # test for second collection
+    write(
+        {
+            "type": "create",
+            "fqid": "c/1",
+            "fields": {"a": 5, "remove": [3], "remove2": "a"},
+        }
+    )
+    write(
+        {
+            "type": "update",
+            "fqid": "c/1",
+            "fields": {"a": 6, "remove": [20], "remove2": "b"},
+        }
+    )
+    write(
+        {
+            "type": "update",
+            "fqid": "c/1",
+            "fields": {"a": 6, "remove": [20], "remove2": "b"},
+        }
+    )
+    write(
+        {
+            "type": "update",
+            "fqid": "c/1",
+            "list_fields": {"add": {"remove": [3]}, "remove": {"remove": [20]}},
+        }
+    )
+    write({"type": "delete", "fqid": "c/1"})
+    write({"type": "restore", "fqid": "c/1"})
 
     set_migration_index_to_1()
 
-    class RemoveField(RemoveFieldMigration):
+    class RemoveField(RemoveFieldsMigration):
         target_migration_index = 2
-        collection = "a"
-        field = "r"
+        collection_fields_map = {"a": ["r", "r2"], "c": ["remove", "remove2"]}
 
     migration_handler.register_migrations(RemoveField)
     migration_handler.finalize()
@@ -134,4 +164,24 @@ def test_remove_field(
     assert_model("a/1", {"a": 7, "meta_deleted": False, "meta_position": 7}, position=7)
     assert_model(
         "b/1", {"a": 5, "r": [3], "meta_deleted": False, "meta_position": 8}, position=8
+    )
+    assert_model(
+        "c/1",
+        {"a": 5, "meta_deleted": False, "meta_position": 9},
+        position=9,
+    )
+    assert_model(
+        "c/1", {"a": 6, "meta_deleted": False, "meta_position": 10}, position=10
+    )
+    assert_model(
+        "c/1", {"a": 6, "meta_deleted": False, "meta_position": 11}, position=11
+    )
+    assert_model(
+        "c/1", {"a": 6, "meta_deleted": False, "meta_position": 12}, position=12
+    )
+    assert_model(
+        "c/1", {"a": 6, "meta_deleted": True, "meta_position": 13}, position=13
+    )
+    assert_model(
+        "c/1", {"a": 6, "meta_deleted": False, "meta_position": 14}, position=14
     )

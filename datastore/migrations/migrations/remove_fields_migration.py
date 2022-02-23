@@ -12,35 +12,37 @@ from .. import (
 )
 
 
-class RemoveFieldMigration(BaseMigration):
+class RemoveFieldsMigration(BaseMigration):
     """
     This migration removes a field from all events for one collection.
     """
 
-    collection: str
-    field: str
+    collection_fields_map: Dict[str, List[str]]
 
-    def remove_field(self, object: Dict[str, Any]) -> None:
-        if self.field in object:
-            del object[self.field]
+    def remove_fields(self, obj: Dict[str, Any], fields: List[str]) -> None:
+        for field in fields:
+            if field in obj:
+                del obj[field]
 
     def migrate_event(
         self,
         event: BaseEvent,
     ) -> Optional[List[BaseEvent]]:
         collection = collection_from_fqid(event.fqid)
-        if collection != self.collection:
+        if collection not in self.collection_fields_map:
             return None
+        fields = self.collection_fields_map[collection]
 
         if isinstance(event, CreateEvent) or isinstance(event, UpdateEvent):
-            self.remove_field(event.data)
+            self.remove_fields(event.data, fields)
 
         elif isinstance(event, DeleteFieldsEvent):
-            if self.field in event.data:
-                event.data.remove(self.field)
+            for field in fields:
+                if field in event.data:
+                    event.data.remove(field)
 
         elif isinstance(event, ListUpdateEvent):
-            self.remove_field(event.add)
-            self.remove_field(event.remove)
+            self.remove_fields(event.add, fields)
+            self.remove_fields(event.remove, fields)
 
         return [event]
