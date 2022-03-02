@@ -5,6 +5,7 @@ from datastore.shared.di import service_as_singleton
 
 
 DATASTORE_DEV_MODE_ENVIRONMENT_VAR = "OPENSLIDES_DEVELOPMENT"
+OTEL_ENABLED_ENVIRONMENT_VAR = "OPENTELEMETRY_ENABLED"
 DEV_SECRET = "openslides"
 
 
@@ -40,9 +41,16 @@ class EnvironmentService:
         if name not in self.cache:
             self.cache[name] = os.environ.get(name, None)
 
+    def is_truthy(self, value) -> bool:
+        return value is not None and value.lower() in ("1", "on", "true")
+
     def is_dev_mode(self) -> bool:
         value = self.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR)
         return value is not None and is_truthy(value)
+
+    def is_otel_enabled(self) -> bool:
+        value = self.try_get(OTEL_ENABLED_ENVIRONMENT_VAR)
+        return self.is_truthy(value)
 
     def get_from_file(self, name: str, use_default_secret: bool = True) -> str:
         if self.is_dev_mode() and use_default_secret:

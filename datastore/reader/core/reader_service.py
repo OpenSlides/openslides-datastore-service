@@ -103,7 +103,7 @@ class ReaderService:
 
             fqids = list(mapped_fields_per_fqid.keys())
 
-            with make_span("call database"):
+            with make_span("call database", { "lol": "kek" }):
                 if request.position:
                     fqids = self.filter_fqids_by_deleted_status(
                         fqids, request.position, request.get_deleted_models

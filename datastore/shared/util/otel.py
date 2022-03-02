@@ -9,15 +9,20 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
+from datastore.shared.di import injector
+from datastore.shared.services import EnvironmentService
 
+
+"""
+Initializes the opentelemetry components and connection to the otel collector.
+"""
 def init(service_name):
-    if not is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+    env_service = injector.get(EnvironmentService)
+    if not env_service.is_otel_enabled():
         return
 
-    collector_host = os.environ.get("OPENTELEMETRY_COLLECTOR_HOST", "collector")
-    collector_port = os.environ.get("OPENTELEMETRY_COLLECTOR_PORT", "4317")
     span_exporter = OTLPSpanExporter(
-        endpoint=f"http://{collector_host}:{collector_port}",
+        endpoint=f"http://collector:4317",
         insecure=True
         # optional
         # credentials=ChannelCredentials(credentials),
@@ -33,16 +38,28 @@ def init(service_name):
 def instrument_flask(app):
     FlaskInstrumentor().instrument_app(app)
 
-def make_span(name):
-    if not is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+"""
+Returns a new child span to the currently active span.
+If OPENTELEMETRY_ENABLED is not truthy a nullcontext will be returned instead.
+So at any point in the code this function can be called in a with statement
+without any additional checking needed.
+
+Example:
+```
+with make_span("foo") as span:
+    ...
+    with make_span("bar", { "key": "value", ... }) as subspan:
+        ...
+```
+"""
+def make_span(name, attributes=None):
+    env_service = injector.get(EnvironmentService)
+    if not env_service.is_otel_enabled():
         return nullcontext()
 
     tracer = trace.get_tracer(__name__)
-    return tracer.start_as_current_span(name)
+    span = tracer.start_as_current_span(name)
+    if attributes is not None:
+        span.set_attributes(attributes)
 
-def is_truthy(value: str) -> bool:
-    truthy = ("1", "on", "true")
-    falsy = ("0", "off", "false")
-    if value.lower() not in truthy + falsy:
-        raise ValueError(f"Value must be one off {truthy + falsy}.")
-    return value.lower() in truthy
+    return span
