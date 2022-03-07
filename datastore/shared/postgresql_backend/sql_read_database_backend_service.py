@@ -1,6 +1,6 @@
 from collections import defaultdict
 from textwrap import dedent
-from typing import Any, ContextManager, Dict, List, Optional
+from typing import Any, ContextManager, Dict, Iterable, List, Optional
 
 from datastore.shared.di import service_as_singleton
 from datastore.shared.postgresql_backend import apply_fields
@@ -26,7 +26,7 @@ from datastore.shared.util import (
 )
 
 from .connection_handler import ConnectionHandler
-from .sql_event_types import EVENT_TYPES
+from .sql_event_types import EVENT_TYPE
 
 
 MIGRATION_INDEX_NOT_INITIALIZED = -2
@@ -57,7 +57,7 @@ class SqlReadDatabaseBackendService:
 
     def get_many(
         self,
-        fqids: List[Fqid],
+        fqids: Iterable[Fqid],
         mapped_fields_per_fqid: Dict[Fqid, List[Field]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Fqid, Model]:
@@ -247,25 +247,25 @@ class SqlReadDatabaseBackendService:
             raise BadCodingError()
 
         create_event = events[0]
-        assert create_event["type"] == EVENT_TYPES.CREATE
+        assert create_event["type"] == EVENT_TYPE.CREATE
         model: Model = {**create_event["data"], META_DELETED: False}
 
         # apply all other update/delete_fields
         for event in events[1:]:
-            if event["type"] == EVENT_TYPES.UPDATE:
+            if event["type"] == EVENT_TYPE.UPDATE:
                 model.update(event["data"])
-            elif event["type"] == EVENT_TYPES.DELETE_FIELDS:
+            elif event["type"] == EVENT_TYPE.DELETE_FIELDS:
                 for field in event["data"]:
                     if field in model:
                         del model[field]
-            elif event["type"] == EVENT_TYPES.LIST_FIELDS:
+            elif event["type"] == EVENT_TYPE.LIST_FIELDS:
                 for field, value in apply_fields(
                     model, event["data"]["add"], event["data"]["remove"]
                 ).items():
                     model[field] = value
-            elif event["type"] == EVENT_TYPES.DELETE:
+            elif event["type"] == EVENT_TYPE.DELETE:
                 model[META_DELETED] = True
-            elif event["type"] == EVENT_TYPES.RESTORE:
+            elif event["type"] == EVENT_TYPE.RESTORE:
                 model[META_DELETED] = False
             else:
                 raise BadCodingError()
@@ -298,9 +298,9 @@ class SqlReadDatabaseBackendService:
     ) -> Dict[Fqid, bool]:
         included_types = dedent(
             f"""\
-            ('{EVENT_TYPES.CREATE}',
-            '{EVENT_TYPES.DELETE}',
-            '{EVENT_TYPES.RESTORE}')"""
+            ('{EVENT_TYPE.CREATE}',
+            '{EVENT_TYPE.DELETE}',
+            '{EVENT_TYPE.RESTORE}')"""
         )
         query = f"""
                 select fqid, type from (
@@ -310,7 +310,7 @@ class SqlReadDatabaseBackendService:
                 ) t natural join events order by position asc, weight asc
                 """
         result = self.connection.query(query, [tuple(fqids)])
-        return {row["fqid"]: row["type"] == EVENT_TYPES.DELETE for row in result}
+        return {row["fqid"]: row["type"] == EVENT_TYPE.DELETE for row in result}
 
     def get_history_information(
         self, fqids: List[Fqid]

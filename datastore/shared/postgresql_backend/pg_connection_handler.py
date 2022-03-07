@@ -5,7 +5,7 @@ from time import sleep
 
 import psycopg2
 from psycopg2 import sql
-from psycopg2.extras import DictCursor, Json
+from psycopg2.extras import DictCursor, Json, execute_values
 from psycopg2.pool import ThreadedConnectionPool
 
 from datastore.shared.di import injector, service_as_singleton
@@ -162,16 +162,22 @@ class PgConnectionHandlerService:
     def to_json(self, data):
         return Json(data)
 
-    def execute(self, query, arguments, sql_parameters=[]):
+    def execute(self, query, arguments, sql_parameters=[], use_execute_values=False):
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
-            cursor.execute(prepared_query, arguments)
+            if use_execute_values:
+                execute_values(cursor, prepared_query, arguments)
+            else:
+                cursor.execute(prepared_query, arguments)
 
-    def query(self, query, arguments, sql_parameters=[]):
+    def query(self, query, arguments, sql_parameters=[], use_execute_values=False):
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
-            cursor.execute(prepared_query, arguments)
-            result = cursor.fetchall()
+            if use_execute_values:
+                result = execute_values(cursor, prepared_query, arguments, fetch=True)
+            else:
+                cursor.execute(prepared_query, arguments)
+                result = cursor.fetchall()
             return result
 
     def query_single_value(self, query, arguments, sql_parameters=[]):
@@ -184,8 +190,10 @@ class PgConnectionHandlerService:
                 return None
             return result[0]
 
-    def query_list_of_single_values(self, query, arguments, sql_parameters=[]):
-        result = self.query(query, arguments, sql_parameters)
+    def query_list_of_single_values(
+        self, query, arguments, sql_parameters=[], use_execute_values=False
+    ):
+        result = self.query(query, arguments, sql_parameters, use_execute_values)
         return list(map(lambda row: row[0], result))
 
     def prepare_query(self, query, sql_parameters):

@@ -1,6 +1,6 @@
 import json
 
-from datastore.shared.postgresql_backend import EVENT_TYPES
+from datastore.shared.postgresql_backend import EVENT_TYPE
 from datastore.shared.util import META_POSITION, strip_reserved_fields
 
 
@@ -18,7 +18,7 @@ def setup_data(connection, cursor, models, deleted=False):
             [
                 model[META_POSITION],
                 fqid,
-                EVENT_TYPES.CREATE,
+                EVENT_TYPE.CREATE,
                 json.dumps(data),
                 weight,
             ],

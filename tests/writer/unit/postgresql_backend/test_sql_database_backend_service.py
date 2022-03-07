@@ -6,11 +6,10 @@ from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ALL_TABLES, ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.util import (
+    META_DELETED,
+    META_POSITION,
     BadCodingError,
     InvalidFormat,
-    ModelDoesNotExist,
-    ModelExists,
-    ModelNotDeleted,
 )
 from datastore.writer.core.database import Database
 from datastore.writer.postgresql_backend import (
@@ -26,7 +25,6 @@ from datastore.writer.postgresql_backend import (
 from datastore.writer.postgresql_backend.sql_database_backend_service import (
     COLLECTION_MAX_LEN,
     COLLECTIONFIELD_MAX_LEN,
-    EVENT_TYPES,
     FQID_MAX_LEN,
 )
 from tests import reset_di  # noqa
@@ -78,34 +76,6 @@ def test_json(sql_backend, connection):
     tj.assert_called_with("my_data")
 
 
-class TestExistsQuery:
-    def test_exists_query_did_not_found_someting(self, sql_backend, connection):
-        connection.query_single_value = MagicMock(return_value=False)
-
-        assert sql_backend.exists_query("", "", None) is False
-
-    def test_exists_query_found_something(self, sql_backend, connection):
-        connection.query_single_value = MagicMock(return_value=True)
-
-        assert sql_backend.exists_query("", "", None)
-
-    def test_exists_query_passed_arguments(self, sql_backend, connection):
-        connection.query_single_value = qsv = MagicMock(return_value=None)
-        args = MagicMock()
-
-        sql_backend.exists_query("", "", args)
-
-        assert qsv.call_args.args[1] == args
-
-    def test_exists_query_table_name_and_conditions(self, sql_backend, connection):
-        connection.query_single_value = qsv = MagicMock(return_value=None)
-
-        sql_backend.exists_query("my_table", "some_conditions", None)
-
-        assert "my_table" in qsv.call_args.args[0]
-        assert "some_conditions" in qsv.call_args.args[0]
-
-
 class TestInsertEvents:
     def test_insert_no_events(self, sql_backend):
         sql_backend.create_position = cp = MagicMock()
@@ -113,15 +83,8 @@ class TestInsertEvents:
             sql_backend.insert_events([], 1, {}, 1)
         cp.assert_not_called()
 
-    def test_insert_invalid_event(self, sql_backend):
-        sql_backend.create_position = cp = MagicMock()
-        with pytest.raises(BadCodingError):
-            sql_backend.insert_event({}, 1, 1)
-        cp.assert_not_called()
-
     def test_set_position(self, sql_backend):
         sql_backend.create_position = MagicMock(return_value=239)
-        sql_backend.insert_event = MagicMock()
         event = MagicMock()
         event.fqid = "a/1"
 
@@ -129,29 +92,10 @@ class TestInsertEvents:
 
         assert position == 239
 
-    def test_call_insert_event(self, sql_backend, event_translator):
-        sql_backend.create_position = MagicMock()
-        sql_backend.insert_event = ie = MagicMock()
-        event_translator.translate = translate = MagicMock(side_effect=lambda x: [x])
-        event1 = MagicMock()
-        event1.fqid = "a/1"
-        event2 = MagicMock()
-        event2.fqid = "a/2"
-
-        sql_backend.insert_events([event1, event2], 1, {}, 1)
-
-        assert ie.call_count == 2
-        assert ie.call_args_list[0].args[0] == event1
-        assert ie.call_args_list[1].args[0] == event2
-
-        assert translate.call_count == 2
-        assert translate.call_args_list[0].args[0] == event1
-        assert translate.call_args_list[1].args[0] == event2
-
     def test_call_get_modified_fields(self, sql_backend, event_translator):
         sql_backend.create_position = MagicMock()
-        sql_backend.insert_event = MagicMock()
-        event_translator.translate = MagicMock(side_effect=lambda x: [x])
+        sql_backend.apply_event_to_models = MagicMock()
+        event_translator.translate = MagicMock(side_effect=lambda x, _: [x])
         event1 = MagicMock()
         event1.fqid = "a/1"
         value1 = MagicMock()
@@ -165,130 +109,165 @@ class TestInsertEvents:
 
         assert modified_models[event1.fqid] == {"f1": value1}
         assert modified_models[event2.fqid] == {"f2": value2}
-        gmf1.assert_called_once()
-        gmf2.assert_called_once()
-
-    def test_fqid_too_long(self, sql_backend, event_translator):
-        event_translator.translate = MagicMock(side_effect=lambda x: [x])
-        event = MagicMock()
-        event.fqid = "a/" + "1" * FQID_MAX_LEN
-        sql_backend.create_position = MagicMock()
-
-        with pytest.raises(InvalidFormat) as e:
-            sql_backend.insert_events([event], 1, {}, 1)
-
-        assert event.fqid in e.value.msg
+        gmf1.assert_called()
+        gmf2.assert_called()
 
 
 def test_create_position(sql_backend, connection):
     sql_backend.json = json = MagicMock(side_effect=lambda data: data)
-    connection.query_single_value = MagicMock(return_value=2844)
-    connection.execute = execute = MagicMock()
+    connection.query_single_value = qsv = MagicMock(return_value=2844)
 
     position = sql_backend.create_position(1, {"some": "data", "is": ["given"]}, 42)
 
     assert position == 2844
-    execute.assert_called_once()
+    qsv.assert_called_once()
     json.assert_called_once()
 
 
-class TestInsertEventDispatching:
+class TestGetModelsFromEvents:
+    def test_get_models_from_events(self, sql_backend, read_db):
+        result = MagicMock()
+        read_db.get_many = MagicMock(return_value=result)
+
+        event = MagicMock()
+        event.fqid = "a/1"
+        models = sql_backend.get_models_from_events([event])
+        assert models == result
+        assert read_db.get_many.call_args.args[0] == {"a/1"}
+
+    def test_fqid_multiple_times(self, sql_backend, read_db):
+        result = MagicMock()
+        read_db.get_many = MagicMock(return_value=result)
+
+        event = MagicMock()
+        event.fqid = "a/1"
+        models = sql_backend.get_models_from_events([event] * 3)
+        assert models == result
+        assert read_db.get_many.call_args.args[0] == {"a/1"}
+
+    def test_fqid_too_long(self, sql_backend, event_translator):
+        event = MagicMock()
+        event.fqid = "a/" + "1" * FQID_MAX_LEN
+
+        with pytest.raises(InvalidFormat) as e:
+            sql_backend.get_models_from_events([event])
+
+        assert event.fqid in e.value.msg
+
+
+class TestApplyEventToModels:
     def test_create_event(self, sql_backend):
-        sql_backend.insert_create_event = ie = MagicMock()
-        event = DbCreateEvent("a/1", {"f": "Value"})
+        data = {"some": "data"}
+        event = DbCreateEvent("a/1", data)
+        models = {}
         position = MagicMock()
-        weight = MagicMock()
-
-        sql_backend.insert_event(event, position, weight)
-
-        ie.assert_called_with(event, position, weight)
+        sql_backend.apply_event_to_models(event, models, position)
+        assert models["a/1"] == {
+            "some": "data",
+            META_POSITION: position,
+            META_DELETED: False,
+        }
+        assert data == {"some": "data"}  # assert that event data was not changed
 
     def test_update_event(self, sql_backend):
-        sql_backend.insert_update_event = ie = MagicMock()
-        event = DbUpdateEvent("a/1", {"f": "Value"})
+        data = {"some": "data"}
+        event = DbUpdateEvent("a/1", data)
+        models = {"a/1": {"other": "field"}}
         position = MagicMock()
-        weight = MagicMock()
-
-        sql_backend.insert_event(event, position, weight)
-
-        ie.assert_called_with(event, position, weight)
+        sql_backend.apply_event_to_models(event, models, position)
+        assert models["a/1"] == {
+            "other": "field",
+            "some": "data",
+            META_POSITION: position,
+        }
+        assert data == {"some": "data"}
 
     def test_list_update_event(self, sql_backend):
-        sql_backend.insert_list_update_event = ie = MagicMock()
-        event = DbListUpdateEvent("a/1", {}, {}, {})
+        add = {"f": [1]}
+        remove = {"g": [2]}
+        models = {"a/1": {"other": "field", "g": [2]}}
+        event = DbListUpdateEvent("a/1", add, remove, models["a/1"])
         position = MagicMock()
-        weight = MagicMock()
-
-        sql_backend.insert_event(event, position, weight)
-
-        ie.assert_called_with(event, position, weight)
+        sql_backend.apply_event_to_models(event, models, position)
+        assert models["a/1"] == {
+            "other": "field",
+            "f": [1],
+            "g": [],
+            META_POSITION: position,
+        }
 
     def test_delete_fields_event(self, sql_backend):
-        sql_backend.insert_delete_fields_event = ie = MagicMock()
-        event = DbDeleteFieldsEvent("a/1", ["f"])
+        event = DbDeleteFieldsEvent("a/1", ["field"])
+        models = {"a/1": {"field": "data"}}
         position = MagicMock()
-        weight = MagicMock()
-
-        sql_backend.insert_event(event, position, weight)
-
-        ie.assert_called_with(event, position, weight)
+        sql_backend.apply_event_to_models(event, models, position)
+        assert models["a/1"] == {META_POSITION: position}
 
     def test_delete_event(self, sql_backend):
-        sql_backend.insert_delete_event = ie = MagicMock()
-        event = DbDeleteEvent("a/1", ["f"])
+        event = DbDeleteEvent("a/1", ["field"])
+        models = {"a/1": {"field": "data"}}
         position = MagicMock()
-        weight = MagicMock()
-
-        sql_backend.insert_event(event, position, weight)
-
-        ie.assert_called_with(event, position, weight)
+        sql_backend.apply_event_to_models(event, models, position)
+        assert models["a/1"] == {
+            "field": "data",
+            META_POSITION: position,
+            META_DELETED: True,
+        }
 
     def test_restore_event(self, sql_backend):
-        sql_backend.insert_restore_event = ie = MagicMock()
-        event = DbRestoreEvent("a/1", ["f"])
+        event = DbRestoreEvent("a/1", ["field"])
+        models = {"a/1": {"field": "data"}}
         position = MagicMock()
-        weight = MagicMock()
+        sql_backend.apply_event_to_models(event, models, position)
+        assert models["a/1"] == {
+            "field": "data",
+            META_POSITION: position,
+            META_DELETED: False,
+        }
 
-        sql_backend.insert_event(event, position, weight)
 
-        ie.assert_called_with(event, position, weight)
+def test_write_model_updates(sql_backend, connection):
+    connection.execute = execute = MagicMock()
+    sql_backend.json = MagicMock(side_effect=lambda data: data)
+
+    sql_backend.write_model_updates(
+        {
+            "a/1": {"f": 1, META_DELETED: False},
+            "a/2": {"f": 1, META_DELETED: True},
+        }
+    )
+
+    execute.assert_called_once()
+    assert execute.call_args.args[0].startswith("insert into models (")
+    assert execute.call_args.args[1] == [
+        ("a/1", {"f": 1, META_DELETED: False}, False),
+        ("a/2", {"f": 1, META_DELETED: True}, True),
+    ]
 
 
-def test_insert_db_event(sql_backend, connection):
-    event_id = MagicMock()
-    event = MagicMock()
-    arguments = MagicMock()
-    position = MagicMock()
-    connection.query_single_value = qsv = MagicMock(return_value=event_id)
-    sql_backend.attach_modified_fields_to_event = amfte = MagicMock()
+def test_update_id_sequences(sql_backend, connection):
+    connection.execute = execute = MagicMock()
 
-    sql_backend.insert_db_event(event, arguments, position)
+    sql_backend.update_id_sequences({"a": 1, "b": 2})
 
-    assert qsv.call_args.args[1] == arguments
-    amfte.assert_called_with(event_id, event, position)
+    execute.assert_called_once()
+    assert execute.call_args.args[0].startswith("insert into id_sequences (")
+    assert execute.call_args.args[1] == [("a", 1), ("b", 2)]
+
+
+def test_write_events(sql_backend, connection):
+    result = MagicMock()
+    connection.query_list_of_single_values = qlosv = MagicMock(return_value=result)
+    events = MagicMock()
+
+    assert sql_backend.write_events(events) == result
+
+    qlosv.assert_called_once()
+    assert qlosv.call_args.args[0].startswith("insert into events (")
+    assert qlosv.call_args.args[1] == events
 
 
 class TestAttachModifiedFieldsToEvents:
-    def test_attach_modified_fields_to_event(self, sql_backend):
-        modified_collectionfields = MagicMock()
-        collection_ids = MagicMock()
-        event_id = MagicMock()
-        event = MagicMock()
-        position = MagicMock()
-        sql_backend.get_modified_collectionfields_from_event = gmcfe = MagicMock(
-            return_value=modified_collectionfields
-        )
-        sql_backend.insert_modified_collectionfields_into_db = imcid = MagicMock(
-            return_value=collection_ids
-        )
-        sql_backend.connect_events_and_collection_fields = ceacf = MagicMock()
-
-        sql_backend.attach_modified_fields_to_event(event_id, event, position)
-
-        gmcfe.assert_called_with(event)
-        imcid.assert_called_with(modified_collectionfields, position)
-        ceacf.assert_called_with(event_id, collection_ids)
-
     def test_get_modified_collectionfields_from_event(self, sql_backend):
         event = MagicMock()
         field = MagicMock()
@@ -317,7 +296,7 @@ class TestAttachModifiedFieldsToEvents:
         sql_backend.insert_modified_collectionfields_into_db(
             [collectionfield], position
         )
-        assert qlosv.call_args.args[1] == [collectionfield, position]
+        assert qlosv.call_args.args[1] == [(collectionfield, position)]
 
     def test_insert_modified_collectionfields_into_db_too_long(
         self, sql_backend, connection
@@ -334,154 +313,21 @@ class TestAttachModifiedFieldsToEvents:
         qlosv.assert_not_called()
 
     def test_connect_events_and_collection_fields(self, sql_backend, connection):
-        collectionfield_id = MagicMock()
         connection.execute = ex = MagicMock()
-        event_id = MagicMock()
+        event_ids = [MagicMock(), MagicMock()]
+        collectionfield_ids = [MagicMock(), MagicMock()]
+        event_indices_order = [[0], [0, 1]]
 
-        sql_backend.connect_events_and_collection_fields(event_id, [collectionfield_id])
+        sql_backend.connect_events_and_collection_fields(
+            event_ids, collectionfield_ids, event_indices_order
+        )
 
         ex.assert_called_once()
-        assert ex.call_args.args[1] == [event_id, collectionfield_id]
-
-
-class TestInsertCreateEvent:
-    def test_raise_model_exists(self, sql_backend):
-        sql_backend.exists_query = MagicMock(return_value=True)
-        event = MagicMock()
-        event.fqid = "a/1"
-
-        with pytest.raises(ModelExists) as e:
-            sql_backend.insert_create_event(event, MagicMock(), MagicMock())
-
-        assert event.fqid == e.value.fqid
-
-    def test_insert(self, sql_backend, connection):
-        sql_backend.exists_query = MagicMock(return_value=False)
-        sql_backend.json = json = MagicMock(side_effect=lambda x: x)
-        sql_backend.insert_db_event = ide = MagicMock()
-        sql_backend.create_model = cm = MagicMock()
-        connection.execute = ex = MagicMock()
-        event = MagicMock()
-        event.fqid = "a/1"
-        event.field_data = {"f": "test_data"}
-        event.get_modified_fields = MagicMock(return_value="f")
-        position = MagicMock()
-        weight = MagicMock()
-
-        sql_backend.insert_create_event(event, position, weight)
-
-        ex.assert_called()
-        ide.assert_called_with(
-            event,
-            [position, event.fqid, EVENT_TYPES.CREATE, {"f": "test_data"}, weight],
-            position,
-        )
-        json.assert_called_once()
-        cm.assert_called_once()
-
-
-def test_insert_update_event(sql_backend, connection):
-    sql_backend.assert_exists = ae = MagicMock()
-    sql_backend.json = json = MagicMock(side_effect=lambda x: x)
-    sql_backend.insert_db_event = ide = MagicMock()
-    sql_backend.update_model = um = MagicMock()
-    event = MagicMock()
-    event.fqid = "a/1"
-    event.field_data = "test_data"
-    event.get_modified_fields = MagicMock(return_value="f")
-    position = MagicMock()
-    weight = MagicMock()
-
-    sql_backend.insert_update_event(event, position, weight)
-
-    ae.assert_called_with(event.fqid)
-    ide.assert_called_with(
-        event, [position, event.fqid, EVENT_TYPES.UPDATE, "test_data", weight], position
-    )
-    json.assert_called_once()
-    um.assert_called_once()
-
-
-def test_insert_delete_fields_event(sql_backend, connection):
-    sql_backend.assert_exists = ae = MagicMock()
-    sql_backend.json = json = MagicMock(side_effect=lambda x: x)
-    sql_backend.insert_db_event = ide = MagicMock()
-    sql_backend.update_model = um = MagicMock()
-    event = MagicMock()
-    event.fqid = "a/1"
-    event.fields = ["f1", "f2"]
-    position = MagicMock()
-    weight = MagicMock()
-
-    sql_backend.insert_delete_fields_event(event, position, weight)
-
-    ae.assert_called_with(event.fqid)
-    ide.assert_called_with(
-        event,
-        [position, event.fqid, EVENT_TYPES.DELETE_FIELDS, event.fields, weight],
-        position,
-    )
-    json.assert_called_once()
-    um.assert_called_once()
-
-
-def test_insert_delete_event(sql_backend, connection):
-    sql_backend.assert_exists = ae = MagicMock()
-    sql_backend.json = json = MagicMock(side_effect=lambda x: x)
-    sql_backend.insert_db_event = ide = MagicMock()
-    sql_backend.delete_model = dm = MagicMock()
-    event = MagicMock()
-    event.fqid = "a/1"
-    position = MagicMock()
-    weight = MagicMock()
-
-    sql_backend.insert_delete_event(event, position, weight)
-
-    ae.assert_called_with(event.fqid)
-    ide.assert_called_with(
-        event, [position, event.fqid, EVENT_TYPES.DELETE, None, weight], position
-    )
-    json.assert_called_once()
-    dm.assert_called_with(event.fqid, position)
-
-
-def test_assert_exists(sql_backend):
-    sql_backend.exists_query = MagicMock(return_value=False)
-    fqid = "a/1"
-
-    with pytest.raises(ModelDoesNotExist) as e:
-        sql_backend.assert_exists(fqid)
-    assert e.value.fqid == fqid
-
-
-def test_insert_restore_event_raises_model_not_deleted(sql_backend, connection):
-    sql_backend.exists_query = MagicMock(return_value=False)
-    event = MagicMock()
-    event.fqid = "a/1"
-
-    with pytest.raises(ModelNotDeleted) as e:
-        sql_backend.insert_restore_event(event, MagicMock(), MagicMock())
-    assert e.value.fqid == event.fqid
-
-
-def test_insert_restore_event(sql_backend, connection):
-    sql_backend.exists_query = eq = MagicMock(return_value=True)
-    sql_backend.json = json = MagicMock(side_effect=lambda x: x)
-    sql_backend.insert_db_event = ide = MagicMock()
-    sql_backend.restore_model = rm = MagicMock()
-    event = MagicMock()
-    event.fqid = "a/1"
-    position = MagicMock()
-    weight = MagicMock()
-
-    sql_backend.insert_restore_event(event, position, weight)
-
-    eq.assert_called_once()
-    ide.assert_called_with(
-        event, [position, event.fqid, EVENT_TYPES.RESTORE, None, weight], position
-    )
-    json.assert_called_once()
-    rm.assert_called_with(event.fqid, position)
+        assert ex.call_args.args[1] == [
+            (event_ids[0], collectionfield_ids[0]),
+            (event_ids[0], collectionfield_ids[1]),
+            (event_ids[1], collectionfield_ids[1]),
+        ]
 
 
 class TestReserveNextIds:

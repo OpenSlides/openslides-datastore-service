@@ -1,5 +1,14 @@
 from dataclasses import dataclass
-from typing import Any, ContextManager, Dict, List, Optional, Protocol, TypedDict
+from typing import (
+    Any,
+    ContextManager,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    TypedDict,
+)
 
 from datastore.shared.di import service_interface
 from datastore.shared.typing import JSON, Collection, Field, Fqid, Id, Model, Position
@@ -59,7 +68,7 @@ class ReadDatabase(Protocol):
 
     def get_many(
         self,
-        fqids: List[Fqid],
+        fqids: Iterable[Fqid],
         mapped_fields_per_fqid: Dict[Fqid, List[Field]] = {},
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Fqid, Model]:

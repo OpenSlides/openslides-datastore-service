@@ -1,7 +1,7 @@
 from .apply_list_updates import ListUpdatesDict, apply_fields  # noqa
 from .connection_handler import ConnectionHandler, DatabaseError  # noqa
 from .pg_connection_handler import retry_on_db_failure  # noqa
-from .sql_event_types import EVENT_TYPES  # noqa
+from .sql_event_types import EVENT_TYPE  # noqa
 from .sql_query_helper import SqlQueryHelper
 
 

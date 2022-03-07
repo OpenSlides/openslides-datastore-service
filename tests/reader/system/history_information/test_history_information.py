@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 
 from datastore.reader.flask_frontend.routes import Route
-from datastore.shared.postgresql_backend import EVENT_TYPES
+from datastore.shared.postgresql_backend import EVENT_TYPE
 from tests.util import assert_success_response
 
 
@@ -19,7 +19,7 @@ def setup(db_connection, db_cur):
         position = db_cur.fetchone()[0]
         db_cur.execute(
             "insert into events (position, fqid, type, data, weight) values (%s, %s, %s, %s, 1)",
-            [position, fqid, EVENT_TYPES.CREATE, json.dumps({})],
+            [position, fqid, EVENT_TYPE.CREATE, json.dumps({})],
         )
         db_connection.commit()
 

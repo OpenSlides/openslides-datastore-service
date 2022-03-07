@@ -2,8 +2,14 @@ from typing import Dict, List, Protocol
 
 from datastore.shared.di import service_as_singleton, service_interface
 from datastore.shared.services import ReadDatabase
-from datastore.shared.typing import JSON
-from datastore.shared.util import BadCodingError, DeletedModelsBehaviour
+from datastore.shared.typing import JSON, Fqid, Model
+from datastore.shared.util import (
+    META_DELETED,
+    BadCodingError,
+    ModelDoesNotExist,
+    ModelExists,
+    ModelNotDeleted,
+)
 from datastore.writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
@@ -25,7 +31,9 @@ from .db_events import (
 
 @service_interface
 class EventTranslator(Protocol):
-    def translate(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
+    def translate(
+        self, request_event: BaseRequestEvent, models: Dict[Fqid, Model]
+    ) -> List[BaseDbEvent]:
         """
         Translates request events into db events
         """
@@ -36,30 +44,45 @@ class EventTranslatorService:
 
     read_database: ReadDatabase
 
-    def translate(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
+    def translate(
+        self, request_event: BaseRequestEvent, models: Dict[Fqid, Model]
+    ) -> List[BaseDbEvent]:
         if isinstance(request_event, RequestCreateEvent):
+            self.assert_model_does_not_exist(request_event.fqid, models)
             return [DbCreateEvent(request_event.fqid, request_event.fields)]
 
         if isinstance(request_event, RequestUpdateEvent):
-            return self.create_update_events(request_event)
+            self.assert_model_exists(request_event.fqid, models)
+            return self.create_update_events(request_event, models)
 
         if isinstance(request_event, RequestDeleteEvent):
-            model_fields = list(self.read_database.get(request_event.fqid).keys())
+            self.assert_model_exists(request_event.fqid, models)
+            model_fields = list(models[request_event.fqid].keys())
             return [DbDeleteEvent(request_event.fqid, model_fields)]
 
         if isinstance(request_event, RequestRestoreEvent):
-            model_fields = list(
-                self.read_database.get(
-                    request_event.fqid,
-                    get_deleted_models=DeletedModelsBehaviour.ONLY_DELETED,
-                ).keys()
-            )
+            self.assert_model_is_deleted(request_event.fqid, models)
+            model_fields = list(models[request_event.fqid].keys())
             return [DbRestoreEvent(request_event.fqid, model_fields)]
 
         raise BadCodingError()
 
+    def assert_model_does_not_exist(
+        self, fqid: Fqid, models: Dict[Fqid, Model]
+    ) -> None:
+        if fqid in models:
+            raise ModelExists(fqid)
+
+    def assert_model_exists(self, fqid: Fqid, models: Dict[Fqid, Model]) -> None:
+        if fqid not in models or models[fqid][META_DELETED] is True:
+            raise ModelDoesNotExist(fqid)
+
+    def assert_model_is_deleted(self, fqid: Fqid, models: Dict[Fqid, Model]) -> None:
+        if fqid not in models or models[fqid][META_DELETED] is False:
+            raise ModelNotDeleted(fqid)
+
     def create_update_events(
-        self, request_update_event: RequestUpdateEvent
+        self, request_update_event: RequestUpdateEvent, models: Dict[Fqid, Model]
     ) -> List[BaseDbEvent]:
         db_events: List[BaseDbEvent] = []
         updated_fields: Dict[str, JSON] = {
@@ -83,9 +106,13 @@ class EventTranslatorService:
         add = request_update_event.list_fields.get("add", {})
         remove = request_update_event.list_fields.get("remove", {})
         if add or remove:
-            model = self.read_database.get(request_update_event.fqid)
             db_events.append(
-                DbListUpdateEvent(request_update_event.fqid, add, remove, model)
+                DbListUpdateEvent(
+                    request_update_event.fqid,
+                    add,
+                    remove,
+                    models[request_update_event.fqid],
+                )
             )
 
         return db_events

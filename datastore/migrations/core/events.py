@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List
 
-from datastore.shared.postgresql_backend import EVENT_TYPES, ListUpdatesDict
+from datastore.shared.postgresql_backend import EVENT_TYPE, ListUpdatesDict
 from datastore.shared.typing import Field, Fqid, Model
 from datastore.shared.util import (
     InvalidKeyFormat,
@@ -56,15 +56,15 @@ class _ModelEvent(BaseEvent):
 
 
 class CreateEvent(_ModelEvent):
-    type = EVENT_TYPES.CREATE
+    type = EVENT_TYPE.CREATE
 
 
 class UpdateEvent(_ModelEvent):
-    type = EVENT_TYPES.UPDATE
+    type = EVENT_TYPE.UPDATE
 
 
 class DeleteFieldsEvent(BaseEvent):
-    type = EVENT_TYPES.DELETE_FIELDS
+    type = EVENT_TYPE.DELETE_FIELDS
 
     def __init__(self, fqid: Fqid, data: List[Field]) -> None:
         super().__init__(fqid, data)
@@ -77,7 +77,7 @@ class DeleteFieldsEvent(BaseEvent):
 
 
 class ListUpdateEvent(BaseEvent):
-    type = EVENT_TYPES.LIST_FIELDS
+    type = EVENT_TYPE.LIST_FIELDS
 
     def __init__(self, fqid: Fqid, data: Dict[str, ListUpdatesDict]) -> None:
         self.add = data.pop("add", {})
@@ -98,26 +98,26 @@ class ListUpdateEvent(BaseEvent):
 
 
 class DeleteEvent(BaseEvent):
-    type = EVENT_TYPES.DELETE
+    type = EVENT_TYPE.DELETE
 
     def __init__(self, fqid: Fqid, data: Any = None) -> None:
         super().__init__(fqid, None)
 
 
 class RestoreEvent(BaseEvent):
-    type = EVENT_TYPES.RESTORE
+    type = EVENT_TYPE.RESTORE
 
     def __init__(self, fqid: Fqid, data: Any = None) -> None:
         super().__init__(fqid, None)
 
 
 EVENT_TYPE_TRANSLATION = {
-    EVENT_TYPES.CREATE: CreateEvent,
-    EVENT_TYPES.UPDATE: UpdateEvent,
-    EVENT_TYPES.DELETE_FIELDS: DeleteFieldsEvent,
-    EVENT_TYPES.LIST_FIELDS: ListUpdateEvent,
-    EVENT_TYPES.DELETE: DeleteEvent,
-    EVENT_TYPES.RESTORE: RestoreEvent,
+    EVENT_TYPE.CREATE: CreateEvent,
+    EVENT_TYPE.UPDATE: UpdateEvent,
+    EVENT_TYPE.DELETE_FIELDS: DeleteFieldsEvent,
+    EVENT_TYPE.LIST_FIELDS: ListUpdateEvent,
+    EVENT_TYPE.DELETE: DeleteEvent,
+    EVENT_TYPE.RESTORE: RestoreEvent,
 }
 
 

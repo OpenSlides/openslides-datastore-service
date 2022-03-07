@@ -4,7 +4,7 @@ import pytest
 
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.writer.flask_frontend.routes import WRITE_URL
-from tests.util import assert_error_response, assert_response_code
+from tests.util import TestPerformance, assert_error_response, assert_response_code
 from tests.writer.system.util import (
     assert_model,
     assert_modified_fields,
@@ -157,3 +157,34 @@ def test_delete_update(json_client, data, redis_connection, reset_redis_data):
     )
     response = json_client.post(WRITE_URL, data)
     assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
+
+
+@pytest.mark.skip(reason="Time-intensive performance test")
+def test_update_performance(json_client, data, redis_connection, reset_redis_data):
+    MODEL_COUNT = 1000
+    data["events"] = [
+        {"type": "create", "fqid": f"a/{i}", "fields": {"f1": 1, "f2": 2, "f3": 3}}
+        for i in range(1, MODEL_COUNT + 1)
+    ]
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    reset_redis_data()
+
+    data["events"] = [
+        {
+            "type": "update",
+            "fqid": f"a/{i}",
+            "fields": {"f1": None, "f2": None, "f3": None, "g1": 1, "g2": 2, "g3": 3},
+        }
+        for i in range(1, MODEL_COUNT + 1)
+    ]
+
+    with TestPerformance() as performance:
+        response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+
+    print(f"{performance['total_time']} seconds")
+    print(f"requests: {performance['requests_count']}")
+    print(
+        f"read time: {performance['read_time']}, write time: {performance['write_time']}"
+    )
