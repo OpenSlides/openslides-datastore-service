@@ -348,11 +348,10 @@ def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
 def test_get_current_migration_index_cached(
     read_database: ReadDatabase, connection: ConnectionHandler
 ):
-    connection.query_single_value = qsv = MagicMock(return_value=None)
+    connection.query = query = MagicMock(return_value=[[None, None]])
     assert read_database.get_current_migration_index() == -1
-    qsv.assert_called_once()
+    query.assert_called_once()
 
-    # second try; now it should be cached
-    connection.query_single_value = qsv = MagicMock(return_value=None)
+    # second try; now it should be cached (so still called only once)
     assert read_database.get_current_migration_index() == -1
-    qsv.assert_not_called()
+    query.assert_called_once()
