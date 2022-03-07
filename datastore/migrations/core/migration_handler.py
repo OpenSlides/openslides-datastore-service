@@ -96,7 +96,7 @@ class MigrationHandlerImplementation:
             if self.check_datastore_empty():
                 return True
 
-            self.assert_not_too_high_migration_index()
+            self.assert_valid_migration_index()
 
             if self.check_for_latest():
                 return True
@@ -108,21 +108,24 @@ class MigrationHandlerImplementation:
             return True
         return False
 
-    def assert_not_too_high_migration_index(self) -> None:
-        # get max migration index from positions and migration_positions
-        _max_1 = (
-            self.connection.query_single_value(
-                "select max(migration_index) from positions", []
-            )
-            or 1
+    def assert_valid_migration_index(self) -> None:
+        # get min/max migration index from positions and migration_positions
+        [(min_migration_index, _max_1)] = self.connection.query(
+            "select min(migration_index), max(migration_index) from positions", []
         )
+        if min_migration_index is not None and min_migration_index != _max_1:
+            raise MismatchingMigrationIndicesException(
+                "The datastore has inconsistent migration indeces: "
+                + f"Minimum is {min_migration_index}, maximum is {_max_1}."
+            )
+
         _max_2 = (
             self.connection.query_single_value(
                 "select max(migration_index) from migration_positions", []
             )
             or 1
         )
-        datastore_max_migration_index = max(_max_1, _max_2)
+        datastore_max_migration_index = max(_max_1 or 1, _max_2 or 1)
 
         if datastore_max_migration_index > self.target_migration_index:
             raise MismatchingMigrationIndicesException(
@@ -194,7 +197,7 @@ class MigrationHandlerImplementation:
             if self.check_datastore_empty():
                 return
 
-            self.assert_not_too_high_migration_index()
+            self.assert_valid_migration_index()
 
         self._delete_migration_keyframes()
         self._clean_migration_data()
