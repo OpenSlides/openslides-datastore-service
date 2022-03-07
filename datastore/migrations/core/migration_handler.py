@@ -1,4 +1,5 @@
-from typing import Protocol, Type
+from enum import Enum
+from typing import Any, Dict, Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
@@ -10,6 +11,12 @@ from .exceptions import MigrationSetupException, MismatchingMigrationIndicesExce
 from .migrater import Migrater
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
+
+
+class MigrationState(str, Enum):
+    NO_MIGRATION_REQUIRED = "no_migrations_required"
+    FINALIZATION_REQUIRED = "finalization_required"
+    MIGRATION_REQUIRED = "migrations_required"
 
 
 @service_interface
@@ -42,9 +49,14 @@ class MigrationHandler(Protocol):
         Clears the collectionfield tables.
         """
 
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Returns a dict with some useful stats about the migration state.
+        """
+
     def print_stats(self) -> None:
         """
-        Prints some useful stats about the migration state.
+        Prints the dict returned by `get_stats` in a readable way.
         """
 
 
@@ -250,7 +262,7 @@ class MigrationHandlerImplementation:
             [KEYSEPARATOR] * 3,
         )
 
-    def print_stats(self) -> None:  # pragma: no cover
+    def get_stats(self) -> Dict[str, Any]:  # pragma: no cover
         def count(table):
             return (
                 self.connection.query_single_value(f"select count(*) from {table}", [])
@@ -260,32 +272,7 @@ class MigrationHandlerImplementation:
         with self.connection.get_connection_context():
             count_positions = count("positions")
             count_events = count("events")
-            min_mi_positions = (
-                self.connection.query_single_value(
-                    "select min(migration_index) from positions", []
-                )
-                or 1
-            )
-            if min_mi_positions == -1:
-                self.logger.info(
-                    "Minimum migration index of -1 found. Setting the Datastore to "
-                    + f"{self.target_migration_index} with the next migrate or finalize."
-                )
-                return
-
-            max_mi_positions = (
-                self.connection.query_single_value(
-                    "select max(migration_index) from positions", []
-                )
-                or 1
-            )
-
-            if min_mi_positions != max_mi_positions:
-                action = "Error! The position table always must have the same migration index!"
-            elif min_mi_positions == self.target_migration_index:
-                action = "The Datastore is up-to-date."
-            else:
-                action = "Migration/Finalization is needed"
+            current_migration_index = self.read_database.get_current_migration_index()
 
             count_migration_positions = count("migration_positions")
             count_migration_positions_full = (
@@ -304,32 +291,49 @@ class MigrationHandlerImplementation:
             )
             if (
                 max_mi_migration_positions
-                and min_mi_positions != max_mi_migration_positions
-            ) or min_mi_positions != self.target_migration_index:
+                and current_migration_index != max_mi_migration_positions
+            ) or current_migration_index != self.target_migration_index:
                 if (
                     count_positions == count_migration_positions
                     and max_mi_migration_positions == self.target_migration_index
                 ):
-                    migration_action = "Finalization needed."
-                    positions_to_migrate = 0
+                    status = MigrationState.FINALIZATION_REQUIRED
                 else:
-                    migration_action = "Migration and finalization needed."
-                    positions_to_migrate = (
-                        count_positions - count_migration_positions_full
-                    )
+                    status = MigrationState.MIGRATION_REQUIRED
             else:
-                migration_action = "No action needed."
-                positions_to_migrate = 0
+                status = MigrationState.NO_MIGRATION_REQUIRED
 
+        return {
+            "status": status,
+            "current_migration_index": current_migration_index,
+            "target_migration_index": self.target_migration_index,
+            "positions": count_positions,
+            "events": count_events,
+            "partially_migrated_positions": count_migration_positions_partial,
+            "fully_migrated_positions": count_migration_positions_full,
+        }
+
+    def print_stats(self) -> None:  # pragma: no cover
+        stats = self.get_stats()
+        if stats["current_migration_index"] == stats["target_migration_index"]:
+            action = "The datastore is up-to-date"
+        else:
+            action = "Migration/Finalization is needed"
+        if stats["status"] == MigrationState.NO_MIGRATION_REQUIRED:
+            migration_action = "No action needed"
+        elif stats["status"] == MigrationState.MIGRATION_REQUIRED:
+            migration_action = "Migration and finalization needed"
+        elif stats["status"] == MigrationState.FINALIZATION_REQUIRED:
+            migration_action = "Finalization needed"
         self.logger.info(
             f"""\
 - Registered migrations for migration index {self.target_migration_index}
-- Datastore has {count_positions} positions with {count_events} events
-- The positions have a minimal migration index {min_mi_positions} and a maximal
-  migration index {max_mi_positions}
+- Datastore has {stats['positions']} positions with {stats['events']} events
+- The positions have a migration index of {stats['current_migration_index']}
   -> {action}
-- There are {count_migration_positions} migration positions: {count_migration_positions_full} fully migrated,
-  {count_migration_positions_partial} partial migrated
+- There are {stats['fully_migrated_positions']} fully migrated positions and
+  {stats['partially_migrated_positions']} partially migrated ones
   -> {migration_action}
-- {positions_to_migrate} positions have to be migrated (including partially migrated ones)"""
+- {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
+  partially migrated ones)"""
         )
