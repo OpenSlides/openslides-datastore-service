@@ -3,7 +3,7 @@ from typing import Protocol, Type
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.util import KEYSEPARATOR
+from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 
 from .base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
@@ -84,7 +84,7 @@ class MigrationHandlerImplementation:
         if self.run_checks():
             return
         if self.run_migrations():
-            self.logger.info("Done. Finalizing is still be needed.")
+            self.logger.info("Done. Finalizing is still needed.")
 
     def run_migrations(self) -> bool:
         return self.migrater.migrate(
@@ -96,7 +96,7 @@ class MigrationHandlerImplementation:
             if self.check_datastore_empty():
                 return True
 
-            self.assert_not_too_high_migration_index()
+            self.assert_valid_migration_index()
 
             if self.check_for_latest():
                 return True
@@ -108,21 +108,21 @@ class MigrationHandlerImplementation:
             return True
         return False
 
-    def assert_not_too_high_migration_index(self) -> None:
-        # get max migration index from positions and migration_positions
-        _max_1 = (
-            self.connection.query_single_value(
-                "select max(migration_index) from positions", []
-            )
-            or 1
-        )
-        _max_2 = (
+    def assert_valid_migration_index(self) -> None:
+        # assert untouched db and assert consistent migration index
+        self.read_database.reset()
+        try:
+            max_db_mi = self.read_database.get_current_migration_index()
+        except InvalidDatastoreState as e:
+            raise MismatchingMigrationIndicesException(str(e))
+
+        max_migrations_mi = (
             self.connection.query_single_value(
                 "select max(migration_index) from migration_positions", []
             )
             or 1
         )
-        datastore_max_migration_index = max(_max_1, _max_2)
+        datastore_max_migration_index = max(max_db_mi, max_migrations_mi)
 
         if datastore_max_migration_index > self.target_migration_index:
             raise MismatchingMigrationIndicesException(
@@ -139,10 +139,7 @@ class MigrationHandlerImplementation:
             or 1
         )
         if min_migration_index == -1:
-            self.connection.execute(
-                "update positions set migration_index=%s",
-                [self.target_migration_index],
-            )
+            self._update_migration_index()
             self.connection.execute("delete from migration_events", [])
             self.connection.execute("delete from migration_positions", [])
             self.connection.execute("delete from migration_keyframes", [])
@@ -181,10 +178,7 @@ class MigrationHandlerImplementation:
             f"Set the new migration index to {self.target_migration_index}..."
         )
         with self.connection.get_connection_context():
-            self.connection.execute(
-                "update positions set migration_index=%s",
-                [self.target_migration_index],
-            )
+            self._update_migration_index()
 
         self._clean_migration_data()
 
@@ -194,10 +188,18 @@ class MigrationHandlerImplementation:
             if self.check_datastore_empty():
                 return
 
-            self.assert_not_too_high_migration_index()
+            self.assert_valid_migration_index()
 
         self._delete_migration_keyframes()
         self._clean_migration_data()
+
+    def _update_migration_index(self) -> None:
+        self.connection.execute(
+            "update positions set migration_index=%s",
+            [self.target_migration_index],
+        )
+        # update migration index cache
+        self.read_database.reset()
 
     def _delete_migration_keyframes(self) -> None:
         self.logger.info("Deleting all migration keyframes...")

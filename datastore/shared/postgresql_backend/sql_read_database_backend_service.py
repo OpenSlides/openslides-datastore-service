@@ -344,23 +344,19 @@ class SqlReadDatabaseBackendService:
 
     def get_current_migration_index(self) -> int:
         if self.current_migration_index == MIGRATION_INDEX_NOT_INITIALIZED:
-            max_migration_index = self.connection.query_single_value(
-                "select max(migration_index) from positions", []
+            [(min_migration_index, max_migration_index)] = self.connection.query(
+                "select min(migration_index), max(migration_index) from positions", []
             )
-            if max_migration_index is not None:  # at least one position exists
-                # Sanity check: There must not exist a position with a different migration index
-                if self.connection.query_single_value(
-                    "select exists(select position from positions where migration_index!=%s)",
-                    [max_migration_index],
-                ):
-                    raise InvalidDatastoreState(
-                        "There exist positions with a migration index "
-                        + f"different to {max_migration_index}"
-                    )
-            else:
-                max_migration_index = -1
-            self.current_migration_index = max_migration_index
+            if min_migration_index != max_migration_index:
+                raise InvalidDatastoreState(
+                    "The datastore has inconsistent migration indices: "
+                    + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
+                )
+            self.current_migration_index = max_migration_index or -1
         return self.current_migration_index
 
     def json(self, data):
         return self.connection.to_json(data)
+
+    def reset(self) -> None:
+        self.current_migration_index = MIGRATION_INDEX_NOT_INITIALIZED

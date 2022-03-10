@@ -146,6 +146,11 @@ class MigraterImplementation:
             last_position: Optional[RawPosition] = (
                 None if len(_last_position) == 0 else RawPosition(**_last_position[0])
             )
+            last_migration_index = (
+                None
+                if last_position is None
+                else self.get_migration_index(last_position)
+            )
 
         for _position in positions:
             position = RawPosition(**_position)
@@ -154,37 +159,30 @@ class MigraterImplementation:
                 last_position_value = (
                     0 if last_position is None else last_position.position
                 )
+                migration_index = self.get_migration_index(position)
 
                 # sanity check: Do not have raising migration indices
                 if (
                     last_position is not None
-                    and position.migration_index > last_position.migration_index
+                    and last_migration_index is not None
+                    and migration_index > last_migration_index
                 ):
                     raise MismatchingMigrationIndicesException(
                         f"Position {position.position} has a higher migration index as it's predecessor "
                         + f"(position {last_position.position})"
                     )
 
-                self.migrate_position(position, last_position_value)
+                self.migrate_position(position, migration_index, last_position_value)
                 last_position = position
+                last_migration_index = migration_index
 
     def migrate_position(
-        self, position: RawPosition, last_position_value: Position
+        self, position: RawPosition, migration_index: int, last_position_value: int
     ) -> None:
-        migration_position = self.connection.query(
-            "select position, migration_index from migration_positions where position=%s",
-            [position.position],
-        )
-        if migration_position:
-            migration_index = migration_position[0]["migration_index"]
-            events_from_migration_table = True
-        else:
-            migration_index = position.migration_index
-            events_from_migration_table = False
-
         self.logger.info(
             f"Position {position.position} from MI {migration_index} to MI {self.target_migration_index} ..."
         )
+        events_from_migration_table = migration_index != position.migration_index
         for source_migration_index in range(
             migration_index, self.target_migration_index
         ):
@@ -233,6 +231,15 @@ class MigraterImplementation:
             """insert into migration_positions (position, migration_index) values (%s, %s)
             on conflict(position) do update set migration_index=excluded.migration_index""",
             [position.position, self.target_migration_index],
+        )
+
+    def get_migration_index(self, position: RawPosition) -> int:
+        return (
+            self.connection.query_single_value(
+                "select migration_index from migration_positions where position=%s",
+                [position.position],
+            )
+            or position.migration_index
         )
 
     def get_accessors(

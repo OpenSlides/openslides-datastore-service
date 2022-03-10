@@ -48,7 +48,7 @@ def test_finalizing_needed(
 
     i.assert_called()
     assert "Position 1 from MI 1 to MI 2" in i.call_args_list[1].args[0]
-    assert "Done. Finalizing is still be needed." in i.call_args.args[0]
+    assert "Done. Finalizing is still needed." in i.call_args.args[0]
 
     i.reset_mock()
     migration_handler.migrate()
@@ -58,7 +58,7 @@ def test_finalizing_needed(
         "No migrations to apply, but finalizing is still needed."
         in i.call_args_list[1].args[0]
     )
-    assert "Done. Finalizing is still be needed." in i.call_args.args[0]
+    assert "Done. Finalizing is still needed." in i.call_args.args[0]
 
 
 def test_finalizing_not_needed(
@@ -109,17 +109,16 @@ def test_raising_migration_index(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
     set_migration_index_to_1()
+    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.migrate()
 
     with connection_handler.get_connection_context():
         connection_handler.execute(
-            "update positions set migration_index=1 where position=1",
-            [],
-        )
-        connection_handler.execute(
-            "update positions set migration_index=2 where position=2",
+            "update migration_positions set migration_index=1 where position=1",
             [],
         )
 
+    migration_handler.migrations_by_target_migration_index = {}
     migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
 
     with pytest.raises(MismatchingMigrationIndicesException) as e:

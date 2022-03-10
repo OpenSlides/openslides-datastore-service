@@ -8,7 +8,7 @@ from ..util import get_noop_migration
 
 
 def test_migration_index_too_high_migrate(
-    migration_handler, write, set_migration_index_to_1, query_single_value
+    migration_handler, write, set_migration_index_to_1
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
@@ -28,7 +28,7 @@ def test_migration_index_too_high_migrate(
 
 
 def test_migration_index_too_high_finalize(
-    migration_handler, write, set_migration_index_to_1, query_single_value
+    migration_handler, write, set_migration_index_to_1
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
@@ -48,7 +48,7 @@ def test_migration_index_too_high_finalize(
 
 
 def test_migration_index_too_high_reset(
-    migration_handler, write, set_migration_index_to_1, query_single_value
+    migration_handler, write, set_migration_index_to_1
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
@@ -65,3 +65,23 @@ def test_migration_index_too_high_reset(
         migration_handler.reset()
 
     dmk.assert_not_called()
+
+
+def test_migration_index_inconsistent(migration_handler, write, connection_handler):
+    write({"type": "create", "fqid": "a/1", "fields": {}})
+    write({"type": "create", "fqid": "a/2", "fields": {}})
+    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.finalize()
+    with connection_handler.get_connection_context():
+        connection_handler.execute(
+            "update positions set migration_index=1 where position=2", []
+        )
+
+    migration_handler.run_migrations = rm = MagicMock()
+    migration_handler.migrations_by_target_migration_index = {}
+    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+
+    with pytest.raises(MismatchingMigrationIndicesException):
+        migration_handler.migrate()
+
+    rm.assert_not_called()
