@@ -63,7 +63,7 @@ def make_span(name, attributes=None):
     if not is_otel_enabled():
         return nullcontext()
 
-    tracer = trace.get_tracer(__name__)
+    tracer = trace.get_tracer_provider().get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)
 
     return span

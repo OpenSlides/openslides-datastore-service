@@ -56,11 +56,11 @@ class ReaderService:
 
     @retry_on_db_failure
     def get(self, request: GetRequest) -> Model:
-        with make_span("get request") as span:
+        with make_span("get request"):
             if request.position:
                 # if a position is given, first test if the model is in the correct
                 # state to prevent the unnecessary building of the model if it's not
-                with make_span("check deleted status for position-based request") as span_test:
+                with make_span("check deleted status for position-based request"):
                     fqids = self.filter_fqids_by_deleted_status(
                         [request.fqid], request.position, request.get_deleted_models
                     )
@@ -69,7 +69,7 @@ class ReaderService:
                             request.fqid, request.get_deleted_models
                         )
 
-                    with make_span("build model for position") as span_buildmodel:
+                    with make_span("build model for position"):
                         model = self.database.build_model_ignore_deleted(
                             request.fqid, request.position
                         )
@@ -84,8 +84,8 @@ class ReaderService:
 
     @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> Dict[Collection, Dict[Id, Model]]:
-        with make_span("get_many request") as span:
-            with make_span("gather mapped fields per fqid") as span:
+        with make_span("get_many request"):
+            with make_span("gather mapped fields per fqid"):
                 mapped_fields_per_fqid: Dict[str, List[str]] = {}
                 if isinstance(request.requests[0], GetManyRequestPart):
                     requests = cast(List[GetManyRequestPart], request.requests)
@@ -136,7 +136,7 @@ class ReaderService:
 
     @retry_on_db_failure
     def get_all(self, request: GetAllRequest) -> Dict[Id, Model]:
-        with make_span("get_all request") as span:
+        with make_span("get_all request"):
             models = self.database.get_all(
                 request.collection, request.mapped_fields, request.get_deleted_models
             )
@@ -150,7 +150,7 @@ class ReaderService:
 
     @retry_on_db_failure
     def filter(self, request: FilterRequest) -> FilterResult:
-        with make_span("filter request") as span:
+        with make_span("filter request"):
             data = self.database.filter(
                 request.collection, request.filter, request.mapped_fields
             )
