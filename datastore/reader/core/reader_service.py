@@ -60,7 +60,7 @@ class ReaderService:
             if request.position:
                 # if a position is given, first test if the model is in the correct
                 # state to prevent the unnecessary building of the model if it's not
-                with make_span("test model") as span_test:
+                with make_span("check deleted status for position-based request") as span_test:
                     fqids = self.filter_fqids_by_deleted_status(
                         [request.fqid], request.position, request.get_deleted_models
                     )
@@ -69,9 +69,10 @@ class ReaderService:
                             request.fqid, request.get_deleted_models
                         )
 
-                    model = self.database.build_model_ignore_deleted(
-                        request.fqid, request.position
-                    )
+                    with make_span("build model for position") as span_buildmodel:
+                        model = self.database.build_model_ignore_deleted(
+                            request.fqid, request.position
+                        )
                 with make_span("apply mapped fields"):
                     model = self.apply_mapped_fields(model, request.mapped_fields)
             else:
@@ -84,26 +85,27 @@ class ReaderService:
     @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> Dict[Collection, Dict[Id, Model]]:
         with make_span("get_many request") as span:
-            mapped_fields_per_fqid: Dict[str, List[str]] = {}
-            if isinstance(request.requests[0], GetManyRequestPart):
-                requests = cast(List[GetManyRequestPart], request.requests)
-                for part in requests:
-                    for id in part.ids:
-                        fqid = fqid_from_collection_and_id(part.collection, str(id))
-                        mapped_fields_per_fqid.setdefault(fqid, []).extend(
-                            part.mapped_fields + request.mapped_fields
+            with make_span("gather mapped fields per fqid") as span:
+                mapped_fields_per_fqid: Dict[str, List[str]] = {}
+                if isinstance(request.requests[0], GetManyRequestPart):
+                    requests = cast(List[GetManyRequestPart], request.requests)
+                    for part in requests:
+                        for id in part.ids:
+                            fqid = fqid_from_collection_and_id(part.collection, str(id))
+                            mapped_fields_per_fqid.setdefault(fqid, []).extend(
+                                part.mapped_fields + request.mapped_fields
+                            )
+                else:
+                    fqfield_requests = cast(List[str], request.requests)
+                    for fqfield in fqfield_requests:
+                        fqid = fqid_from_fqfield(fqfield)
+                        mapped_fields_per_fqid.setdefault(fqid, []).append(
+                            field_from_fqfield(fqfield)
                         )
-            else:
-                fqfield_requests = cast(List[str], request.requests)
-                for fqfield in fqfield_requests:
-                    fqid = fqid_from_fqfield(fqfield)
-                    mapped_fields_per_fqid.setdefault(fqid, []).append(
-                        field_from_fqfield(fqfield)
-                    )
 
             fqids = list(mapped_fields_per_fqid.keys())
 
-            with make_span("call database", { "lol": "kek" }):
+            with make_span("call database"):
                 if request.position:
                     fqids = self.filter_fqids_by_deleted_status(
                         fqids, request.position, request.get_deleted_models
@@ -124,11 +126,12 @@ class ReaderService:
                     collection, id = collection_and_id_from_fqid(fqid)
                     final[collection][id] = model
 
-                # add back empty collections
-                for fqid in mapped_fields_per_fqid.keys():
-                    collection = collection_from_fqid(fqid)
-                    if not final[collection]:
-                        final[collection] = {}
+                with make_span("add back empty collections"):
+                    # add back empty collections
+                    for fqid in mapped_fields_per_fqid.keys():
+                        collection = collection_from_fqid(fqid)
+                        if not final[collection]:
+                            final[collection] = {}
         return final
 
     @retry_on_db_failure
@@ -147,10 +150,11 @@ class ReaderService:
 
     @retry_on_db_failure
     def filter(self, request: FilterRequest) -> FilterResult:
-        data = self.database.filter(
-            request.collection, request.filter, request.mapped_fields
-        )
-        position = self.database.get_max_position()
+        with make_span("filter request") as span:
+            data = self.database.filter(
+                request.collection, request.filter, request.mapped_fields
+            )
+            position = self.database.get_max_position()
         return {
             "data": data,
             "position": position,

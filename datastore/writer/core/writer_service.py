@@ -43,11 +43,12 @@ class WriterService:
                         )
                         self.position_to_modified_models[position] = modified_models
 
-                # Only propagate updates to redis after the transaction has finished
-                self.messaging.handle_events(
-                    self.position_to_modified_models,
-                    log_all_modified_fields=log_all_modified_fields,
-                )
+                with make_span("handle events"):
+                    # Only propagate updates to redis after the transaction has finished
+                    self.messaging.handle_events(
+                        self.position_to_modified_models,
+                        log_all_modified_fields=log_all_modified_fields,
+                    )
 
             self.print_stats()
             self.print_summary()
