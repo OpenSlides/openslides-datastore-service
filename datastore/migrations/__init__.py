@@ -14,7 +14,7 @@ from .core.exceptions import (  # noqa
     MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
-from .core.migration_handler import MigrationHandler  # noqa
+from .core.migration_handler import MigrationHandler, MigrationState  # noqa
 from .core.migration_keyframes import (  # noqa
     BaseMigrationKeyframeException,
     MigrationKeyframeAccessor,

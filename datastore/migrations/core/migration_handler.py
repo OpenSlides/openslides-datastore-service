@@ -14,9 +14,9 @@ from .migration_logger import MigrationLogger
 
 
 class MigrationState(str, Enum):
-    NO_MIGRATION_REQUIRED = "no_migrations_required"
+    NO_MIGRATION_REQUIRED = "no_migration_required"
     FINALIZATION_REQUIRED = "finalization_required"
-    MIGRATION_REQUIRED = "migrations_required"
+    MIGRATION_REQUIRED = "migration_required"
 
 
 @service_interface
