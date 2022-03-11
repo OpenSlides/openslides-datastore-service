@@ -23,6 +23,9 @@ class ConnectionHandler(Protocol):
     def execute(self, query, arguments, sql_parameters=[]):
         """Executes the query."""
 
+    def execute_values(self, query, arguments, sql_parameters=[]):
+        """Executes the query with many values"""
+
     def query(self, query, arguments, sql_parameters=[]):
         """
         Executes the query. returns all results in a matrix-fashion:

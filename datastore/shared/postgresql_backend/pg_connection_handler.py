@@ -5,7 +5,7 @@ from time import sleep
 
 import psycopg2
 from psycopg2 import sql
-from psycopg2.extras import DictCursor, Json
+from psycopg2.extras import DictCursor, Json, execute_values
 from psycopg2.pool import ThreadedConnectionPool
 
 from datastore.shared.di import injector, service_as_singleton
@@ -166,6 +166,14 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             cursor.execute(prepared_query, arguments)
+
+    def execute_values(self, query, arguments, sql_parameters=[]):
+        prepared_query = self.prepare_query(query, sql_parameters)
+        with self.get_current_connection().cursor() as cursor:
+            result = execute_values(
+                cursor, prepared_query, arguments, page_size=1_000, fetch=True
+            )
+            return result
 
     def query(self, query, arguments, sql_parameters=[]):
         prepared_query = self.prepare_query(query, sql_parameters)

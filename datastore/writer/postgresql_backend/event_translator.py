@@ -1,4 +1,4 @@
-from typing import Dict, List, Protocol
+from typing import Dict, List, Protocol, Tuple, Any
 
 from datastore.shared.di import service_as_singleton, service_interface
 from datastore.shared.services import ReadDatabase
@@ -25,7 +25,9 @@ from .db_events import (
 
 @service_interface
 class EventTranslator(Protocol):
-    def translate(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
+    def translate(
+        self, request_event: BaseRequestEvent, cache: Dict[str, Tuple[Any, Any]]
+    ) -> List[BaseDbEvent]:
         """
         Translates request events into db events
         """
@@ -36,12 +38,14 @@ class EventTranslatorService:
 
     read_database: ReadDatabase
 
-    def translate(self, request_event: BaseRequestEvent) -> List[BaseDbEvent]:
+    def translate(
+        self, request_event: BaseRequestEvent, cache: Dict[str, Tuple[Any, Any]]
+    ) -> List[BaseDbEvent]:
         if isinstance(request_event, RequestCreateEvent):
             return [DbCreateEvent(request_event.fqid, request_event.fields)]
 
         if isinstance(request_event, RequestUpdateEvent):
-            return self.create_update_events(request_event)
+            return self.create_update_events(request_event, cache)
 
         if isinstance(request_event, RequestDeleteEvent):
             model_fields = list(self.read_database.get(request_event.fqid).keys())
@@ -59,7 +63,9 @@ class EventTranslatorService:
         raise BadCodingError()
 
     def create_update_events(
-        self, request_update_event: RequestUpdateEvent
+        self,
+        request_update_event: RequestUpdateEvent,
+        cache: Dict[str, Tuple[Any, Any]],
     ) -> List[BaseDbEvent]:
         db_events: List[BaseDbEvent] = []
         updated_fields: Dict[str, JSON] = {
@@ -83,7 +89,12 @@ class EventTranslatorService:
         add = request_update_event.list_fields.get("add", {})
         remove = request_update_event.list_fields.get("remove", {})
         if add or remove:
-            model = self.read_database.get(request_update_event.fqid)
+            model = cache.get(request_update_event.fqid)
+            if model is None:
+                model = self.read_database.get(request_update_event.fqid)
+            else:
+                model = model[0]
+
             db_events.append(
                 DbListUpdateEvent(request_update_event.fqid, add, remove, model)
             )
