@@ -55,7 +55,7 @@ class TestPerformance:
             **{
                 method_name: self._performance_decorator(orig_methods[method_name])
                 for method_name in self.query_methods
-            }
+            },
         )
         self.patcher.start()
         self.performance_info = {

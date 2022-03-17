@@ -225,6 +225,10 @@ class TestApplyEventToModels:
             META_DELETED: False,
         }
 
+    def test_invalid_event(self, sql_backend):
+        with pytest.raises(BadCodingError):
+            sql_backend.apply_event_to_models(MagicMock(), {}, MagicMock())
+
 
 def test_write_model_updates(sql_backend, connection):
     connection.execute = execute = MagicMock()
