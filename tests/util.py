@@ -1,8 +1,12 @@
+import os
 from time import time
 from unittest.mock import patch
 
+import pytest
+
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
+from datastore.shared.services.environment_service import is_truthy
 
 
 def assert_response_code(response, code):
@@ -26,6 +30,13 @@ def assert_success_response(response):
 
 def assert_no_newline_in_json(response):
     assert "\n" not in response.get_data(as_text=True)
+
+
+def performance(func):
+    return pytest.mark.skipif(
+        not is_truthy(os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "")),
+        reason="Performance tests are disabled.",
+    )(func)
 
 
 class TestPerformance:

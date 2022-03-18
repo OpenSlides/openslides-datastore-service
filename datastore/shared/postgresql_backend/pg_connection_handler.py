@@ -55,6 +55,9 @@ class DATABASE_ENVIRONMENT_VARIABLES:
     PASSWORD_FILE = "DATASTORE_DATABASE_PASSWORD_FILE"
 
 
+EXECUTE_VALUES_PAGE_SIZE = int(1e7)
+
+
 class ConnectionContext:
     def __init__(self, connection_handler):
         self.connection_handler = connection_handler
@@ -166,7 +169,12 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             if use_execute_values:
-                execute_values(cursor, prepared_query, arguments)
+                execute_values(
+                    cursor,
+                    prepared_query,
+                    arguments,
+                    page_size=EXECUTE_VALUES_PAGE_SIZE,
+                )
             else:
                 cursor.execute(prepared_query, arguments)
 
@@ -174,7 +182,13 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             if use_execute_values:
-                result = execute_values(cursor, prepared_query, arguments, fetch=True)
+                result = execute_values(
+                    cursor,
+                    prepared_query,
+                    arguments,
+                    page_size=EXECUTE_VALUES_PAGE_SIZE,
+                    fetch=True,
+                )
             else:
                 cursor.execute(prepared_query, arguments)
                 result = cursor.fetchall()

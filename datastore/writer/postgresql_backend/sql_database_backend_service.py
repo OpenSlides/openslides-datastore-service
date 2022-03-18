@@ -1,5 +1,4 @@
 from collections import defaultdict
-from copy import deepcopy
 from textwrap import dedent
 from typing import ContextManager, Dict, Iterable, List, Tuple
 
@@ -93,7 +92,7 @@ class SqlDatabaseBackendService:
                 fqid = db_event.fqid
                 collection, id = collection_and_id_from_fqid(fqid)
 
-                # create event data now, before further changes to the event
+                # create event data
                 events_data.append(
                     (
                         position,
@@ -266,7 +265,7 @@ class SqlDatabaseBackendService:
         self.connection.execute(statement, arguments, use_execute_values=True)
 
     def json(self, data):
-        return self.connection.to_json(deepcopy(data))
+        return self.connection.to_json(data)
 
     def reserve_next_ids(self, collection: str, amount: int) -> List[Id]:
         if amount <= 0:

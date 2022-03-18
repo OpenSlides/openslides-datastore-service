@@ -8,6 +8,11 @@ DATASTORE_DEV_MODE_ENVIRONMENT_VAR = "OPENSLIDES_DEVELOPMENT"
 DEV_SECRET = "openslides"
 
 
+def is_truthy(value: str) -> bool:
+    truthy = ("1", "on", "true")
+    return value.lower() in truthy
+
+
 class EnvironmentVariableMissing(Exception):
     def __init__(self, name: str):
         self.name = name
@@ -37,7 +42,7 @@ class EnvironmentService:
 
     def is_dev_mode(self) -> bool:
         value = self.try_get(DATASTORE_DEV_MODE_ENVIRONMENT_VAR)
-        return value is not None and value.lower() in ("1", "on", "true")
+        return value is not None and is_truthy(value)
 
     def get_from_file(self, name: str, use_default_secret: bool = True) -> str:
         if self.is_dev_mode() and use_default_secret:

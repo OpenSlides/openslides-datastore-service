@@ -4,7 +4,12 @@ import pytest
 
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.writer.flask_frontend.routes import WRITE_URL
-from tests.util import TestPerformance, assert_error_response, assert_response_code
+from tests.util import (
+    TestPerformance,
+    assert_error_response,
+    assert_response_code,
+    performance,
+)
 from tests.writer.system.util import (
     assert_model,
     assert_modified_fields,
@@ -159,9 +164,9 @@ def test_delete_update(json_client, data, redis_connection, reset_redis_data):
     assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
 
 
-@pytest.mark.skip(reason="Time-intensive performance test")
+@performance
 def test_update_performance(json_client, data, redis_connection, reset_redis_data):
-    MODEL_COUNT = 1000
+    MODEL_COUNT = 10000
     data["events"] = [
         {"type": "create", "fqid": f"a/{i}", "fields": {"f1": 1, "f2": 2, "f3": 3}}
         for i in range(1, MODEL_COUNT + 1)
