@@ -12,7 +12,7 @@ from datastore.shared.util import (
     fqfield_from_fqid_and_field,
     logger,
 )
-from datastore.shared.util.otel import get_span_data
+from datastore.shared.util.otel import inject_otel_data
 from datastore.writer.core import Messaging
 
 from .connection_handler import ConnectionHandler
@@ -38,8 +38,11 @@ class RedisMessagingBackendService(Messaging):
                 + json.dumps(modified_fqfields)
             )
 
+        print("WASGEHT")
+
         # merge span data into modified fields
-        modified_fqfields = { **get_span_data(), **modified_fqfields}
+        #modified_fqfields = { **get_span_data(), **modified_fqfields}
+        inject_otel_data(modified_fqfields)
 
         self.connection.xadd(MODIFIED_FIELDS_TOPIC, modified_fqfields)
 
