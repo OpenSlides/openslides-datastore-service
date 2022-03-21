@@ -1,4 +1,4 @@
-FROM python:3.8.1
+FROM python:3.10.3-slim-buster
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it postgresql-client redis-tools

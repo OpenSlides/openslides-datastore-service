@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, NewType, Union
+from typing_extensions import TypeAlias
 
 
 JSON = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
@@ -20,4 +21,4 @@ Fqid = Union[str, _Fqid]
 Fqfield = Union[str, _Fqfield]
 Position = Union[int, _Position]
 
-custom_types = [Collection, Field, Id, Fqid, Fqfield, Position]  # type: ignore
+custom_types: List[TypeAlias] = [Collection, Field, Id, Fqid, Fqfield, Position]
