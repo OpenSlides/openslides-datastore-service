@@ -90,9 +90,7 @@ class ReaderService:
             fqfield_requests = cast(List[str], request.requests)
             for fqfield in fqfield_requests:
                 fqid = fqid_from_fqfield(fqfield)
-                mapped_fields_per_fqid[fqid].append(
-                    field_from_fqfield(fqfield)
-                )
+                mapped_fields_per_fqid[fqid].append(field_from_fqfield(fqfield))
 
         fqids = list(mapped_fields_per_fqid.keys())
 

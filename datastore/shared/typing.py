@@ -1,5 +1,4 @@
-from typing import Any, Dict, List, NewType, Union
-from typing_extensions import TypeAlias
+from typing import Any, Dict, List, NewType, TypeAlias, Union
 
 
 JSON = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]

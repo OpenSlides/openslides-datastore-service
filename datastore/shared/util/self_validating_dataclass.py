@@ -1,7 +1,16 @@
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import Any, Optional, Type, Union, get_args, get_origin, get_type_hints, Dict
-from typing_extensions import TypeAlias
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Type,
+    TypeAlias,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from datastore.shared.typing import (
     Collection,
@@ -23,7 +32,9 @@ from .key_types import (
 )
 
 
-optional_custom_types: Dict[TypeAlias, TypeAlias] = {t: Optional[t] for t in custom_types}
+optional_custom_types: Dict[TypeAlias, TypeAlias] = {
+    t: Optional[t] for t in custom_types
+}
 
 
 @dataclass
