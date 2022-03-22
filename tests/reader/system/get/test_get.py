@@ -2,7 +2,7 @@ import json
 
 from datastore.reader.flask_frontend.routes import Route
 from datastore.shared.flask_frontend.errors import ERROR_CODES
-from datastore.shared.postgresql_backend import EVENT_TYPES
+from datastore.shared.postgresql_backend import EVENT_TYPE
 from datastore.shared.util import DeletedModelsBehaviour
 from tests.reader.system.util import setup_data
 from tests.util import assert_error_response, assert_success_response
@@ -126,11 +126,11 @@ def setup_events_data(connection, cursor):
     )
     cursor.execute(
         "insert into events (position, fqid, type, data, weight) values (1, %s, %s, %s, 1)",
-        [FQID, EVENT_TYPES.CREATE, data_json],
+        [FQID, EVENT_TYPE.CREATE, data_json],
     )
     cursor.execute(
         "insert into events (position, fqid, type, data, weight) values (2, %s, %s, %s, 2)",
-        [FQID, EVENT_TYPES.UPDATE, json.dumps({"field_1": "other"})],
+        [FQID, EVENT_TYPE.UPDATE, json.dumps({"field_1": "other"})],
     )
     connection.commit()
 
@@ -153,7 +153,7 @@ def test_position_deleted(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     db_cur.execute(
         "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
-        [FQID, EVENT_TYPES.DELETE],
+        [FQID, EVENT_TYPE.DELETE],
     )
     db_connection.commit()
     response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 3})
@@ -204,19 +204,19 @@ def test_order(json_client, db_connection, db_cur):
     # Do not reorder - the ids are implicitly chosen form 1-4
     db_cur.execute(
         "insert into events (position, fqid, type, data, weight) values (2, %s, %s, %s, 2)",
-        [FQID, EVENT_TYPES.RESTORE, json.dumps(None)],
+        [FQID, EVENT_TYPE.RESTORE, json.dumps(None)],
     )
     db_cur.execute(
         "insert into events (position, fqid, type, data, weight) values (2, %s, %s, %s, 1)",
-        [FQID, EVENT_TYPES.DELETE, json.dumps(None)],
+        [FQID, EVENT_TYPE.DELETE, json.dumps(None)],
     )
     db_cur.execute(
         "insert into events (position, fqid, type, data, weight) values (1, %s, %s, %s, 2)",
-        [FQID, EVENT_TYPES.UPDATE, json.dumps({"field_1": "other"})],
+        [FQID, EVENT_TYPE.UPDATE, json.dumps({"field_1": "other"})],
     )
     db_cur.execute(
         "insert into events (position, fqid, type, data, weight) values (1, %s, %s, %s, 1)",
-        [FQID, EVENT_TYPES.CREATE, data_json],
+        [FQID, EVENT_TYPE.CREATE, data_json],
     )
     db_connection.commit()
 

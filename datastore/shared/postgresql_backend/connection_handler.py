@@ -20,10 +20,10 @@ class ConnectionHandler(Protocol):
         specific json representation
         """
 
-    def execute(self, query, arguments, sql_parameters=[]):
+    def execute(self, query, arguments, sql_parameters=[], use_execute_values=False):
         """Executes the query."""
 
-    def query(self, query, arguments, sql_parameters=[]):
+    def query(self, query, arguments, sql_parameters=[], use_execute_values=False):
         """
         Executes the query. returns all results in a matrix-fashion:
         Each row is a result, and each column one value of one result.
@@ -39,7 +39,9 @@ class ConnectionHandler(Protocol):
         row, that contains null.
         """
 
-    def query_list_of_single_values(self, query, arguments, sql_parameters=[]):
+    def query_list_of_single_values(
+        self, query, arguments, sql_parameters=[], use_execute_values=False
+    ):
         """
         Returns a list of values of each row. It is expected that each
         row returns exactly one value. An empty list will be returned if

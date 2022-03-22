@@ -165,6 +165,7 @@ class MigrationHandlerImplementation:
     def finalize(self) -> None:
         self.logger.info("Finalize migrations.")
         if self.run_checks():
+            self.delete_collectionfield_aux_tables()
             return
         if not self.run_migrations():
             return

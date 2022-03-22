@@ -2,7 +2,7 @@ import json
 
 from datastore.reader.flask_frontend.routes import Route
 from datastore.shared.flask_frontend import ERROR_CODES
-from datastore.shared.postgresql_backend import EVENT_TYPES
+from datastore.shared.postgresql_backend import EVENT_TYPE
 from datastore.shared.util import (
     META_DELETED,
     META_POSITION,
@@ -255,12 +255,12 @@ def setup_events_data(connection, cursor):
             cursor.execute(
                 "insert into events (position, fqid, type, data, weight) \
                 values (1, %s, %s, %s, 1)",
-                [fqid, EVENT_TYPES.CREATE, json.dumps(model_data)],
+                [fqid, EVENT_TYPE.CREATE, json.dumps(model_data)],
             )
             cursor.execute(
                 "insert into events (position, fqid, type, data, weight) \
                 values (2, %s, %s, %s, 2)",
-                [fqid, EVENT_TYPES.UPDATE, json.dumps({"common_field": 0})],
+                [fqid, EVENT_TYPE.UPDATE, json.dumps({"common_field": 0})],
             )
     connection.commit()
 
@@ -309,11 +309,11 @@ def test_position_deleted(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     db_cur.execute(
         "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
-        ["b/1", EVENT_TYPES.DELETE],
+        ["b/1", EVENT_TYPE.DELETE],
     )
     db_cur.execute(
         "insert into events (position, fqid, type, weight) values (4, %s, %s, 4)",
-        ["b/1", EVENT_TYPES.RESTORE],
+        ["b/1", EVENT_TYPE.RESTORE],
     )
     db_connection.commit()
     request = {
@@ -349,7 +349,7 @@ def test_position_not_deleted(json_client, db_connection, db_cur):
     setup_events_data(db_connection, db_cur)
     db_cur.execute(
         "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
-        ["b/1", EVENT_TYPES.DELETE],
+        ["b/1", EVENT_TYPE.DELETE],
     )
     db_connection.commit()
     request = {

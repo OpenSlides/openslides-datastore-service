@@ -103,7 +103,7 @@ class Base:
         migration_handler.register_migrations(get_noop_migration(2))
         self.write_data(
             write,
-            {"type": "create", "fqid": "a/1", "fields": {}},
+            {"type": "create", "fqid": "a/1", "fields": {"f": 1}},
             {"type": "create", "fqid": "a/3", "fields": {}},
             {"type": "create", "fqid": "b/5", "fields": {}},
         )

@@ -4,7 +4,7 @@ import pytest
 
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ALL_TABLES, ConnectionHandler
-from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPES
+from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPE
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import Field, Fqid
 from datastore.shared.util import (
@@ -39,7 +39,7 @@ def assert_model(fqid, model, position):
         assert (
             isinstance(event_type, str)
             and len(event_type) > 0
-            and event_type != EVENT_TYPES.DELETE
+            and event_type != EVENT_TYPE.DELETE
         )
 
 
@@ -57,7 +57,7 @@ def assert_no_model(fqid):
             "select type from events where fqid=%s order by position desc, weight desc limit 1",
             [fqid],
         )
-        assert event_type in (EVENT_TYPES.DELETE, None)
+        assert event_type in (EVENT_TYPE.DELETE, None)
 
 
 def assert_no_db_entry(db_cur):

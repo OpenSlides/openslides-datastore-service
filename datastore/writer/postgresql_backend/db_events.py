@@ -1,15 +1,24 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from datastore.shared.postgresql_backend import ListUpdatesDict, apply_fields
+from datastore.shared.postgresql_backend import (
+    EVENT_TYPE,
+    ListUpdatesDict,
+    apply_fields,
+)
 from datastore.shared.typing import JSON, Model
-from datastore.shared.util import InvalidFormat
+from datastore.shared.util import META_DELETED, InvalidFormat
 
 
 class BaseDbEvent:
+    event_type: EVENT_TYPE
+
     def __init__(self, fqid: str) -> None:
         self.fqid = fqid
 
     def get_modified_fields(self) -> Dict[str, JSON]:
+        raise NotImplementedError()
+
+    def get_event_data(self) -> Any:
         raise NotImplementedError()
 
 
@@ -19,6 +28,9 @@ class BaseDbEventWithValues(BaseDbEvent):
         self.field_data = field_data
 
     def get_modified_fields(self) -> Dict[str, JSON]:
+        return self.field_data
+
+    def get_event_data(self) -> Any:
         return self.field_data
 
 
@@ -31,15 +43,25 @@ class BaseDbEventWithoutValues(BaseDbEvent):
         return {field: None for field in self.fields}
 
 
-class DbCreateEvent(BaseDbEventWithValues):
-    pass
+class DeletionStateChangeMixin(BaseDbEvent):
+    def get_modified_fields(self) -> Dict[str, JSON]:
+        return {
+            **super().get_modified_fields(),
+            META_DELETED: self.event_type == EVENT_TYPE.DELETE,
+        }
+
+
+class DbCreateEvent(DeletionStateChangeMixin, BaseDbEventWithValues):
+    event_type = EVENT_TYPE.CREATE
 
 
 class DbUpdateEvent(BaseDbEventWithValues):
-    pass
+    event_type = EVENT_TYPE.UPDATE
 
 
 class DbListUpdateEvent(BaseDbEvent):
+    event_type = EVENT_TYPE.LIST_FIELDS
+
     def __init__(
         self, fqid: str, add: ListUpdatesDict, remove: ListUpdatesDict, model: Model
     ) -> None:
@@ -70,14 +92,26 @@ class DbListUpdateEvent(BaseDbEvent):
     def get_modified_fields(self) -> Dict[str, JSON]:
         return self.modified_fields
 
+    def get_event_data(self) -> Any:
+        return {"add": self.add, "remove": self.remove}
+
 
 class DbDeleteFieldsEvent(BaseDbEventWithoutValues):
-    pass
+    event_type = EVENT_TYPE.DELETE_FIELDS
+
+    def get_event_data(self) -> Any:
+        return self.fields
 
 
-class DbDeleteEvent(BaseDbEventWithoutValues):
-    pass
+class DbDeleteEvent(BaseDbEventWithoutValues, DeletionStateChangeMixin):
+    event_type = EVENT_TYPE.DELETE
+
+    def get_event_data(self) -> Any:
+        return None
 
 
-class DbRestoreEvent(BaseDbEventWithoutValues):
-    pass
+class DbRestoreEvent(BaseDbEventWithoutValues, DeletionStateChangeMixin):
+    event_type = EVENT_TYPE.RESTORE
+
+    def get_event_data(self) -> Any:
+        return None

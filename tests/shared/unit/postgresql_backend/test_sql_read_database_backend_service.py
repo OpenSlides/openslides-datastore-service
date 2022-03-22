@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import EVENT_TYPES, ConnectionHandler
+from datastore.shared.postgresql_backend import EVENT_TYPE, ConnectionHandler
 from datastore.shared.postgresql_backend.connection_handler import DatabaseError
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from datastore.shared.postgresql_backend.sql_read_database_backend_service import (
@@ -260,7 +260,7 @@ def test_build_model_from_events_unknown_event(read_database: ReadDatabase):
     with pytest.raises(BadCodingError):
         read_database.build_model_from_events(
             [
-                {"type": EVENT_TYPES.CREATE, "data": MagicMock()},
+                {"type": EVENT_TYPE.CREATE, "data": MagicMock()},
                 {"type": MagicMock(), "data": MagicMock()},
             ]
         )
@@ -273,9 +273,9 @@ def test_build_model_from_events_delete_fields_event(read_database: ReadDatabase
 
     result = read_database.build_model_from_events(
         [
-            {"type": EVENT_TYPES.CREATE, "data": base_model},
+            {"type": EVENT_TYPE.CREATE, "data": base_model},
             {
-                "type": EVENT_TYPES.DELETE_FIELDS,
+                "type": EVENT_TYPE.DELETE_FIELDS,
                 "data": delete_fields_event,
                 "position": 0,
             },
@@ -316,7 +316,7 @@ def test_get_deleted_status_position(
     read_database: ReadDatabase, connection: ConnectionHandler
 ):
     fqid = MagicMock()
-    result = [{"fqid": fqid, "type": EVENT_TYPES.DELETE}]
+    result = [{"fqid": fqid, "type": EVENT_TYPE.DELETE}]
     connection.query = q = MagicMock(return_value=result)
 
     assert read_database.get_deleted_status([fqid], 42) == {fqid: True}

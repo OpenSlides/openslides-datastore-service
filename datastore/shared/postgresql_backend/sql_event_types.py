@@ -1,4 +1,7 @@
-class EVENT_TYPES:
+from enum import Enum
+
+
+class EVENT_TYPE(str, Enum):
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"

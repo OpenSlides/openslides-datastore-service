@@ -18,6 +18,11 @@ def test_base_db_event_get_modified_fields():
         BaseDbEvent("a/1").get_modified_fields()
 
 
+def test_base_db_event_get_event_data():
+    with pytest.raises(NotImplementedError):
+        BaseDbEvent("a/1").get_event_data()
+
+
 def test_db_create_event():
     fqid = MagicMock()
     value = MagicMock()

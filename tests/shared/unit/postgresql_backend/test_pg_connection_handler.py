@@ -254,7 +254,7 @@ def test_query_single_value_none(handler):
 def test_query_list_of_single_values(handler):
     handler.query = MagicMock()
     handler.query_list_of_single_values("", "")
-    handler.query.assert_called_with("", "", [])
+    handler.query.assert_called_with("", "", [], False)
 
 
 def test_shutdown(handler):

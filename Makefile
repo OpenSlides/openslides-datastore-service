@@ -13,7 +13,7 @@ build:
 build-dev:
 	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
 
-run-dev: | build-dev
+run-dev-standalone: | build-dev
 	docker-compose -f dc.dev.yml up -d $(MODULE)
 
 run-dev-verbose: | build-dev
@@ -44,7 +44,7 @@ run-tests: | run-tests-no-down
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
 
-run-tests-interactive run-bash: | setup-docker-compose
+run-dev run-bash: | setup-docker-compose
 	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
 
 run-system-tests: | setup-docker-compose
@@ -101,7 +101,7 @@ run:
 run-verbose:
 	docker-compose up
 
-run-dev: | build-dev
+run-dev-standalone: | build-dev
 	docker-compose -f dc.dev.yml up -d
 
 run-dev-verbose: | build-dev
