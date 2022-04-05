@@ -9,24 +9,30 @@ from .migration_handler import MigrationHandler
 from .migration_logger import MigrationLogger, PrintFunction
 
 
-def register_services():
-    util_setup_di()
-    postgresql_setup_di()
-    redis_setup_di()
-    writer_setup_di()
-    reader_setup_di()
+def register_services(memory_only:bool = False):
+    if not memory_only:
+        util_setup_di()
+        postgresql_setup_di()
+        redis_setup_di()
+        writer_setup_di()
+        reader_setup_di()
 
     from .migrater import Migrater, MigraterImplementation
-    from .migration_handler import MigrationHandlerImplementation
+    from .migrater_memory import MigraterImplementationMemory
+    from .migration_handler import MigrationHandlerImplementation, MigrationHandlerImplementationMemory
     from .migration_logger import MigrationLogger, MigrationLoggerImplementation
 
     injector.register(MigrationLogger, MigrationLoggerImplementation)
-    injector.register(Migrater, MigraterImplementation)
-    injector.register(MigrationHandler, MigrationHandlerImplementation)
+    if memory_only:
+        injector.register(MigrationHandler, MigrationHandlerImplementationMemory)
+        injector.register(Migrater, MigraterImplementationMemory)
+    else:
+        injector.register(MigrationHandler, MigrationHandlerImplementation)
+        injector.register(Migrater, MigraterImplementation)
 
 
-def setup(verbose: bool = False, print_fn: PrintFunction = print) -> MigrationHandler:
-    register_services()
+def setup(verbose: bool = False, print_fn: PrintFunction = print, memory_only: bool = False) -> MigrationHandler:
+    register_services(memory_only)
     logger = injector.get(MigrationLogger)
     logger.set_verbose(verbose)
     logger.set_print_fn(print_fn)

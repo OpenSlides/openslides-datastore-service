@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import Any, Dict, Protocol, Type
+from typing import Any, Dict, List, Optional, Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
@@ -340,3 +339,20 @@ class MigrationHandlerImplementation:
 - {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
   partially migrated ones)"""
         )
+
+class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
+    """
+    All Migrations are made in memory only for the import of meetings
+    """
+    def finalize(self) -> None:
+        self.logger.info("Finalize in memory migrations.")
+        self.run_migrations()
+        self.logger.info("Finalize in memory migrations ready.")
+
+    def run_migrations(self) -> bool:
+        self.migrater.set_additional_data(self.import_create_events, self.imported_models)
+        self.migrater.migrate(
+            self.target_migration_index, self.migrations_by_target_migration_index, self.start_migration_index
+        )
+        self.import_create_events = self.migrater.get_import_create_events()
+        return False
