@@ -2,4 +2,4 @@
 
 set -e
 
-black --check --diff --target-version py38 $(ls -d */)
+black --check --diff --target-version py310 $(ls -d */)

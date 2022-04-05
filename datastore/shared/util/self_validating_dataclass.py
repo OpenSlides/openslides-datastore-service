@@ -1,6 +1,16 @@
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import Any, Optional, Type, Union, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Type,
+    TypeAlias,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from datastore.shared.typing import (
     Collection,
@@ -22,6 +32,11 @@ from .key_types import (
 )
 
 
+optional_custom_types: Dict[TypeAlias, TypeAlias] = {
+    t: Optional[t] for t in custom_types
+}
+
+
 @dataclass
 class SelfValidatingDataclass:
     """
@@ -31,8 +46,7 @@ class SelfValidatingDataclass:
     """
 
     def __post_init__(self):
-        # mypy wants get_type_hints to be called with a callable...
-        for key, type_hint in get_type_hints(self).items():  # type: ignore
+        for key, type_hint in get_type_hints(self).items():
             value = getattr(self, key)
             if value is not None:
                 self.validate_nested_types(type_hint, value)
@@ -82,24 +96,22 @@ class SelfValidatingDataclass:
                 self.validate(el, nested_type)
 
     def normalize_type_hint(self, type_hint: Type) -> Type:
-        for t in custom_types:
-            if Optional[t] == type_hint:
-                return t  # type: ignore
+        for t, opt_t in optional_custom_types.items():
+            if opt_t == type_hint:
+                return t
         return type_hint
 
     def validate(self, value: Any, type: Type) -> None:
-        # TODO: remove type comments as soon as mypy is fixed
-        # (which may be a while, see https://github.com/python/mypy/issues/5354)
-        if type == Collection:  # type: ignore
+        if type == Collection:
             assert_is_collection(value)
-        elif type == Field:  # type: ignore
+        elif type == Field:
             assert_is_field(value)
-        elif type == Id:  # type: ignore
+        elif type == Id:
             assert_is_id(str(value))
-        elif type == Fqid:  # type: ignore
+        elif type == Fqid:
             assert_is_fqid(value)
-        elif type == Fqfield:  # type: ignore
+        elif type == Fqfield:
             assert_is_fqfield(value)
-        elif type == Position:  # type: ignore
+        elif type == Position:
             if value <= 0:
                 raise InvalidFormat("The position has to be >0")

@@ -77,22 +77,20 @@ class ReaderService:
 
     @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> Dict[Collection, Dict[Id, Model]]:
-        mapped_fields_per_fqid: Dict[str, List[str]] = {}
+        mapped_fields_per_fqid: Dict[str, List[str]] = defaultdict(list)
         if isinstance(request.requests[0], GetManyRequestPart):
             requests = cast(List[GetManyRequestPart], request.requests)
             for part in requests:
                 for id in part.ids:
                     fqid = fqid_from_collection_and_id(part.collection, str(id))
-                    mapped_fields_per_fqid.setdefault(fqid, []).extend(
+                    mapped_fields_per_fqid[fqid].extend(
                         part.mapped_fields + request.mapped_fields
                     )
         else:
             fqfield_requests = cast(List[str], request.requests)
             for fqfield in fqfield_requests:
                 fqid = fqid_from_fqfield(fqfield)
-                mapped_fields_per_fqid.setdefault(fqid, []).append(
-                    field_from_fqfield(fqfield)
-                )
+                mapped_fields_per_fqid[fqid].append(field_from_fqfield(fqfield))
 
         fqids = list(mapped_fields_per_fqid.keys())
 
