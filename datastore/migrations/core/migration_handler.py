@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional, Protocol, Type
+from enum import Enum
+from typing import Any, Dict, Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
