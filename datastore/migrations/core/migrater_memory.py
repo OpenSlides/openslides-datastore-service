@@ -1,14 +1,13 @@
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Protocol, Tuple
+from typing import Dict, List, Tuple, cast
 
-from datastore.shared.di import service_as_factory, service_interface
+from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.typing import Fqid, JSON, Model, Position
+from datastore.shared.typing import Fqid, Model, Position
 
-from .base_migration import BaseMigration, PositionData
-from .events import BaseEvent, to_event
+from .base_migration import BaseMigration
+from .events import BaseEvent, CreateEvent
 from .exceptions import MismatchingMigrationIndicesException
 from .migration_keyframes import (
     InitialMigrationKeyframeModifier,
@@ -24,6 +23,8 @@ class MigraterImplementationMemory:
     connection: ConnectionHandler
     logger: MigrationLogger
     target_migration_index: int
+    import_create_events: List[BaseEvent]
+    imported_models: Dict[Fqid, Model]
 
     def migrate(
         self, target_migration_index: int, migrations: Dict[int, BaseMigration], start_migration_index: int = 0
@@ -97,7 +98,7 @@ class MigraterImplementationMemory:
         position: Position,
         is_last_migration_index: bool,
     ) -> Tuple[MigrationKeyframeModifier, MigrationKeyframeModifier]:
-        old_accessor: MigrationKeyframeModifier = InitialMigrationKeyframeModifier(
+        old_accessor = InitialMigrationKeyframeModifier(
             self.connection,
             last_position_value,
             source_migration_index,
@@ -105,19 +106,19 @@ class MigraterImplementationMemory:
         )
         old_accessor.models.update(self.imported_models)
         old_accessor.deleted.update({key: False for key in self.imported_models})
-        new_accessor: MigrationKeyframeModifier = InitialMigrationKeyframeModifier(
+        new_accessor = InitialMigrationKeyframeModifier(
             self.connection,
             last_position_value,
             target_migration_index,
             position,
         )
         new_accessor.models.update(self.imported_models)
-        new_accessor. deleted.update({key: False for key in self.imported_models})
+        new_accessor.deleted.update({key: False for key in self.imported_models})
         return old_accessor, new_accessor
 
-    def set_additional_data(self, import_create_events: List[BaseEvent], models: Dict[Fqid, Model]) -> None:
-        self.import_create_events = import_create_events
+    def set_additional_data(self, import_create_events: List[CreateEvent], models: Dict[Fqid, Model]) -> None:
+        self.import_create_events = cast(List[BaseEvent], import_create_events)
         self.imported_models = models
 
-    def get_import_create_events(self) -> List[BaseEvent]:
+    def get_migrated_create_events(self) -> List[BaseEvent]:
         return self.import_create_events

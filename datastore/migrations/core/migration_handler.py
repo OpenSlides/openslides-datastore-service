@@ -1,15 +1,15 @@
 from enum import Enum
-from typing import Any, Dict, Iterable, Optional, Protocol, Type
+from typing import Any, Dict, Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.typing import Fqid, Model
 from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 
 from .base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
 from .migrater import Migrater
+from .migrater_memory import MigraterImplementationMemory
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
@@ -346,9 +346,8 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
     All Migrations are made in memory only for the import of meetings
     """
+    migrater: MigraterImplementationMemory
     start_migration_index: int = 1
-    import_create_events: Optional[Iterable[Any]]
-    imported_models: Dict[Fqid, Model]
 
     def finalize(self) -> None:
         self.logger.info("Finalize in memory migrations.")
@@ -356,9 +355,7 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
         self.logger.info("Finalize in memory migrations ready.")
 
     def run_migrations(self) -> bool:
-        self.migrater.set_additional_data(self.import_create_events, self.imported_models)
         self.migrater.migrate(
             self.target_migration_index, self.migrations_by_target_migration_index, self.start_migration_index
         )
-        self.import_create_events = self.migrater.get_import_create_events()
         return False
