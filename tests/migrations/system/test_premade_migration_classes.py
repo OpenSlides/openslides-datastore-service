@@ -1,5 +1,9 @@
+import pytest
+
 from datastore.migrations import (
     AddFieldMigration,
+    AddFieldsMigration,
+    Calculated,
     RemoveFieldsMigration,
     RenameFieldMigration,
 )
@@ -10,7 +14,6 @@ def test_rename_field(
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     """f -> f_new"""
@@ -55,7 +58,6 @@ def test_add_field_with_default(
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 3}})
@@ -86,12 +88,63 @@ def test_add_field_with_default(
     )
 
 
+def test_add_fields_with_default(
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    assert_finalized,
+):
+    write({"type": "create", "fqid": "a/1", "fields": {"f": 3}})
+    write({"type": "create", "fqid": "b/1", "fields": {"x": 42}})
+    write({"type": "update", "fqid": "a/1", "fields": {"f": 5, "g": 127}})
+    set_migration_index_to_1()
+
+    class AddFields(AddFieldsMigration):
+        target_migration_index = 2
+        defaults = {"a": {"g": "default"}, "b": {"y": "default"}}
+
+    migration_handler.register_migrations(AddFields)
+    migration_handler.finalize()
+
+    assert_finalized()
+    assert_model(
+        "a/1",
+        {"f": 3, "g": "default", "meta_deleted": False, "meta_position": 1},
+        position=1,
+    )
+    assert_model(
+        "b/1",
+        {"x": 42, "y": "default", "meta_deleted": False, "meta_position": 2},
+        position=2,
+    )
+    assert_model(
+        "a/1", {"f": 5, "g": 127, "meta_deleted": False, "meta_position": 3}, position=3
+    )
+
+
+def test_add_fields_no_default(
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+):
+    write({"type": "create", "fqid": "a/1", "fields": {"f": 3}})
+    set_migration_index_to_1()
+
+    class AddFields(AddFieldsMigration):
+        target_migration_index = 2
+        defaults = {"a": {"g": Calculated()}}
+
+    migration_handler.register_migrations(AddFields)
+    with pytest.raises(NotImplementedError):
+        migration_handler.finalize()
+
+
 def test_remove_field(
     migration_handler,
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"a": 5, "r": [3], "r2": "a"}})
