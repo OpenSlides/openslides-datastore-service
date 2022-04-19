@@ -17,6 +17,9 @@ class AddFieldMigration(AddFieldsMigration):
         super().__init__()
         self.defaults = {self.collection: {self.field: Calculated()}}
 
-    def get_default(self, event: BaseEvent, field: str) -> JSON:
+    def get_default(self, event: BaseEvent) -> JSON:
         """Can be overwritten for custom default values."""
         return self.default
+
+    def get_default_for_field(self, event: BaseEvent, field: str) -> JSON:
+        return self.get_default(event)
