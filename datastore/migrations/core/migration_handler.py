@@ -1,9 +1,10 @@
 from enum import Enum
-from typing import Any, Dict, Protocol, Type
+from typing import Any, Dict, Iterable, Optional, Protocol, Type
 
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
+from datastore.shared.typing import Fqid, Model
 from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 
 from .base_migration import BaseMigration
@@ -345,6 +346,10 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
     All Migrations are made in memory only for the import of meetings
     """
+    start_migration_index: int = 1
+    import_create_events: Optional[Iterable[Any]]
+    imported_models: Dict[Fqid, Model]
+
     def finalize(self) -> None:
         self.logger.info("Finalize in memory migrations.")
         self.run_migrations()
