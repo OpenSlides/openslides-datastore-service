@@ -342,10 +342,12 @@ class MigrationHandlerImplementation:
   partially migrated ones)"""
         )
 
+
 class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
     All Migrations are made in memory only for the import of meetings
     """
+
     migrater: MigraterImplementationMemory
     start_migration_index: int = 1
 
@@ -356,6 +358,8 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
 
     def run_migrations(self) -> bool:
         self.migrater.migrate(
-            self.target_migration_index, self.migrations_by_target_migration_index, self.start_migration_index
+            self.target_migration_index,
+            self.migrations_by_target_migration_index,
+            self.start_migration_index,
         )
         return False

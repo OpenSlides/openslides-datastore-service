@@ -9,12 +9,12 @@ from datastore.shared.typing import Fqid, Model, Position
 from .base_migration import BaseMigration
 from .events import BaseEvent, CreateEvent
 from .exceptions import MismatchingMigrationIndicesException
+from .migrater import RawPosition
 from .migration_keyframes import (
     InitialMigrationKeyframeModifier,
     MigrationKeyframeModifier,
 )
 from .migration_logger import MigrationLogger
-from .migrater import RawPosition
 
 
 @service_as_factory
@@ -27,19 +27,28 @@ class MigraterImplementationMemory:
     imported_models: Dict[Fqid, Model]
 
     def migrate(
-        self, target_migration_index: int, migrations: Dict[int, BaseMigration], start_migration_index: int = 0
+        self,
+        target_migration_index: int,
+        migrations: Dict[int, BaseMigration],
+        start_migration_index: int = 0,
     ) -> bool:
         self.target_migration_index = target_migration_index
         self.migrations = migrations
         self.start_migration_index = start_migration_index
 
-        if self.start_migration_index == -1 or self.start_migration_index == self.target_migration_index:
+        if (
+            self.start_migration_index == -1
+            or self.start_migration_index == self.target_migration_index
+        ):
             self.logger.info(
                 "No migrations to apply for data to import. "
                 + f"Given migration index of import data: {self.start_migration_index} "
                 + f"Current backend migration index: {self.target_migration_index}"
             )
-        elif self.start_migration_index == 0 or start_migration_index > self.target_migration_index:
+        elif (
+            self.start_migration_index == 0
+            or start_migration_index > self.target_migration_index
+        ):
             raise MismatchingMigrationIndicesException(
                 "The migration index of import data is invalid: "
                 + f"Given migration index of import data: {self.start_migration_index} "
@@ -51,7 +60,13 @@ class MigraterImplementationMemory:
         return False
 
     def run_actual_migrations(self) -> None:
-        position = RawPosition(position=1, migration_index=self.start_migration_index, timestamp=datetime.now(), user_id=0, information=None)
+        position = RawPosition(
+            position=1,
+            migration_index=self.start_migration_index,
+            timestamp=datetime.now(),
+            user_id=0,
+            information=None,
+        )
         last_position_value = 0
         self.migrate_position(position, last_position_value)
 
@@ -116,7 +131,9 @@ class MigraterImplementationMemory:
         new_accessor.deleted.update({key: False for key in self.imported_models})
         return old_accessor, new_accessor
 
-    def set_additional_data(self, import_create_events: List[CreateEvent], models: Dict[Fqid, Model]) -> None:
+    def set_additional_data(
+        self, import_create_events: List[CreateEvent], models: Dict[Fqid, Model]
+    ) -> None:
         self.import_create_events = cast(List[BaseEvent], import_create_events)
         self.imported_models = models
 

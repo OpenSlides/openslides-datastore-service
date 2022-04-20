@@ -9,7 +9,7 @@ from .migration_handler import MigrationHandler
 from .migration_logger import MigrationLogger, PrintFunction
 
 
-def register_services(memory_only:bool = False):
+def register_services(memory_only: bool = False):
     if not memory_only:
         util_setup_di()
         postgresql_setup_di()
@@ -19,7 +19,10 @@ def register_services(memory_only:bool = False):
 
     from .migrater import Migrater, MigraterImplementation
     from .migrater_memory import MigraterImplementationMemory
-    from .migration_handler import MigrationHandlerImplementation, MigrationHandlerImplementationMemory
+    from .migration_handler import (
+        MigrationHandlerImplementation,
+        MigrationHandlerImplementationMemory,
+    )
     from .migration_logger import MigrationLogger, MigrationLoggerImplementation
 
     injector.register(MigrationLogger, MigrationLoggerImplementation)
@@ -31,7 +34,9 @@ def register_services(memory_only:bool = False):
         injector.register(Migrater, MigraterImplementation)
 
 
-def setup(verbose: bool = False, print_fn: PrintFunction = print, memory_only: bool = False) -> MigrationHandler:
+def setup(
+    verbose: bool = False, print_fn: PrintFunction = print, memory_only: bool = False
+) -> MigrationHandler:
     register_services(memory_only)
     logger = injector.get(MigrationLogger)
     logger.set_verbose(verbose)

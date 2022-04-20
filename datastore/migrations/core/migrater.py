@@ -38,7 +38,10 @@ class RawPosition:
 @service_interface
 class Migrater(Protocol):
     def migrate(
-        self, target_migration_index: int, migrations: Dict[int, BaseMigration], start_migration_index: int = 0
+        self,
+        target_migration_index: int,
+        migrations: Dict[int, BaseMigration],
+        start_migration_index: int = 0,
     ) -> bool:
         """
         Runs the actual migrations of the datastore up to the target migration index.
@@ -55,7 +58,10 @@ class MigraterImplementation:
     target_migration_index: int
 
     def migrate(
-        self, target_migration_index: int, migrations: Dict[int, BaseMigration], start_migration_index: int = 0,
+        self,
+        target_migration_index: int,
+        migrations: Dict[int, BaseMigration],
+        start_migration_index: int = 0,
     ) -> bool:
         self.target_migration_index = target_migration_index
         self.migrations = migrations
