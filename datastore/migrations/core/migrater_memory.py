@@ -22,19 +22,19 @@ class MigraterImplementationMemory:
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger
+    start_migration_index: int
     target_migration_index: int
-    import_create_events: List[BaseEvent]
+    import_create_events: List[CreateEvent]
+    migrated_events: List[BaseEvent]
     imported_models: Dict[Fqid, Model]
 
     def migrate(
         self,
         target_migration_index: int,
         migrations: Dict[int, BaseMigration],
-        start_migration_index: int = 0,
     ) -> bool:
         self.target_migration_index = target_migration_index
         self.migrations = migrations
-        self.start_migration_index = start_migration_index
 
         if (
             self.start_migration_index == -1
@@ -47,7 +47,7 @@ class MigraterImplementationMemory:
             )
         elif (
             self.start_migration_index == 0
-            or start_migration_index > self.target_migration_index
+            or self.start_migration_index > self.target_migration_index
         ):
             raise MismatchingMigrationIndicesException(
                 "The migration index of import data is invalid: "
@@ -99,11 +99,11 @@ class MigraterImplementationMemory:
 
             migration = self.migrations[target_migration_index]
 
-            old_events = self.import_create_events
+            old_events = cast(List[BaseEvent], self.import_create_events)
             new_events = migration.migrate(
                 old_events, old_accessor, new_accessor, position.to_position_data()
             )
-            self.import_create_events = new_events
+            self.migrated_events = new_events
 
     def get_accessors(
         self,
@@ -113,29 +113,40 @@ class MigraterImplementationMemory:
         position: Position,
         is_last_migration_index: bool,
     ) -> Tuple[MigrationKeyframeModifier, MigrationKeyframeModifier]:
-        old_accessor = InitialMigrationKeyframeModifier(
-            self.connection,
+        old_accessor = self._get_accessor(
             last_position_value,
             source_migration_index,
             position,
         )
-        old_accessor.models.update(self.imported_models)
-        old_accessor.deleted.update({key: False for key in self.imported_models})
-        new_accessor = InitialMigrationKeyframeModifier(
-            self.connection,
+        new_accessor = self._get_accessor(
             last_position_value,
             target_migration_index,
             position,
         )
-        new_accessor.models.update(self.imported_models)
-        new_accessor.deleted.update({key: False for key in self.imported_models})
         return old_accessor, new_accessor
 
-    def set_additional_data(
-        self, import_create_events: List[CreateEvent], models: Dict[Fqid, Model]
-    ) -> None:
-        self.import_create_events = cast(List[BaseEvent], import_create_events)
-        self.imported_models = models
+    def _get_accessor(
+        self, last_position_value: Position, migration_index, position: Position
+    ) -> MigrationKeyframeModifier:
+        accessor = InitialMigrationKeyframeModifier(
+            self.connection,
+            last_position_value,
+            migration_index,
+            position,
+        )
+        accessor.models.update(self.imported_models)
+        accessor.deleted.update({key: False for key in self.imported_models})
+        return accessor
 
-    def get_migrated_create_events(self) -> List[BaseEvent]:
-        return self.import_create_events
+    def set_additional_data(
+        self,
+        import_create_events: List[CreateEvent],
+        models: Dict[Fqid, Model],
+        start_migration_index: int,
+    ) -> None:
+        self.import_create_events = import_create_events
+        self.imported_models = models
+        self.start_migration_index = start_migration_index
+
+    def get_migrated_events(self) -> List[BaseEvent]:
+        return self.migrated_events

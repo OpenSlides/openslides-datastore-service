@@ -41,7 +41,6 @@ class Migrater(Protocol):
         self,
         target_migration_index: int,
         migrations: Dict[int, BaseMigration],
-        start_migration_index: int = 0,
     ) -> bool:
         """
         Runs the actual migrations of the datastore up to the target migration index.
@@ -61,7 +60,6 @@ class MigraterImplementation:
         self,
         target_migration_index: int,
         migrations: Dict[int, BaseMigration],
-        start_migration_index: int = 0,
     ) -> bool:
         self.target_migration_index = target_migration_index
         self.migrations = migrations

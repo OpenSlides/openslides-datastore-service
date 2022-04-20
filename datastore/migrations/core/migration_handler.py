@@ -349,7 +349,6 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
 
     migrater: MigraterImplementationMemory
-    start_migration_index: int = 1
 
     def finalize(self) -> None:
         self.logger.info("Finalize in memory migrations.")
@@ -360,6 +359,5 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
         self.migrater.migrate(
             self.target_migration_index,
             self.migrations_by_target_migration_index,
-            self.start_migration_index,
         )
         return False
