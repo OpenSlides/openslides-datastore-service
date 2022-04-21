@@ -9,6 +9,7 @@ from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 from .base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
 from .migrater import Migrater
+from .migrater_memory import MigraterImplementationMemory
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
@@ -340,3 +341,23 @@ class MigrationHandlerImplementation:
 - {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
   partially migrated ones)"""
         )
+
+
+class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
+    """
+    All Migrations are made in memory only for the import of meetings
+    """
+
+    migrater: MigraterImplementationMemory
+
+    def finalize(self) -> None:
+        self.logger.info("Finalize in memory migrations.")
+        self.run_migrations()
+        self.logger.info("Finalize in memory migrations ready.")
+
+    def run_migrations(self) -> bool:
+        self.migrater.migrate(
+            self.target_migration_index,
+            self.migrations_by_target_migration_index,
+        )
+        return False
