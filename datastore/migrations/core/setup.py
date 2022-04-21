@@ -18,7 +18,6 @@ def register_services(memory_only: bool = False):
         reader_setup_di()
 
     from .migrater import Migrater, MigraterImplementation
-    from .migrater_memory import MigraterImplementationMemory
     from .migration_handler import (
         MigrationHandlerImplementation,
         MigrationHandlerImplementationMemory,
@@ -27,6 +26,8 @@ def register_services(memory_only: bool = False):
 
     injector.register(MigrationLogger, MigrationLoggerImplementation)
     if memory_only:
+        from .migrater_memory import MigraterImplementationMemory
+
         injector.register(MigrationHandler, MigrationHandlerImplementationMemory)
         injector.register(Migrater, MigraterImplementationMemory)
     else:

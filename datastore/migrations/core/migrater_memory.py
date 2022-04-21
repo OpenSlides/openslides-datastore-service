@@ -25,7 +25,7 @@ class MigraterImplementationMemory:
     start_migration_index: int
     target_migration_index: int
     import_create_events: List[CreateEvent]
-    migrated_events: List[BaseEvent]
+    migrated_events: List[BaseEvent] = []
     imported_models: Dict[Fqid, Model]
 
     def migrate(
@@ -37,16 +37,7 @@ class MigraterImplementationMemory:
         self.migrations = migrations
 
         if (
-            self.start_migration_index == -1
-            or self.start_migration_index == self.target_migration_index
-        ):
-            self.logger.info(
-                "No migrations to apply for data to import. "
-                + f"Given migration index of import data: {self.start_migration_index} "
-                + f"Current backend migration index: {self.target_migration_index}"
-            )
-        elif (
-            self.start_migration_index == 0
+            self.start_migration_index < 1
             or self.start_migration_index > self.target_migration_index
         ):
             raise MismatchingMigrationIndicesException(
