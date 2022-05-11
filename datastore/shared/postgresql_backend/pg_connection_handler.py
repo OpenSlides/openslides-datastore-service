@@ -63,23 +63,34 @@ class ConnectionContext:
         self.connection_handler = connection_handler
 
     def __enter__(self):
-        self.connection = self.connection_handler.get_connection()
-        self.connection.__enter__()
+        try:
+            self.connection_handler._semaphore.acquire()
+            self.connection = self.connection_handler.get_connection()
+            self.connection.__enter__()
+        except:
+            raise
+        finally:
+            self.connection_handler._semaphore.release()
 
     def __exit__(self, exception, exception_value, traceback):
-        has_connection_error = exception is not None and issubclass(
-            exception, psycopg2.Error
-        )
-        if has_connection_error:
-            # make sure the connection was already closed by psycopg
-            assert self.connection.closed > 0
-        else:
-            self.connection.__exit__(exception, exception_value, traceback)
-        self.connection_handler.put_connection(self.connection, has_connection_error)
+        try:
+            self.connection_handler._semaphore.acquire()
+            has_connection_error = exception is not None and issubclass(
+                exception, psycopg2.Error
+            )
+            if has_connection_error:
+                # make sure the connection was already closed by psycopg
+                assert self.connection.closed > 0
+            else:
+                self.connection.__exit__(exception, exception_value, traceback)
+            self.connection_handler.put_connection(self.connection, has_connection_error)
 
-        if has_connection_error:
-            self.connection_handler.raise_error(exception_value)
-
+            if has_connection_error:
+                self.connection_handler.raise_error(exception_value)
+        except:
+            raise
+        finally:
+            self.connection_handler._semaphore.release()
 
 @service_as_singleton
 class PgConnectionHandlerService:
@@ -96,7 +107,7 @@ class PgConnectionHandlerService:
 
         min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 0)
         max_conn = int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 1)
-        self._semaphore = Semaphore(max_conn)
+        self._semaphore = Semaphore()
         try:
             self.connection_pool = ThreadedConnectionPool(
                 min_conn, max_conn, **self.get_connection_params()
@@ -140,7 +151,6 @@ class PgConnectionHandlerService:
                 raise BadCodingError(
                     "You cannot start multiple transactions in one thread!"
                 )
-        self._semaphore.acquire()
         connection = self.connection_pool.getconn()
         connection.autocommit = False
         self.set_current_connection(connection)
@@ -157,7 +167,6 @@ class PgConnectionHandlerService:
 
         self.connection_pool.putconn(connection, close=has_error)
         self.set_current_connection(None)
-        self._semaphore.release()
 
     def get_connection_context(self):
         return ConnectionContext(self)
