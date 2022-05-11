@@ -83,7 +83,9 @@ class ConnectionContext:
                 assert self.connection.closed > 0
             else:
                 self.connection.__exit__(exception, exception_value, traceback)
-            self.connection_handler.put_connection(self.connection, has_connection_error)
+            self.connection_handler.put_connection(
+                self.connection, has_connection_error
+            )
 
             if has_connection_error:
                 self.connection_handler.raise_error(exception_value)
@@ -91,6 +93,7 @@ class ConnectionContext:
             raise
         finally:
             self.connection_handler._semaphore.release()
+
 
 @service_as_singleton
 class PgConnectionHandlerService:
