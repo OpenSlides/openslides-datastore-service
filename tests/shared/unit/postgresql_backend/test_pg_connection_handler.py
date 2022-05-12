@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import psycopg2
 import pytest
+from psycopg2.errors import SyntaxError
 from psycopg2.extras import Json
 
 from datastore.shared.di import injector
@@ -143,27 +144,6 @@ def test_put_connection_invalid_connection(handler):
         handler.put_connection(MagicMock(), False)
 
 
-@pytest.mark.skipif(
-    not os.getenv("RUN_MANUAL_TESTS"), reason="needs manual intervention"
-)
-def test_postgres_connection_reset(handler):
-    """
-    Unfortunately, a manual restart of the postgres container is necessary to provoke
-    the needed OperationalError. Run this test to see how the connection handler
-    handles a short connection loss to the db.
-    """
-    try:
-        with handler.get_connection_context():
-            breakpoint()  # restart postgres here
-            handler.execute("SELECT 1", [])
-    except Exception:
-        pass
-
-    # this should still work without error
-    with handler.get_connection_context():
-        handler.execute("SELECT 1", [])
-
-
 def test_get_connection_context(handler):
     with patch(
         "datastore.shared.postgresql_backend.pg_connection_handler.ConnectionContext"
@@ -183,11 +163,14 @@ def test_connection_error_in_context(handler):
     pool.getconn = gc = MagicMock(return_value=connection)
     pool.putconn = pc = MagicMock()
 
+    def raise_error() -> None:
+        raise SyntaxError("Test")
+
     context = ConnectionContext(handler)
     with pytest.raises(DatabaseError):
         with context:
             gc.assert_called()
-            raise psycopg2.Error("Test")
+            raise_error()
 
     # not blocked
     semaphore.acquire.assert_called_once()
