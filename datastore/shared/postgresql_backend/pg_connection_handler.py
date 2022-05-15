@@ -69,7 +69,7 @@ class ConnectionContext:
     def __exit__(self, exception, exception_value, traceback):
         has_pg_error = exception is not None and issubclass(exception, psycopg2.Error)
         # connection which were already closed will raise an InterfaceError in __exit__
-        if self.connection.closed == 0:
+        if not self.connection.closed:
             self.connection.__exit__(exception, exception_value, traceback)
         # some errors are not correctly recognized by the connection pool, soto be save we dispose
         # all connection which errored out, even though some might still be usable
