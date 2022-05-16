@@ -84,7 +84,8 @@ class ConnectionContext:
 class PgConnectionHandlerService:
 
     _storage: threading.local
-    _lock: Lock
+    _get_connection_lock: Lock
+    _put_connection_lock: Lock
     connection_pool: ThreadedConnectionPool
 
     environment: EnvironmentService
@@ -93,7 +94,8 @@ class PgConnectionHandlerService:
     def __init__(self, shutdown_service: ShutdownService):
         shutdown_service.register(self)
         self._storage = threading.local()
-        self._lock = Lock()
+        self._get_connection_lock = Lock()
+        self._put_connection_lock = Lock()
 
         min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 1)
         max_conn = int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 1)
@@ -129,7 +131,7 @@ class PgConnectionHandlerService:
         }
 
     def get_connection(self):
-        with self._lock:
+        with self._get_connection_lock:
             if old_conn := self.get_current_connection():
                 if old_conn.closed:
                     # If an error happens while returning the connection to the pool, it
@@ -153,7 +155,7 @@ class PgConnectionHandlerService:
             return connection
 
     def put_connection(self, connection, has_error=False):
-        with self._lock:
+        with self._put_connection_lock:
             self._put_connection(connection, has_error)
 
     def _put_connection(self, connection, has_error):

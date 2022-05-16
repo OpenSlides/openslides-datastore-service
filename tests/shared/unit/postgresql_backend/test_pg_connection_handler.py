@@ -42,6 +42,7 @@ def handler(provide_di):
 
 def test_connection_context(handler):
     connection = MagicMock()
+    connection.closed = 0
     handler.get_connection = gc = MagicMock(return_value=connection)
     handler.put_connection = pc = MagicMock()
 
