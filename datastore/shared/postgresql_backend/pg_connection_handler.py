@@ -1,6 +1,6 @@
 import threading
 from functools import wraps
-from threading import Event, Lock, current_thread
+from threading import Event, Lock
 from time import sleep
 
 import psycopg2
@@ -77,7 +77,6 @@ class ConnectionContext:
         # Handle errors by ourselves
         if has_pg_error:
             self.connection_handler.raise_error(exception_value)
-            return True
 
 
 @service_as_singleton
@@ -152,9 +151,9 @@ class PgConnectionHandlerService:
                         raise BadCodingError(
                             "You cannot start multiple transactions in one thread!"
                         )
-                try: 
+                try:
                     connection = self.connection_pool.getconn()
-                except PoolError as e:
+                except PoolError:
                     self.sync_event.clear()
                     continue
                 connection.autocommit = False

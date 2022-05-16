@@ -69,9 +69,6 @@ class TestConcurrentRequests:
         patcher = patch.object(connection_handler.connection_pool, "maxconn", 2)
         patcher.start()
         self.patches.append(patcher)
-        patcher = patch.object(connection_handler._semaphore, "_value", 2)
-        patcher.start()
-        self.patches.append(patcher)
 
         for route in self.routes:
             self.lock_map[route] = threading.Lock()
