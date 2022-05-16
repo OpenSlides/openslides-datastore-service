@@ -1,5 +1,5 @@
 from datetime import datetime
-from time import sleep
+from time import sleep, strftime, localtime
 import concurrent.futures
 import os
 from threading import Thread, current_thread
@@ -72,13 +72,11 @@ def test_init_error():
 
 def test_get_connection(handler):
     connection = MagicMock()
-    handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
 
     pool.getconn = gc = MagicMock(return_value=connection)
 
     assert handler.get_connection() == connection
-    semaphore.acquire.assert_called()
     gc.assert_called()
     assert connection.autocommit is False
     assert handler.get_current_connection() == connection
@@ -96,13 +94,15 @@ def test_get_connection_ignore_invalid_connection(handler):
     new_conn = handler.get_connection()
     assert old_conn != new_conn
 
-@pytest.mark.skip(reason="never returns, lock not released?")
+#@pytest.mark.skip(reason="never returns, lock not released?")
 def test_get_connection_lock(handler):
     conn = handler.get_connection()
+    handler.sync_event.clear()
     thread = Thread(target=handler.get_connection)
     thread.start()
     thread.join(0.05)
     assert thread.is_alive()
+    handler.sync_event.set()
     handler.put_connection(conn, False)
     thread.join(0.05)
     assert not thread.is_alive()
@@ -127,14 +127,12 @@ def test_put_connection(handler):
     connection = MagicMock()
     handler.get_current_connection = gcc = MagicMock(return_value=connection)
     handler.set_current_connection = scc = MagicMock()
-    handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
 
     pool.putconn = pc = MagicMock()
 
     handler.put_connection(connection, False)
     pc.assert_called_with(connection, close=False)
-    semaphore.release.assert_called()
     gcc.assert_called()
     scc.assert_called_with(None)
 
@@ -161,7 +159,6 @@ def test_get_connection_context(handler):
 def test_connection_error_in_context(handler):
     connection = MagicMock()
     connection.closed = 1
-    handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
     pool.getconn = gc = MagicMock(return_value=connection)
     pool.putconn = pc = MagicMock()
@@ -176,8 +173,6 @@ def test_connection_error_in_context(handler):
             raise_error()
 
     # not blocked
-    semaphore.acquire.assert_called_once()
-    semaphore.release.assert_called_once()
     assert handler.get_current_connection() is None
     pc.assert_called_with(connection, close=True)
 
@@ -251,8 +246,6 @@ def test_shutdown(handler):
 
 
 # test retry_on_db_failure
-
-
 def test_retry_on_db_failure():
     @retry_on_db_failure
     def test(counter):
@@ -296,6 +289,7 @@ def test_retry_on_db_failure_with_timeout():
     assert sleep.call_count == 2
 
 
+#@pytest.mark.skip(reason="Just to play with threads, locking, performance")
 def test_play():
     sleeping_secs = 3
     start = datetime.now()
@@ -303,18 +297,12 @@ def test_play():
     print(f"Connectionpool maxconn:{handler.connection_pool.maxconn} minconn:{handler.connection_pool.minconn}")
     print_connection_pool("Pos0", handler.connection_pool)
     conn = handler.get_connection()
-    #assert len(handler.connection_pool._pool) == 0
-    #assert len(handler.connection_pool._used) == 1
-
     handler.put_connection(conn, True)
-    #assert len(handler.connection_pool._pool) == 0
-    #assert len(handler.connection_pool._used) == 0
 
+    print_connection_pool("Pos1", handler.connection_pool)
     conn = handler.get_connection()
     handler.put_connection(conn)
-    print_connection_pool("Pos1", handler.connection_pool)
-    #assert len(handler.connection_pool._pool) == 1
-    #assert len(handler.connection_pool._used) == 0
+    print_connection_pool("Pos2", handler.connection_pool)
 
     try:
         thread1 = Thread(target=thread_method, kwargs={"handler":handler, "secs":sleeping_secs})
@@ -328,30 +316,28 @@ def test_play():
     except Exception as e:
         print(e)
 
-    print_connection_pool("Pos2", handler.connection_pool)
+    print_connection_pool("Pos3", handler.connection_pool)
 
     thread1.join()
     thread2.join()
     thread3.join()
     thread4.join()
 
-    print_connection_pool("Pos3", handler.connection_pool)
+    print_connection_pool("Pos4", handler.connection_pool)
 
     threads = []
     for i in range(10):
-        thread = Thread(target=thread_method, kwargs={"handler":handler, "secs":5})
+        thread = Thread(target=thread_method, kwargs={"handler":handler, "secs":sleeping_secs})
         thread.start()
         threads.append(thread)
-    print_connection_pool("Pos4", handler.connection_pool)
+    print_connection_pool("Pos5", handler.connection_pool)
 
     for thread in threads:
         thread.join()
 
     print(f"Laufzeit gesamt: {datetime.now() - start}")
-    print_connection_pool("Pos5", handler.connection_pool)
-    #assert len(handler.connection_pool._pool) == 1
-    #assert len(handler.connection_pool._used) == 1
-
+    1/0
+    print_connection_pool("Pos6", handler.connection_pool)
 
 def print_connection_pool(info, connection_pool):
     def poolobj(pobjects):
@@ -359,21 +345,15 @@ def print_connection_pool(info, connection_pool):
     print(f"Connectionpool {info} _pool:{poolobj(connection_pool._pool)} _used:{poolobj(connection_pool._used.values())}", flush=True)
 
 def thread_method(handler, secs):
-    with ConnectionContext(handler) as context:
-        con_obj = hex(id(handler._storage))
+    with ConnectionContext(handler):
         sleep(secs)
-    print(f"Thread {current_thread().name} conn:{con_obj} ended")
 
 def thread_method_exc(handler, secs):
-    with ConnectionContext(handler) as context:
-        con_obj = hex(id(handler._storage))
+    with ConnectionContext(handler):
         sleep(secs)
-        print(f"Thread {current_thread().name} conn:{con_obj} ending")
         5/0
 
 def thread_method_conn_close_exc(handler, secs):
-    with ConnectionContext(handler) as context:
-        con_obj = hex(id(handler._storage))
+    with ConnectionContext(handler):
         sleep(secs)
-        print(f"Thread {current_thread().name} conn:{con_obj} ending")
         raise psycopg2.Error("test raising psycopg2")
