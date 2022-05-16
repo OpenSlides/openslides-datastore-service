@@ -302,13 +302,9 @@ def test_sync_event_for_getter():
     conn = handler.get_connection()  # get the one and only connection
     handler.sync_event.clear()
 
-    thread1 = Thread(
-        target=thread_method, kwargs={"handler": handler, "secs": 0.1}
-    )
+    thread1 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
     thread1.start()
-    thread2 = Thread(
-        target=thread_method, kwargs={"handler": handler, "secs": 0.1}
-    )
+    thread2 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
     thread2.start()
     handler.sync_event.set()
     sleep(0.1)
@@ -316,6 +312,7 @@ def test_sync_event_for_getter():
     handler.put_connection(conn)
     thread1.join()
     thread2.join()
+
 
 @pytest.mark.skip(reason="Just to play with threads, locking, performance")
 def test_play():
