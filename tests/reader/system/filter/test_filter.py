@@ -107,6 +107,19 @@ def test_leq(json_client, db_connection, db_cur):
     }
 
 
+def test_eq_ignore_case(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_1", "operator": "~=", "value": "DATA"},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
+
+
 def test_and(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, data)
     response = json_client.post(

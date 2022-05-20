@@ -155,7 +155,10 @@ class SqlQueryHelper:
                 condition = f"{table_alias}data->>%s {operator} NULL"
                 arguments += [filter.field]
             else:
-                condition = f"{table_alias}data->>%s {filter.operator} %s::text"
+                if filter.operator == "~=":
+                    condition = f"LOWER({table_alias}data->>%s) = LOWER(%s::text)"
+                else:
+                    condition = f"{table_alias}data->>%s {filter.operator} %s::text"
                 arguments += [filter.field, filter.value]
             return condition
         else:
