@@ -9,7 +9,7 @@ from .self_validating_dataclass import SelfValidatingDataclass
 @dataclass
 class FilterOperator(SelfValidatingDataclass):
     field: Field
-    operator: Literal["=", "!=", "<", ">", ">=", "<="]
+    operator: Literal["=", "!=", "<", ">", ">=", "<=", "~="]
     value: Any
 
 
@@ -45,7 +45,10 @@ filter_definitions_schema = {
         "properties": {
             "field": {"type": "string"},
             "value": {},
-            "operator": {"type": "string", "enum": ["=", "!=", "<", ">", ">=", "<="]},
+            "operator": {
+                "type": "string",
+                "enum": ["=", "!=", "<", ">", ">=", "<=", "~="],
+            },
         },
         "required": ["field", "value", "operator"],
     },
