@@ -49,6 +49,22 @@ def test_gt(json_client, db_connection, db_cur):
     assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
 
 
+def test_gt_with_high_string_value(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_2", "operator": ">", "value": 9},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {
+        "data": {"1": data["a/1"], "2": data["a/2"]},
+        "position": 3,
+    }
+
+
 def test_geq(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, data)
     response = json_client.post(
