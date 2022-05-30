@@ -1,10 +1,13 @@
 import concurrent.futures
 import os
+from datetime import datetime
 from threading import Thread
+from time import sleep
 from unittest.mock import MagicMock, patch
 
 import psycopg2
 import pytest
+from psycopg2.errors import SyntaxError
 from psycopg2.extras import Json
 
 from datastore.shared.di import injector
@@ -41,6 +44,7 @@ def handler(provide_di):
 
 def test_connection_context(handler):
     connection = MagicMock()
+    connection.closed = 0
     handler.get_connection = gc = MagicMock(return_value=connection)
     handler.put_connection = pc = MagicMock()
 
@@ -68,13 +72,11 @@ def test_init_error():
 
 def test_get_connection(handler):
     connection = MagicMock()
-    handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
 
     pool.getconn = gc = MagicMock(return_value=connection)
 
     assert handler.get_connection() == connection
-    semaphore.acquire.assert_called()
     gc.assert_called()
     assert connection.autocommit is False
     assert handler.get_current_connection() == connection
@@ -95,10 +97,12 @@ def test_get_connection_ignore_invalid_connection(handler):
 
 def test_get_connection_lock(handler):
     conn = handler.get_connection()
+    handler.sync_event.clear()
     thread = Thread(target=handler.get_connection)
     thread.start()
     thread.join(0.05)
     assert thread.is_alive()
+    handler.sync_event.set()
     handler.put_connection(conn, False)
     thread.join(0.05)
     assert not thread.is_alive()
@@ -123,14 +127,12 @@ def test_put_connection(handler):
     connection = MagicMock()
     handler.get_current_connection = gcc = MagicMock(return_value=connection)
     handler.set_current_connection = scc = MagicMock()
-    handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
 
     pool.putconn = pc = MagicMock()
 
     handler.put_connection(connection, False)
     pc.assert_called_with(connection, close=False)
-    semaphore.release.assert_called()
     gcc.assert_called()
     scc.assert_called_with(None)
 
@@ -141,27 +143,6 @@ def test_put_connection_invalid_connection(handler):
 
     with pytest.raises(BadCodingError):
         handler.put_connection(MagicMock(), False)
-
-
-@pytest.mark.skipif(
-    not os.getenv("RUN_MANUAL_TESTS"), reason="needs manual intervention"
-)
-def test_postgres_connection_reset(handler):
-    """
-    Unfortunately, a manual restart of the postgres container is necessary to provoke
-    the needed OperationalError. Run this test to see how the connection handler
-    handles a short connection loss to the db.
-    """
-    try:
-        with handler.get_connection_context():
-            breakpoint()  # restart postgres here
-            handler.execute("SELECT 1", [])
-    except Exception:
-        pass
-
-    # this should still work without error
-    with handler.get_connection_context():
-        handler.execute("SELECT 1", [])
 
 
 def test_get_connection_context(handler):
@@ -178,20 +159,20 @@ def test_get_connection_context(handler):
 def test_connection_error_in_context(handler):
     connection = MagicMock()
     connection.closed = 1
-    handler._semaphore = semaphore = MagicMock()
     handler.connection_pool = pool = MagicMock()
     pool.getconn = gc = MagicMock(return_value=connection)
     pool.putconn = pc = MagicMock()
+
+    def raise_error() -> None:
+        raise SyntaxError("Test")
 
     context = ConnectionContext(handler)
     with pytest.raises(DatabaseError):
         with context:
             gc.assert_called()
-            raise psycopg2.Error("Test")
+            raise_error()
 
     # not blocked
-    semaphore.acquire.assert_called_once()
-    semaphore.release.assert_called_once()
     assert handler.get_current_connection() is None
     pc.assert_called_with(connection, close=True)
 
@@ -265,8 +246,6 @@ def test_shutdown(handler):
 
 
 # test retry_on_db_failure
-
-
 def test_retry_on_db_failure():
     @retry_on_db_failure
     def test(counter):
@@ -308,3 +287,119 @@ def test_retry_on_db_failure_with_timeout():
             test(counter)
     assert counter.call_count == 3
     assert sleep.call_count == 2
+
+
+def test_sync_event_for_getter():
+    """
+    Test the 5.line "continue" in get_connection of the handler,
+    leaving the lock, if sync_event is not set
+    """
+    os.environ["DATASTORE_MAX_CONNECTIONS"] = "1"
+    injector.get(EnvironmentService).cache = {}
+    handler = service(PgConnectionHandlerService)()
+
+    assert handler.connection_pool.maxconn == 1
+    conn = handler.get_connection()  # get the one and only connection
+    handler.sync_event.clear()
+
+    thread1 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
+    thread1.start()
+    thread2 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
+    thread2.start()
+    handler.sync_event.set()
+    sleep(0.1)
+    assert not handler.sync_event.is_set()
+    handler.put_connection(conn)
+    thread1.join()
+    thread2.join()
+
+
+@pytest.mark.skip(reason="Just to play with threads, locking, performance")
+def test_play():
+    sleeping_secs = 1
+    start = datetime.now()
+    handler = injector.get(ConnectionHandler)
+    print(
+        f"Connectionpool maxconn:{handler.connection_pool.maxconn} minconn:{handler.connection_pool.minconn}"
+    )
+    print_connection_pool("Pos0", handler.connection_pool)
+    conn = handler.get_connection()
+    handler.put_connection(conn, True)
+
+    print_connection_pool("Pos1", handler.connection_pool)
+    conn = handler.get_connection()
+    handler.put_connection(conn)
+    print_connection_pool("Pos2", handler.connection_pool)
+
+    try:
+        thread1 = Thread(
+            target=thread_method, kwargs={"handler": handler, "secs": sleeping_secs}
+        )
+        thread1.start()
+        thread2 = Thread(
+            target=thread_method_conn_close_exc,
+            kwargs={"handler": handler, "secs": sleeping_secs},
+        )
+        thread2.start()
+        thread3 = Thread(
+            target=thread_method_exc, kwargs={"handler": handler, "secs": sleeping_secs}
+        )
+        thread3.start()
+        thread4 = Thread(
+            target=thread_method, kwargs={"handler": handler, "secs": sleeping_secs}
+        )
+        thread4.start()
+    except Exception as e:
+        print(e)
+
+    print_connection_pool("Pos3", handler.connection_pool)
+
+    thread1.join()
+    thread2.join()
+    thread3.join()
+    thread4.join()
+
+    print_connection_pool("Pos4", handler.connection_pool)
+
+    threads = []
+    for i in range(10):
+        thread = Thread(
+            target=thread_method, kwargs={"handler": handler, "secs": sleeping_secs}
+        )
+        thread.start()
+        threads.append(thread)
+    print_connection_pool("Pos5", handler.connection_pool)
+
+    for thread in threads:
+        thread.join()
+
+    print(f"Laufzeit gesamt: {datetime.now() - start}")
+    # 1 / 0  # remove comment to see the captured output
+    print_connection_pool("Pos6", handler.connection_pool)
+
+
+def print_connection_pool(info, connection_pool):
+    def poolobj(pobjects):
+        return [hex(id(pobj)) for pobj in pobjects]
+
+    print(
+        f"Connectionpool {info} _pool:{poolobj(connection_pool._pool)} _used:{poolobj(connection_pool._used.values())}",
+        flush=True,
+    )
+
+
+def thread_method(handler, secs):
+    with ConnectionContext(handler):
+        sleep(secs)
+
+
+def thread_method_exc(handler, secs):
+    with ConnectionContext(handler):
+        sleep(secs)
+        5 / 0
+
+
+def thread_method_conn_close_exc(handler, secs):
+    with ConnectionContext(handler):
+        sleep(secs)
+        raise psycopg2.Error("test raising psycopg2")

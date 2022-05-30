@@ -1,12 +1,12 @@
 import threading
 from functools import wraps
-from threading import Semaphore
+from threading import Event, Lock
 from time import sleep
 
 import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import DictCursor, Json, execute_values
-from psycopg2.pool import ThreadedConnectionPool
+from psycopg2.pool import PoolError, ThreadedConnectionPool
 
 from datastore.shared.di import injector, service_as_singleton
 from datastore.shared.services import EnvironmentService, ShutdownService
@@ -67,17 +67,15 @@ class ConnectionContext:
         self.connection.__enter__()
 
     def __exit__(self, exception, exception_value, traceback):
-        has_connection_error = exception is not None and issubclass(
-            exception, psycopg2.Error
-        )
-        if has_connection_error:
-            # make sure the connection was already closed by psycopg
-            assert self.connection.closed > 0
-        else:
+        has_pg_error = exception is not None and issubclass(exception, psycopg2.Error)
+        # connection which were already closed will raise an InterfaceError in __exit__
+        if not self.connection.closed:
             self.connection.__exit__(exception, exception_value, traceback)
-        self.connection_handler.put_connection(self.connection, has_connection_error)
-
-        if has_connection_error:
+        # some errors are not correctly recognized by the connection pool, soto be save we dispose
+        # all connection which errored out, even though some might still be usable
+        self.connection_handler.put_connection(self.connection, has_pg_error)
+        # Handle errors by ourselves
+        if has_pg_error:
             self.connection_handler.raise_error(exception_value)
 
 
@@ -85,6 +83,8 @@ class ConnectionContext:
 class PgConnectionHandlerService:
 
     _storage: threading.local
+    sync_lock: Lock
+    sync_event: Event
     connection_pool: ThreadedConnectionPool
 
     environment: EnvironmentService
@@ -93,10 +93,12 @@ class PgConnectionHandlerService:
     def __init__(self, shutdown_service: ShutdownService):
         shutdown_service.register(self)
         self._storage = threading.local()
+        self.sync_lock = Lock()
+        self.sync_event = Event()
+        self.sync_event.set()
 
-        min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 0)
+        min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 1)
         max_conn = int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 1)
-        self._semaphore = Semaphore(max_conn)
         try:
             self.connection_pool = ThreadedConnectionPool(
                 min_conn, max_conn, **self.get_connection_params()
@@ -128,36 +130,48 @@ class PgConnectionHandlerService:
         }
 
     def get_connection(self):
-        if old_conn := self.get_current_connection():
-            if old_conn.closed:
-                # If an error happens while returning the connection to the pool, it
-                # might still be set as the current connection although it is already
-                # closed. In this case, we just discard it.
-                logger.debug(f"Discarding old connection (closed={old_conn.closed})")
-                logger.debug("This indicates a previous error, please check the logs")
-                self.put_connection(old_conn, True)
-            else:
-                raise BadCodingError(
-                    "You cannot start multiple transactions in one thread!"
-                )
-        self._semaphore.acquire()
-        connection = self.connection_pool.getconn()
-        connection.autocommit = False
-        self.set_current_connection(connection)
+        while True:
+            self.sync_event.wait()
+            with self.sync_lock:
+                if not self.sync_event.is_set():
+                    continue
+                if old_conn := self.get_current_connection():
+                    if old_conn.closed:
+                        # If an error happens while returning the connection to the pool, it
+                        # might still be set as the current connection although it is already
+                        # closed. In this case, we just discard it.
+                        logger.debug(
+                            f"Discarding old connection (closed={old_conn.closed})"
+                        )
+                        logger.debug(
+                            "This indicates a previous error, please check the logs"
+                        )
+                        self._put_connection(old_conn, True)
+                    else:
+                        raise BadCodingError(
+                            "You cannot start multiple transactions in one thread!"
+                        )
+                try:
+                    connection = self.connection_pool.getconn()
+                except PoolError:
+                    self.sync_event.clear()
+                    continue
+                connection.autocommit = False
+                self.set_current_connection(connection)
+                break
         return connection
 
-    def put_connection(self, connection, has_error):
-        """
-        has_error indicated, whether to not reuse the connection.
-        If the connection encountered an error, set it to true, so
-        it will be discarded from the pool.
-        """
+    def put_connection(self, connection, has_error=False):
+        with self.sync_lock:
+            self._put_connection(connection, has_error)
+
+    def _put_connection(self, connection, has_error):
         if connection != self.get_current_connection():
             raise BadCodingError("Invalid connection")
 
         self.connection_pool.putconn(connection, close=has_error)
         self.set_current_connection(None)
-        self._semaphore.release()
+        self.sync_event.set()
 
     def get_connection_context(self):
         return ConnectionContext(self)
