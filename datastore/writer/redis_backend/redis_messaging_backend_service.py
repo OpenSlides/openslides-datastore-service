@@ -38,11 +38,11 @@ class RedisMessagingBackendService(Messaging):
                 + json.dumps(modified_fqfields)
             )
 
-        print("WASGEHT")
+        # print("WASGEHT")
 
         # merge span data into modified fields
         #modified_fqfields = { **get_span_data(), **modified_fqfields}
-        inject_otel_data(modified_fqfields)
+        # inject_otel_data(modified_fqfields)
 
         self.connection.xadd(MODIFIED_FIELDS_TOPIC, modified_fqfields)
 

@@ -43,7 +43,7 @@ class WriterService:
                         )
                         self.position_to_modified_models[position] = modified_models
 
-                with make_span("handle events"):
+                with make_span("push events onto redis messaging-bus"):
                     # Only propagate updates to redis after the transaction has finished
                     self.messaging.handle_events(
                         self.position_to_modified_models,

@@ -86,13 +86,13 @@ def inject_otel_data(fields: Dict[str, Any]) -> None:
             data[OTEL_DATA_FIELD_KEY] = {}
         data[OTEL_DATA_FIELD_KEY][key] = value
 
-    print("ATTENTION")
+    # print("ATTENTION")
 
-    print("span_context = trace.get_current_span().get_span_context()")
+    # print("span_context = trace.get_current_span().get_span_context()")
     span_context = trace.get_current_span().get_span_context()
-    print("propa = propagators.get_global_textmap()")
+    # print("propa = propagators.get_global_textmap()")
     propa = get_global_textmap()
-    print("propa.inject(cb_set_opentelemetry_field, fields, context=span_context)")
+    # print("propa.inject(cb_set_opentelemetry_field, fields, context=span_context)")
     propa.inject(
         carrier=fields,
         setter=FqfieldsSetter
@@ -101,10 +101,10 @@ def inject_otel_data(fields: Dict[str, Any]) -> None:
     print("print(fields)")
     print(fields)
 
-    #trace_id_hex = span_context.trace_id.to_bytes(((span_context.trace_id.bit_length() + 7) // 8),"big").hex()
-    #span_id_hex = span_context.span_id.to_bytes((( span_context.span_id.bit_length() + 7) // 8),"big").hex()
-    #span_data = f"{trace_id_hex}:{span_id_hex}:{span_context.trace_flags}"
-    #return { OTEL_DATA_FIELD_KEY: span_data }
+    # trace_id_hex = span_context.trace_id.to_bytes(((span_context.trace_id.bit_length() + 7) // 8),"big").hex()
+    # span_id_hex = span_context.span_id.to_bytes((( span_context.span_id.bit_length() + 7) // 8),"big").hex()
+    # span_data = f"{trace_id_hex}:{span_id_hex}:{span_context.trace_flags}"
+    return { OTEL_DATA_FIELD_KEY: span_data }
 
 
 
