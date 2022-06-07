@@ -93,7 +93,9 @@ class WriterService:
             self.occ_locker.assert_locked_fields(write_request)
 
             # Insert db events with position data
-            information = write_request.information if write_request.information else None
+            information = (
+                write_request.information if write_request.information else None
+            )
             position, modified_fqfields = self.database.insert_events(
                 write_request.events,
                 migration_index,

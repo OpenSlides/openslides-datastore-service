@@ -1,7 +1,6 @@
 from collections import defaultdict
 from typing import Any, ContextManager, Dict, List, cast
 
-
 from datastore.reader.core.reader import (
     CountResult,
     ExistsResult,
@@ -19,7 +18,6 @@ from datastore.shared.services.read_database import (
     CountFilterQueryFieldsParameters,
 )
 from datastore.shared.typing import Collection, Fqid, Id, Model
-from datastore.shared.util.otel import make_span
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
@@ -32,6 +30,7 @@ from datastore.shared.util.key_transforms import (
     field_from_fqfield,
     fqid_from_fqfield,
 )
+from datastore.shared.util.otel import make_span
 
 from .requests import (
     AggregateRequest,
@@ -99,9 +98,7 @@ class ReaderService:
                     fqfield_requests = cast(List[str], request.requests)
                     for fqfield in fqfield_requests:
                         fqid = fqid_from_fqfield(fqfield)
-                        mapped_fields_per_fqid[fqid].append(
-                            field_from_fqfield(fqfield)
-                        )
+                        mapped_fields_per_fqid[fqid].append(field_from_fqfield(fqfield))
 
             fqids = list(mapped_fields_per_fqid.keys())
 
@@ -110,8 +107,12 @@ class ReaderService:
                     fqids = self.filter_fqids_by_deleted_status(
                         fqids, request.position, request.get_deleted_models
                     )
-                    result = self.database.build_models_ignore_deleted(fqids, request.position)
-                    result = self.apply_mapped_fields_multi(result, mapped_fields_per_fqid)
+                    result = self.database.build_models_ignore_deleted(
+                        fqids, request.position
+                    )
+                    result = self.apply_mapped_fields_multi(
+                        result, mapped_fields_per_fqid
+                    )
                 else:
                     result = self.database.get_many(
                         fqids,
