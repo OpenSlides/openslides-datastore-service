@@ -1,6 +1,8 @@
 [report]
 fail_under=100
-omit=tests/*
+omit=
+    tests/*
+    datastore/shared/util/otel.py
 
 [html]
 directory = tests/htmlcov

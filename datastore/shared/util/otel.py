@@ -1,12 +1,8 @@
-import os
-from abc import ABC
 from contextlib import nullcontext
-from typing import Any, Dict
 
-from opentelemetry import propagators, trace
+from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.propagate import get_global_textmap
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -34,7 +30,7 @@ def init(service_name):
         return
 
     span_exporter = OTLPSpanExporter(
-        endpoint=f"http://collector:4317",
+        endpoint="http://collector:4317",
         insecure=True
         # optional
         # credentials=ChannelCredentials(credentials),
