@@ -36,6 +36,7 @@ class RedisMessagingBackendService(Messaging):
                 f"written fqfields into {MODIFIED_FIELDS_TOPIC}: "
                 + json.dumps(modified_fqfields)
             )
+
         self.connection.xadd(MODIFIED_FIELDS_TOPIC, modified_fqfields)
 
     def get_modified_fqfields(

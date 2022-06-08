@@ -7,6 +7,7 @@ from datastore.shared.postgresql_backend import retry_on_db_failure
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Field, Fqid
 from datastore.shared.util import DatastoreNotEmpty, logger
+from datastore.shared.util.otel import make_span
 
 from .database import Database
 from .messaging import Messaging
@@ -30,25 +31,27 @@ class WriterService:
         write_requests: List[WriteRequest],
         log_all_modified_fields: bool = True,
     ) -> None:
-        self.write_requests = write_requests
+        with make_span("write request"):
+            self.write_requests = write_requests
 
-        with self._lock:
-            self.position_to_modified_models = {}
-            with self.database.get_context():
-                for write_request in self.write_requests:
-                    position, modified_models = self.write_with_database_context(
-                        write_request
+            with self._lock:
+                self.position_to_modified_models = {}
+                with self.database.get_context():
+                    for write_request in self.write_requests:
+                        position, modified_models = self.write_with_database_context(
+                            write_request
+                        )
+                        self.position_to_modified_models[position] = modified_models
+
+                with make_span("push events onto redis messaging-bus"):
+                    # Only propagate updates to redis after the transaction has finished
+                    self.messaging.handle_events(
+                        self.position_to_modified_models,
+                        log_all_modified_fields=log_all_modified_fields,
                     )
-                    self.position_to_modified_models[position] = modified_models
 
-            # Only propagate updates to redis after the transaction has finished
-            self.messaging.handle_events(
-                self.position_to_modified_models,
-                log_all_modified_fields=log_all_modified_fields,
-            )
-
-        self.print_stats()
-        self.print_summary()
+            self.print_stats()
+            self.print_summary()
 
     def print_stats(self) -> None:
         stats: Dict[str, int] = defaultdict(int)
@@ -75,36 +78,40 @@ class WriterService:
     def write_with_database_context(
         self, write_request: WriteRequest
     ) -> Tuple[int, Dict[Fqid, Dict[Field, JSON]]]:
-        # get migration index
-        if write_request.migration_index is None:
-            migration_index = self.read_database.get_current_migration_index()
-        else:
-            if not self.read_database.is_empty():
-                raise DatastoreNotEmpty(
-                    f"Passed a migration index of {write_request.migration_index}, but the datastore is not empty."
-                )
-            migration_index = write_request.migration_index
+        with make_span("write with database context"):
+            # get migration index
+            if write_request.migration_index is None:
+                migration_index = self.read_database.get_current_migration_index()
+            else:
+                if not self.read_database.is_empty():
+                    raise DatastoreNotEmpty(
+                        f"Passed a migration index of {write_request.migration_index}, but the datastore is not empty."
+                    )
+                migration_index = write_request.migration_index
 
-        # Check locked_fields -> Possible LockedError
-        self.occ_locker.assert_locked_fields(write_request)
+            # Check locked_fields -> Possible LockedError
+            self.occ_locker.assert_locked_fields(write_request)
 
-        # Insert db events with position data
-        information = write_request.information if write_request.information else None
-        position, modified_fqfields = self.database.insert_events(
-            write_request.events,
-            migration_index,
-            information,
-            write_request.user_id,
-        )
+            # Insert db events with position data
+            information = (
+                write_request.information if write_request.information else None
+            )
+            position, modified_fqfields = self.database.insert_events(
+                write_request.events,
+                migration_index,
+                information,
+                write_request.user_id,
+            )
 
-        return position, modified_fqfields
+            return position, modified_fqfields
 
     @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> List[int]:
-        with self.database.get_context():
-            ids = self.database.reserve_next_ids(collection, amount)
-            logger.info(f"{len(ids)} ids reserved")
-            return ids
+        with make_span("reserve ids"):
+            with self.database.get_context():
+                ids = self.database.reserve_next_ids(collection, amount)
+                logger.info(f"{len(ids)} ids reserved")
+                return ids
 
     @retry_on_db_failure
     def truncate_db(self) -> None:
