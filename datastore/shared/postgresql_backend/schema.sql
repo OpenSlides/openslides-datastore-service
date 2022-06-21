@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS events (
     data JSONB,
     weight INTEGER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS event_position_idx ON events (position);
 CREATE INDEX IF NOT EXISTS event_fqid_idx ON events (fqid);
 -- TODO: create index for data->>meeting_id for collectionfieldlocks
 
