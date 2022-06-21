@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
@@ -64,17 +64,20 @@ class SqlOccLockerBackendService:
         event_filter_parts = []
         collectionfield_query_arguments: List[str] = []
         collectionfield_filter_parts = []
+        fqid_position_set: Set[Tuple[str, int]] = set()
 
         for fqfield, position in fqfields.items():
             collectionfield, fqid = collectionfield_and_fqid_from_fqfield(fqfield)
 
-            event_query_arguments.extend(
-                (
-                    fqid,
-                    position,
+            if (fqid, position) not in fqid_position_set:
+                fqid_position_set.add((fqid, position))
+                event_query_arguments.extend(
+                    (
+                        fqid,
+                        position,
+                    )
                 )
-            )
-            event_filter_parts.append("(fqid=%s and position>%s)")
+                event_filter_parts.append("(fqid=%s and position>%s)")
 
             # % matches zero or more chars: this is correct since the template field
             # itself may also be locked
