@@ -1,13 +1,13 @@
-from collections import defaultdict
 import json
 import re
-import sys
-from datetime import datetime
 import string
+import sys
+from collections import defaultdict
+from datetime import datetime
+from typing import Any, Dict, List
 
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
-from datastore.shared.postgresql_backend.pg_connection_handler import PgConnectionHandlerService
 from datastore.writer.app import register_services
 
 
@@ -45,7 +45,6 @@ PERMISSION_MAPPING = {
     "motion.can_support": "motions.can_support",
     "projector.can_see": "core.can_see_projector",
     "projector.can_manage": "core.can_manage_projector",
-    "projector.can_manage": "core.can_manage_tags",
     "user.can_see_extra_data": "users.can_see_extra_data",
     "user.can_see": "users.can_see_name",
     "user.can_manage": "users.can_manage",
@@ -82,6 +81,7 @@ PERMISSION_HIERARCHIE = {
 
 
 def main():
+    # TODO: adjust sequences afterwards so new models can be created in the instance
     register_services()
     connection: ConnectionHandler = injector.get(ConnectionHandler)
 
@@ -92,8 +92,9 @@ def main():
 
     with connection.get_connection_context():
         models = connection.query(
-            "SELECT fqid, data FROM models WHERE deleted is FALSE AND (data->>'meeting_id'='%s' OR data->'meeting_ids' @> '%s')",
-            (meeting_id, meeting_id)
+            "SELECT fqid, data FROM models WHERE deleted is FALSE AND "
+            "(data->>'meeting_id'='%s' OR data->'meeting_ids' @> '%s')",
+            (meeting_id, meeting_id),
         )
 
     lists_of_speakers = []
@@ -102,15 +103,15 @@ def main():
     motion_change_recommendations = []
     motion_comments = []
     motion_comment_sections = []
-    motion_comment_section_read_groups = []
-    motion_comment_section_write_groups = []
+    motion_comment_section_read_groups: List[Dict[str, Any]] = []
+    motion_comment_section_write_groups: List[Dict[str, Any]] = []
     motion_states = []
-    motion_states_next_states = []
+    motion_states_next_states: List[Dict[str, Any]] = []
     motion_submitters = []
     motion_workflows = []
     personal_notes = []
     users = []
-    users_groups = []
+    users_groups: List[Dict[str, Any]] = []
 
     motion_id_map = {}
     motion_identifiers = set()
@@ -136,7 +137,7 @@ def main():
                 "state_id",
                 "recommendation_id",
                 "category_id",
-                "sort_parent_id"
+                "sort_parent_id",
             )
             new_model["id"] = data["sequential_number"]
             new_model["identifier"] = data["number"]
@@ -145,7 +146,9 @@ def main():
             i = 0
             while new_model["identifier"] in motion_identifiers:
                 print("Double Identifier: " + new_model["identifier"])
-                new_model["identifier"] = data["number"] + "--" + string.ascii_uppercase[i]
+                new_model["identifier"] = (
+                    data["number"] + "--" + string.ascii_uppercase[i]
+                )
                 i += 1
             motion_identifiers.add(new_model["identifier"])
             new_model["identifier_number"] = data["number_value"]
@@ -154,7 +157,9 @@ def main():
             if not new_model.get("text"):
                 new_model["text"] = ""
             new_model["last_modified"] = datetime.fromtimestamp(data["last_modified"])
-            new_model["created"] = datetime.fromtimestamp(data.get("created", 1655913939))
+            new_model["created"] = datetime.fromtimestamp(
+                data.get("created", 1655913939)
+            )
             if data.get("amendment_paragraph_$"):
                 new_ap = []
                 ap_set = set(data["amendment_paragraph_$"])
@@ -205,9 +210,12 @@ def main():
                 new_model["line_to"] += 1
             if not new_model.get("other_description"):
                 new_model["other_description"] = ""
-            new_model["type"] = {"replacement": 0, "insertion": 1, "deletion": 2, "other": 3}[
-                data["type"]
-            ]
+            new_model["type"] = {
+                "replacement": 0,
+                "insertion": 1,
+                "deletion": 2,
+                "other": 3,
+            }[data["type"]]
             motion_change_recommendations.append(new_model)
         elif collection == "motion_comment":
             new_model = copy(data, "id", "section_id", "comment", "motion_id")
@@ -270,10 +278,7 @@ def main():
             motion_states.append(new_model)
 
             motion_states_next_states.extend(
-                {
-                    "from_state_id": data["id"],
-                    "to_state_id": next_state_id
-                }
+                {"from_state_id": data["id"], "to_state_id": next_state_id}
                 for next_state_id in data.get("next_state_ids", [])
             )
         elif collection == "motion_workflow":
@@ -309,7 +314,9 @@ def main():
             )
 
             if "last_email_send" in data:
-                new_model["last_email_send"] = datetime.fromtimestamp(data["last_email_send"])
+                new_model["last_email_send"] = datetime.fromtimestamp(
+                    data["last_email_send"]
+                )
             if not new_model.get("gender"):
                 new_model["gender"] = ""
             if not new_model.get("title"):
@@ -325,9 +332,19 @@ def main():
             new_model["password"] = ""
             new_model["is_superuser"] = False
             new_model["is_committee"] = not data.get("is_physical_person")
-            new_model["number"] = data.get(f"number_${meeting_id}") or data.get("default_number") or ""
-            new_model["structure_level"] = data.get(f"structure_level_${meeting_id}") or data.get("default_structure_level") or ""
-            new_model["vote_weight"] = data.get(f"vote_weight_${meeting_id}") or data.get("default_vote_weight") or 1
+            new_model["number"] = (
+                data.get(f"number_${meeting_id}") or data.get("default_number") or ""
+            )
+            new_model["structure_level"] = (
+                data.get(f"structure_level_${meeting_id}")
+                or data.get("default_structure_level")
+                or ""
+            )
+            new_model["vote_weight"] = (
+                data.get(f"vote_weight_${meeting_id}")
+                or data.get("default_vote_weight")
+                or 1
+            )
             new_model["about_me"] = data.get(f"about_me_${meeting_id}") or ""
             new_model["comment"] = data.get(f"comment_${meeting_id}") or ""
             new_model["is_present"] = meeting_id in data["is_present_in_meeting_ids"]
@@ -335,13 +352,10 @@ def main():
             users.append(new_model)
 
             users_groups.extend(
-                {
-                    "user_id": data["id"],
-                    "group_id": group_id
-                }
+                {"user_id": data["id"], "group_id": group_id}
                 for group_id in data.get(f"group_${meeting_id}_ids", [])
             )
-    
+
     # update motion ids
     for motion in motions:
         if "sort_parent_id" in motion:
@@ -364,48 +378,148 @@ def main():
     personal_notes = [
         {
             "user_id": user_id,
-            "notes": json.dumps({
-                "motions/motion": {
-                    note["motion_id"]: {
-                        "note": note.get("note"),
-                        "star": note.get("star", False)
+            "notes": json.dumps(
+                {
+                    "motions/motion": {
+                        note["motion_id"]: {
+                            "note": note.get("note"),
+                            "star": note.get("star", False),
+                        }
+                        for note in notes
                     }
-                    for note in notes
                 }
-            })
+            ),
         }
         for user_id, notes in notes_by_user.items()
     ]
-    
+
     with open("cli/export.sql", "w") as file:
         file.write("SET session_replication_role = 'replica';")
-        fields = ["id", "title", "text", "modified_final_version", "reason", "category_weight", "start_line_number", "state_extension", "recommendation_extension", "origin", "created", "last_modified", "state_id", "recommendation_id", "category_id", "sort_parent_id", "identifier", "identifier_number", "amendment_paragraphs", "weight", "parent_id"]
+        fields = [
+            "id",
+            "title",
+            "text",
+            "modified_final_version",
+            "reason",
+            "category_weight",
+            "start_line_number",
+            "state_extension",
+            "recommendation_extension",
+            "origin",
+            "created",
+            "last_modified",
+            "state_id",
+            "recommendation_id",
+            "category_id",
+            "sort_parent_id",
+            "identifier",
+            "identifier_number",
+            "amendment_paragraphs",
+            "weight",
+            "parent_id",
+        ]
         file.write(get_insert_statement(motions, fields, "motions_motion"))
         fields = ["id", "name", "prefix", "weight", "parent_id"]
         file.write(get_insert_statement(motion_categories, fields, "motions_category"))
-        fields = ["id", "rejected", "internal", "other_description", "line_from", "line_to", "text", "creation_time", "motion_id", "type"]
-        file.write(get_insert_statement(motion_change_recommendations, fields, "motions_motionchangerecommendation"))
+        fields = [
+            "id",
+            "rejected",
+            "internal",
+            "other_description",
+            "line_from",
+            "line_to",
+            "text",
+            "creation_time",
+            "motion_id",
+            "type",
+        ]
+        file.write(
+            get_insert_statement(
+                motion_change_recommendations,
+                fields,
+                "motions_motionchangerecommendation",
+            )
+        )
         fields = ["id", "section_id", "comment", "motion_id"]
-        file.write(get_insert_statement(motion_comments, fields, "motions_motioncomment"))
+        file.write(
+            get_insert_statement(motion_comments, fields, "motions_motioncomment")
+        )
         fields = ["id", "name", "weight"]
-        file.write(get_insert_statement(motion_comment_sections, fields, "motions_motioncommentsection"))
+        file.write(
+            get_insert_statement(
+                motion_comment_sections, fields, "motions_motioncommentsection"
+            )
+        )
         fields = ["id", "name", "first_state_id"]
         file.write(get_insert_statement(motion_workflows, fields, "motions_workflow"))
-        fields = ["id", "name", "recommendation_label", "allow_support", "allow_create_poll", "allow_submitter_edit", "css_class", "show_state_extension_field", "show_recommendation_extension_field", "workflow_id", "restriction", "dont_set_identifier", "merge_amendment_into_final"]
+        fields = [
+            "id",
+            "name",
+            "recommendation_label",
+            "allow_support",
+            "allow_create_poll",
+            "allow_submitter_edit",
+            "css_class",
+            "show_state_extension_field",
+            "show_recommendation_extension_field",
+            "workflow_id",
+            "restriction",
+            "dont_set_identifier",
+            "merge_amendment_into_final",
+        ]
         file.write(get_insert_statement(motion_states, fields, "motions_state"))
         fields = ["from_state_id", "to_state_id"]
-        file.write(get_insert_statement(motion_states_next_states, fields, "motions_state_next_states"))
+        file.write(
+            get_insert_statement(
+                motion_states_next_states, fields, "motions_state_next_states"
+            )
+        )
         fields = ["id", "motion_id", "weight", "user_id"]
         file.write(get_insert_statement(motion_submitters, fields, "motions_submitter"))
-        fields = ["id", "username", "title", "first_name", "last_name", "is_active", "password", "auth_type", "about_me", "comment", "default_password", "gender", "email", "last_email_send", "is_committee", "number", "structure_level", "vote_weight", "is_present", "is_superuser"]
+        fields = [
+            "id",
+            "username",
+            "title",
+            "first_name",
+            "last_name",
+            "is_active",
+            "password",
+            "auth_type",
+            "about_me",
+            "comment",
+            "default_password",
+            "gender",
+            "email",
+            "last_email_send",
+            "is_committee",
+            "number",
+            "structure_level",
+            "vote_weight",
+            "is_present",
+            "is_superuser",
+        ]
         file.write(get_insert_statement(users, fields, "users_user"))
         fields = ["motioncommentsection_id", "group_id"]
-        file.write(get_insert_statement(motion_comment_section_read_groups, fields, "motions_motioncommentsection_read_groups"))
-        file.write(get_insert_statement(motion_comment_section_write_groups, fields, "motions_motioncommentsection_write_groups"))
+        file.write(
+            get_insert_statement(
+                motion_comment_section_read_groups,
+                fields,
+                "motions_motioncommentsection_read_groups",
+            )
+        )
+        file.write(
+            get_insert_statement(
+                motion_comment_section_write_groups,
+                fields,
+                "motions_motioncommentsection_write_groups",
+            )
+        )
         fields = ["notes", "user_id"]
         file.write(get_insert_statement(personal_notes, fields, "users_personalnote"))
         fields = ["id", "object_id", "content_type_id", "closed"]
-        file.write(get_insert_statement(lists_of_speakers, fields, "agenda_listofspeakers"))
+        file.write(
+            get_insert_statement(lists_of_speakers, fields, "agenda_listofspeakers")
+        )
         fields = ["user_id", "group_id"]
         file.write(get_insert_statement(users_groups, fields, "users_user_groups"))
         file.write("SET session_replication_role = 'origin';")
@@ -417,7 +531,7 @@ def get_insert_statement(models, fields, table):
     if models:
         stmt += f'insert into {table} ("' + '", "'.join(fields) + '") values '
         values = []
-        args = []
+        args: List[Any] = []
         for model in models:
             values.append("(" + ", ".join(["%s"] * len(fields)) + ")")
             args.extend(model.get(field) for field in fields)
