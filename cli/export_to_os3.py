@@ -84,6 +84,8 @@ PERMISSION_HIERARCHIE = {
 Usage: python cli/export_to_os3.py <meeting-id> (from the root folder of the container). This script
 will create (and overwrite!) the file cli/export.sql.
 """
+
+
 def main():
     # TODO: adjust sequences afterwards so new models can be created in the instance
     register_services()
