@@ -38,6 +38,8 @@ All other commands work analogous to this.
 
 Please refer to the [development documentation](docs/development.md).
 
+For useful tools, take a look at the [CLI](cli/README.md).
+
 ## Configuration
 
 The datastore can be configured with the following environment variables:
