@@ -1,6 +1,6 @@
 from collections import defaultdict
 from textwrap import dedent
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Sequence, Set, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
@@ -63,9 +63,9 @@ class SqlOccLockerBackendService:
 
         event_query_arguments: List[Any] = []
         event_filter_parts = []
-        collectionfield_query_arguments: List[str] = []
+        collectionfield_query_arguments: List[Sequence[str]] = []
         fqid_position_set: Set[Tuple[str, int]] = set()
-        collectionfield_query_data:Dict[str, List[str]] = defaultdict(list)
+        collectionfield_query_data: Dict[str, List[str]] = defaultdict(list)
 
         for fqfield, position in fqfields.items():
             collectionfield, fqid = collectionfield_and_fqid_from_fqfield(fqfield)
@@ -80,12 +80,16 @@ class SqlOccLockerBackendService:
                 )
                 event_filter_parts.append("(e.fqid=%s and e.position>%s)")
 
-
             collectionfield_query_data[fqid].append(collectionfield)
 
         event_filter = " or ".join(event_filter_parts)
-        collectionfield_filter = " or ".join(["(fqid=%s and collectionfield = ANY(%s))"]*len(collectionfield_query_data))
-        collectionfield_query_arguments = [argument for item in collectionfield_query_data.items() for argument in item]
+        collectionfield_filter = " or ".join(
+            ["(fqid=%s and collectionfield = ANY(%s))"]
+            * len(collectionfield_query_data)
+        )
+        collectionfield_query_arguments = [
+            argument for item in collectionfield_query_data.items() for argument in item
+        ]
         query = dedent(
             f"""\
             with all_together as (
