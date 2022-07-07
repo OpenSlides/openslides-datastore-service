@@ -125,6 +125,7 @@ class SqlOccLockerBackendService:
 
         query_arguments: List[Any] = []
         filter_parts = []
+        joins_needed = False
         for collectionfield, cf_lock in collectionfields.items():
             if isinstance(cf_lock, int):
                 query_arguments.extend(
@@ -133,8 +134,9 @@ class SqlOccLockerBackendService:
                         cf_lock,
                     )
                 )
-                filter_parts.append("(cf.collectionfield=%s and e.position>%s)")
+                filter_parts.append("(cf.collectionfield=%s and cf.position>%s)")
             else:
+                joins_needed = True
                 for lock in cf_lock:
                     query_arguments.extend(
                         (
@@ -151,12 +153,15 @@ class SqlOccLockerBackendService:
                     filter_parts.append(filter_part)
 
         filter_query = " or ".join(filter_parts)
-        query = dedent(
-            f"""\
-            select collectionfield from collectionfields cf
+        joins = """\
             inner join events_to_collectionfields ecf on cf.id=ecf.collectionfield_id
             inner join events e on ecf.event_id=e.id
             inner join models m on e.fqid=m.fqid
+        """
+        query = dedent(
+            f"""\
+            select collectionfield from collectionfields cf
+            {joins if joins_needed else ""}
             where {filter_query}"""
         )
         return self.connection.query_list_of_single_values(query, query_arguments)
