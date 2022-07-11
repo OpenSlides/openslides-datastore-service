@@ -128,10 +128,32 @@ def test_query_arguments_fqfield(occ_locker, connection):
     args = qsv.call_args.args[1]
     assert (
         args
-        == ["a/1", 2, "b/3", 42, KEYSEPARATOR, KEYSEPARATOR, "a/1", ["a/f"], "b/3", ["b/e"]]
+        == [
+            "a/1",
+            2,
+            "b/3",
+            42,
+            KEYSEPARATOR,
+            KEYSEPARATOR,
+            "a/1",
+            ["a/f"],
+            "b/3",
+            ["b/e"],
+        ]
     ) or (
         args
-        == ["b/3", 42, "a/1", 2, KEYSEPARATOR, KEYSEPARATOR, "b/3", ["b/e"], "a/1", ["a/f"]]
+        == [
+            "b/3",
+            42,
+            "a/1",
+            2,
+            KEYSEPARATOR,
+            KEYSEPARATOR,
+            "b/3",
+            ["b/e"],
+            "a/1",
+            ["a/f"],
+        ]
     )  # order of arguments is not determinated
 
 
