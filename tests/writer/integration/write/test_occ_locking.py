@@ -20,7 +20,7 @@ from tests import reset_di  # noqa
 
 class FakeConnectionHandler:
     def query_list_of_single_values(self, query, arguments):
-        if query.startswith("select e.fqid"):
+        if query.startswith("with all_together as"):
             return [self.fqfield()]
         elif query.startswith("select fqid from events"):
             return [self.fqid()]

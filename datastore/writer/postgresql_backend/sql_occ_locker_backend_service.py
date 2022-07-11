@@ -1,5 +1,6 @@
+from collections import defaultdict
 from textwrap import dedent
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Sequence, Set, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
@@ -62,9 +63,9 @@ class SqlOccLockerBackendService:
 
         event_query_arguments: List[Any] = []
         event_filter_parts = []
-        collectionfield_query_arguments: List[str] = []
-        collectionfield_filter_parts = []
+        collectionfield_query_arguments: List[Sequence[str]] = []
         fqid_position_set: Set[Tuple[str, int]] = set()
+        collectionfield_query_data: Dict[str, List[str]] = defaultdict(list)
 
         for fqfield, position in fqfields.items():
             collectionfield, fqid = collectionfield_and_fqid_from_fqfield(fqfield)
@@ -77,42 +78,29 @@ class SqlOccLockerBackendService:
                         position,
                     )
                 )
-                event_filter_parts.append("(fqid=%s and position>%s)")
+                event_filter_parts.append("(e.fqid=%s and e.position>%s)")
 
-            # % matches zero or more chars: this is correct since the template field
-            # itself may also be locked
-            # only replace template fields, not structured fields
-            collectionfield = collectionfield.replace("$_", "$%_")
-            if collectionfield.endswith("$"):
-                # also add % if the placeholder is at the end of the collectionfield
-                collectionfield += "%"
-            # _ is the postgres wild card for a single character so we have to escape
-            # all underscores
-            collectionfield = collectionfield.replace("_", r"\_")
-
-            collectionfield_query_arguments.extend(
-                (
-                    fqid,
-                    collectionfield,
-                )
-            )
-            collectionfield_filter_parts.append(
-                "(e.fqid=%s and cf.collectionfield LIKE %s)"
-            )
+            collectionfield_query_data[fqid].append(collectionfield)
 
         event_filter = " or ".join(event_filter_parts)
-        collectionfield_filter = " or ".join(collectionfield_filter_parts)
+        collectionfield_filter = " or ".join(
+            ["(fqid=%s and collectionfield = ANY(%s))"]
+            * len(collectionfield_query_data)
+        )
+        collectionfield_query_arguments = [
+            argument for item in collectionfield_query_data.items() for argument in item
+        ]
         query = dedent(
             f"""\
-            select e.fqid || %s || split_part(cf.collectionfield, %s, 2) from (
-                select id, fqid from events where {event_filter}
-            ) e
-            inner join events_to_collectionfields ecf on e.id=ecf.event_id
-            inner join collectionfields cf on ecf.collectionfield_id=cf.id
-            where {collectionfield_filter}"""
+            with all_together as (
+                select e.fqid, cf.collectionfield from events e
+                    inner join events_to_collectionfields ecf on e.id=ecf.event_id
+                    inner join collectionfields cf on ecf.collectionfield_id=cf.id
+                where {event_filter})
+            select fqid || %s || split_part(collectionfield, %s, 2) from all_together where {collectionfield_filter}"""
         )
         query_arguments = (
-            [KEYSEPARATOR] * 2 + event_query_arguments + collectionfield_query_arguments
+            event_query_arguments + [KEYSEPARATOR] * 2 + collectionfield_query_arguments
         )
 
         return self.connection.query_list_of_single_values(query, query_arguments)

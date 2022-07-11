@@ -101,7 +101,7 @@ def test_raise_model_locked_multiple_different(
     mock_write_request.locked_collectionfields = {"a/f": 2}
     with pytest.raises(ModelLocked) as e:
         occ_locker.assert_locked_fields(mock_write_request)
-    assert set(e.value.keys) == {"a/1", "/", "a/f"}
+    assert set(e.value.keys) == {"a/f", "a/1"}
 
 
 def test_query_arguments_fqid(occ_locker, connection):
@@ -123,15 +123,37 @@ def test_query_arguments_fqfield(occ_locker, connection):
     occ_locker.get_locked_fqfields({"a/1/f": 2, "b/3/e": 42})
 
     query = qsv.call_args.args[0]
-    assert query.count("(fqid=%s and position>%s)") == 2
-    assert query.count("(e.fqid=%s and cf.collectionfield LIKE %s)") == 2
+    assert query.count("(e.fqid=%s and e.position>%s)") == 2
+    assert query.count("(fqid=%s and collectionfield = ANY(%s))") == 2
     args = qsv.call_args.args[1]
     assert (
         args
-        == [KEYSEPARATOR, KEYSEPARATOR, "a/1", 2, "b/3", 42, "a/1", "a/f", "b/3", "b/e"]
+        == [
+            "a/1",
+            2,
+            "b/3",
+            42,
+            KEYSEPARATOR,
+            KEYSEPARATOR,
+            "a/1",
+            ["a/f"],
+            "b/3",
+            ["b/e"],
+        ]
     ) or (
         args
-        == [KEYSEPARATOR, KEYSEPARATOR, "b/3", 42, "a/1", 2, "b/3", "b/e", "a/1", "a/f"]
+        == [
+            "b/3",
+            42,
+            "a/1",
+            2,
+            KEYSEPARATOR,
+            KEYSEPARATOR,
+            "b/3",
+            ["b/e"],
+            "a/1",
+            ["a/f"],
+        ]
     )  # order of arguments is not determinated
 
 
