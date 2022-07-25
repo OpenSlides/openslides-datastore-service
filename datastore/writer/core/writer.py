@@ -18,3 +18,9 @@ class Writer(Protocol):
 
     def truncate_db(self) -> None:
         """Truncate all tables. Dev mode only"""
+
+    def write_action_worker(
+        self,
+        write_request: WriteRequest,
+    ) -> None:
+        """Writes or updates an action_worker-object"""

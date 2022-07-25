@@ -298,7 +298,7 @@ def test_sync_event_for_getter():
     injector.get(EnvironmentService).cache = {}
     handler = service(PgConnectionHandlerService)()
 
-    assert handler.connection_pool.maxconn == 1
+    assert handler.connection_pool.maxconn >= 1
     conn = handler.get_connection()  # get the one and only connection
     handler.sync_event.clear()
 
