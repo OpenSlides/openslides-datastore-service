@@ -1,3 +1,5 @@
+from typing import Any, Dict, cast
+
 from flask import request
 
 from datastore.shared.di import injector
@@ -43,13 +45,18 @@ def reserve_ids():
 def write_action_worker():
     if not request.is_json:
         raise InvalidRequest("Data must be json")
-    if len(request.json) != 1 or len(request.json[0]["events"]) != 1:  # type: ignore
+    if len(cast(Dict[str, Any], request.json).get("events", ())) != 1:
         raise InvalidRequest("write_action_worker may contain only 1 event!")
-    if collection_from_fqid(request.json[0]["events"][0]["fqid"]) != "action_worker":  # type: ignore
+    if collection_from_fqid(request.json["events"][0]["fqid"]) != "action_worker":  # type: ignore
         raise InvalidRequest("Collection for write_action_worker must be action_worker")
     write_handler = WriteHandler()
-    write_handler.write(request.json)
-    return "", 201 if request.json[0]["events"][0]["type"] == "create" else 200  # type: ignore
+    write_handler.write_action_worker(request.json)
+    return (
+        "",
+        201
+        if cast(Dict[str, Any], request.json)["events"][0]["type"] == "create"
+        else 200,
+    )
 
 
 @dev_only_route
