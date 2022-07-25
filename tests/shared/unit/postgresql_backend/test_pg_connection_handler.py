@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import threading
 from datetime import datetime
 from threading import Thread
 from time import sleep
@@ -294,12 +295,19 @@ def test_sync_event_for_getter():
     Test the 5.line "continue" in get_connection of the handler,
     leaving the lock, if sync_event is not set
     """
-    os.environ["DATASTORE_MAX_CONNECTIONS"] = "1"
+    os.environ["DATASTORE_MAX_CONNECTIONS"] = "2"
     injector.get(EnvironmentService).cache = {}
     handler = service(PgConnectionHandlerService)()
 
-    assert handler.connection_pool.maxconn >= 1
-    conn = handler.get_connection()  # get the one and only connection
+    assert handler.connection_pool.maxconn == 2
+    block_event = threading.Event()
+    block_event.clear()
+    conn = handler.get_connection()
+    thread_blocking_conn = Thread(
+        target=thread_method_block,
+        kwargs={"handler": handler, "block_event": block_event},
+    )
+    thread_blocking_conn.start()
     handler.sync_event.clear()
 
     thread1 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
@@ -310,8 +318,10 @@ def test_sync_event_for_getter():
     sleep(0.1)
     assert not handler.sync_event.is_set()
     handler.put_connection(conn)
+    block_event.set()
     thread1.join()
     thread2.join()
+    thread_blocking_conn.join()
 
 
 @pytest.mark.skip(reason="Just to play with threads, locking, performance")
@@ -403,3 +413,9 @@ def thread_method_conn_close_exc(handler, secs):
     with ConnectionContext(handler):
         sleep(secs)
         raise psycopg2.Error("test raising psycopg2")
+
+
+def thread_method_block(handler, block_event):
+    """only for consuming a connection"""
+    with ConnectionContext(handler):
+        block_event.wait()
