@@ -47,7 +47,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
         "timestamp": 1658489444,
     }
     response = json_client.post(WRITE_ACTION_WORKER_URL, data)
-    assert_response_code(response, 200)
+    assert_response_code(response, 201)
     db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone()
     assert fqid == "action_worker/1"
@@ -60,7 +60,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
         "timestamp": 1658489454,
     }
     response = json_client.post(WRITE_ACTION_WORKER_URL, data)
-    assert_response_code(response, 200)
+    assert_response_code(response, 201)
     db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone()
     assert fqid == "action_worker/1"

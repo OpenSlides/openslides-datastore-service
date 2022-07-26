@@ -45,18 +45,15 @@ def reserve_ids():
 def write_action_worker():
     if not request.is_json:
         raise InvalidRequest("Data must be json")
-    if len(cast(Dict[str, Any], request.json).get("events", ())) != 1:
+    req_json = cast(Dict[str, Any], request.json)
+    if len(req_json.get("events", ())) != 1:
         raise InvalidRequest("write_action_worker may contain only 1 event!")
-    if collection_from_fqid(request.json["events"][0]["fqid"]) != "action_worker":  # type: ignore
+    event = req_json["events"][0]
+    if collection_from_fqid(event["fqid"]) != "action_worker":
         raise InvalidRequest("Collection for write_action_worker must be action_worker")
     write_handler = WriteHandler()
     write_handler.write_action_worker(request.json)
-    return (
-        "",
-        201
-        if cast(Dict[str, Any], request.json)["events"][0]["type"] == "create"
-        else 200,
-    )
+    return ("", 201)
 
 
 @dev_only_route

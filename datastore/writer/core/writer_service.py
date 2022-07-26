@@ -43,12 +43,8 @@ class WriterService:
                         )
                         self.position_to_modified_models[position] = modified_models
 
-                with make_span("push events onto redis messaging-bus"):
-                    # Only propagate updates to redis after the transaction has finished
-                    self.messaging.handle_events(
-                        self.position_to_modified_models,
-                        log_all_modified_fields=log_all_modified_fields,
-                    )
+                # Only propagate updates to redis after the transaction has finished
+                self.propagate_updates_to_redis(log_all_modified_fields)
 
             self.print_stats()
             self.print_summary()
@@ -135,12 +131,15 @@ class WriterService:
                 )
                 self.position_to_modified_models[position] = modified_models
 
-            with make_span("push events onto redis messaging-bus"):
-                # Only propagate updates to redis after the transaction has finished
-                self.messaging.handle_events(
-                    self.position_to_modified_models,
-                    log_all_modified_fields=False,
-                )
+            # Only propagate updates to redis after the transaction has finished
+            self.propagate_updates_to_redis(False)
 
         self.print_stats()
         self.print_summary()
+
+    def propagate_updates_to_redis(self, log_all_modified_fields: bool) -> None:
+        with make_span("push events onto redis messaging-bus"):
+            self.messaging.handle_events(
+                self.position_to_modified_models,
+                log_all_modified_fields=log_all_modified_fields,
+            )
