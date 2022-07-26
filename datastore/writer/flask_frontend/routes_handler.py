@@ -1,4 +1,4 @@
-from typing import Any, Dict, cast
+from typing import Any, Dict, List, cast
 
 from flask import request
 
@@ -45,7 +45,7 @@ def reserve_ids():
 def write_action_worker():
     if not request.is_json:
         raise InvalidRequest("Data must be json")
-    req_json = cast(Dict[str, Any], request.json[0])
+    req_json = cast(List[Dict[str, Any]], request.json)[0]
     if len(req_json.get("events", ())) != 1:
         raise InvalidRequest("write_action_worker may contain only 1 event!")
     event = req_json["events"][0]
