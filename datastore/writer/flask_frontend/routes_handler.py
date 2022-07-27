@@ -45,6 +45,8 @@ def reserve_ids():
 def write_action_worker():
     if not request.is_json:
         raise InvalidRequest("Data must be json")
+    if type(request.json) != list:
+        raise InvalidRequest("write_action_worker data internally must be a list!")
     req_json = cast(List[Dict[str, Any]], request.json)[0]
     if len(req_json.get("events", ())) != 1:
         raise InvalidRequest("write_action_worker may contain only 1 event!")

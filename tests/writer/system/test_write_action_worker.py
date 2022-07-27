@@ -9,24 +9,26 @@ from tests.util import assert_response_code
 @pytest.fixture()
 def data():
     yield copy.deepcopy(
-        {
-            "events": [
-                {
-                    "type": "create",
-                    "fqid": "action_worker/1",
-                    "fields": {
-                        "id": 1,
-                        "name": "motion.create",
-                        "state": "running",
-                        "created": 1658489433,
-                        "timestamp": 1658489434,
-                    },
-                }
-            ],
-            "information": {"action_worker/1": ["create action_worker"]},
-            "user_id": 1,
-            "locked_fields": {},
-        }
+        [
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqid": "action_worker/1",
+                        "fields": {
+                            "id": 1,
+                            "name": "motion.create",
+                            "state": "running",
+                            "created": 1658489433,
+                            "timestamp": 1658489434,
+                        },
+                    }
+                ],
+                "information": {"action_worker/1": ["create action_worker"]},
+                "user_id": 1,
+                "locked_fields": {},
+            }
+        ]
     )
 
 
@@ -41,9 +43,10 @@ def test_create_update_action_worker(json_client, data, db_cur):
     assert result["name"] == "motion.create"
     assert result["state"] == "running"
 
+    data_single = data[0]
     # update timestamp of action worker
-    data["events"][0]["type"] = "update"
-    data["events"][0]["fields"] = {
+    data_single["events"][0]["type"] = "update"
+    data_single["events"][0]["fields"] = {
         "timestamp": 1658489444,
     }
     response = json_client.post(WRITE_ACTION_WORKER_URL, data)
@@ -55,7 +58,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
     assert result["state"] == "running"
 
     # end action_worker
-    data["events"][0]["fields"] = {
+    data_single["events"][0]["fields"] = {
         "state": "end",
         "timestamp": 1658489454,
     }
@@ -69,7 +72,8 @@ def test_create_update_action_worker(json_client, data, db_cur):
 
 
 def test_create_action_worker_not_single_event(json_client, data, db_cur):
-    data["events"].append(
+    data_single = data[0]
+    data_single["events"].append(
         {
             "type": "create",
             "fqid": "action_worker/2",
@@ -89,8 +93,19 @@ def test_create_action_worker_not_single_event(json_client, data, db_cur):
     )
 
 
+def test_create_action_worker_data_not_in_list_format(json_client, data, db_cur):
+    data_single = data[0]
+    response = json_client.post(WRITE_ACTION_WORKER_URL, data_single)
+    assert_response_code(response, 400)
+    assert (
+        response.json["error"]["msg"]
+        == "write_action_worker data internally must be a list!"
+    )
+
+
 def test_create_action_worker_wrong_collection(json_client, data, db_cur):
-    data["events"][0]["fqid"] = "topic/1"
+    data_single = data[0]
+    data_single["events"][0]["fqid"] = "topic/1"
     response = json_client.post(WRITE_ACTION_WORKER_URL, data)
     assert_response_code(response, 400)
     assert (
