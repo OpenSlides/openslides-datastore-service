@@ -43,12 +43,8 @@ class WriterService:
                         )
                         self.position_to_modified_models[position] = modified_models
 
-                with make_span("push events onto redis messaging-bus"):
-                    # Only propagate updates to redis after the transaction has finished
-                    self.messaging.handle_events(
-                        self.position_to_modified_models,
-                        log_all_modified_fields=log_all_modified_fields,
-                    )
+                # Only propagate updates to redis after the transaction has finished
+                self.propagate_updates_to_redis(log_all_modified_fields)
 
             self.print_stats()
             self.print_summary()
@@ -118,3 +114,32 @@ class WriterService:
         with self.database.get_context():
             self.database.truncate_db()
             logger.info("Database truncated")
+
+    @retry_on_db_failure
+    def write_action_worker(
+        self,
+        write_request: WriteRequest,
+    ) -> None:
+        """Writes or updates an action_worker-object"""
+        self.write_requests = [write_request]
+
+        with make_span("write action worker"):
+            self.position_to_modified_models = {}
+            with self.database.get_context():
+                position, modified_models = self.write_with_database_context(
+                    write_request
+                )
+                self.position_to_modified_models[position] = modified_models
+
+            # Only propagate updates to redis after the transaction has finished
+            self.propagate_updates_to_redis(False)
+
+        self.print_stats()
+        self.print_summary()
+
+    def propagate_updates_to_redis(self, log_all_modified_fields: bool) -> None:
+        with make_span("push events onto redis messaging-bus"):
+            self.messaging.handle_events(
+                self.position_to_modified_models,
+                log_all_modified_fields=log_all_modified_fields,
+            )

@@ -1,3 +1,5 @@
+from typing import Any, Dict, List, cast
+
 from flask import request
 
 from datastore.shared.di import injector
@@ -7,10 +9,12 @@ from datastore.shared.flask_frontend import (
     dev_only_route,
     handle_internal_errors,
 )
+from datastore.shared.util.key_transforms import collection_from_fqid
 from datastore.writer.core import Writer
 from datastore.writer.flask_frontend.routes import (
     RESERVE_IDS_URL,
     TRUNCATE_DB_URL,
+    WRITE_ACTION_WORKER_URL,
     WRITE_URL,
 )
 
@@ -37,6 +41,23 @@ def reserve_ids():
     return JsonResponse({"ids": ids})
 
 
+@handle_internal_errors
+def write_action_worker():
+    if not request.is_json:
+        raise InvalidRequest("Data must be json")
+    if type(request.json) != list:
+        raise InvalidRequest("write_action_worker data internally must be a list!")
+    req_json = cast(List[Dict[str, Any]], request.json)[0]
+    if len(req_json.get("events", ())) != 1:
+        raise InvalidRequest("write_action_worker may contain only 1 event!")
+    event = req_json["events"][0]
+    if collection_from_fqid(event["fqid"]) != "action_worker":
+        raise InvalidRequest("Collection for write_action_worker must be action_worker")
+    write_handler = WriteHandler()
+    write_handler.write_action_worker(req_json)
+    return ("", 201)
+
+
 @dev_only_route
 @handle_internal_errors
 def truncate_db():
@@ -60,6 +81,14 @@ def register_routes(app, url_prefix):
         TRUNCATE_DB_URL,
         "truncate_db",
         truncate_db,
+        methods=["POST"],
+        strict_slashes=False,
+    )
+
+    app.add_url_rule(
+        WRITE_ACTION_WORKER_URL,
+        "write_action_worker",
+        write_action_worker,
         methods=["POST"],
         strict_slashes=False,
     )

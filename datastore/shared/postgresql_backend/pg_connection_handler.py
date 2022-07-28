@@ -97,8 +97,12 @@ class PgConnectionHandlerService:
         self.sync_event = Event()
         self.sync_event.set()
 
-        min_conn = int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 1)
-        max_conn = int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 1)
+        min_conn = max(
+            int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 2), 2
+        )
+        max_conn = max(
+            int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 2), 2
+        )
         try:
             self.connection_pool = ThreadedConnectionPool(
                 min_conn, max_conn, **self.get_connection_params()
