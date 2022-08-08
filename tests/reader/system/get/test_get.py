@@ -110,6 +110,18 @@ def test_mapped_fields(json_client, db_connection, db_cur):
     }
 
 
+def test_too_many_mapped_fields(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, {FQID: data})
+    fields = [f"field_{i}" for i in range(2000)]
+    response = json_client.post(Route.GET.URL, {"fqid": FQID, "mapped_fields": fields})
+    assert_success_response(response)
+    assert response.json == {
+        "field_1": "data",
+        "field_2": 42,
+        "field_3": [1, 2, 3],
+    }
+
+
 def test_mapped_fields_filter_none_values(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(

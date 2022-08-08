@@ -31,21 +31,16 @@ def query_helper(provide_di):
     yield injector.get(SqlQueryHelper)
 
 
-def test_get_unique_mapped_fields(query_helper: SqlQueryHelper):
-    assert query_helper.get_unique_mapped_fields({"c": ["field"]}) == ["field"]
-
-
 def test_build_filter_query_mapped_fields(query_helper: SqlQueryHelper):
     query_helper.build_filter_str = bfs = MagicMock(return_value=MagicMock())
     filter = MagicMock()
-    field = MagicMock()
-    param = MappedFieldsFilterQueryFieldsParameters([field])
+    param = MappedFieldsFilterQueryFieldsParameters(["field"])
 
     q, a, s = query_helper.build_filter_query(MagicMock(), filter, param)
 
     assert bfs.call_args[0] == (filter, [])
-    assert a[0] == field
-    assert s == [field]
+    assert a[0] == "field"
+    assert s == ["field"]
 
 
 def test_build_filter_query_invalid_function(query_helper: SqlQueryHelper):

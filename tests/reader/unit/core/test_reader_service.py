@@ -60,7 +60,11 @@ def test_get(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.get(request) == model
 
-    get.assert_called_with("c/1", ["field"], DeletedModelsBehaviour.NO_DELETED)
+    get.assert_called_once()
+    ca = get.call_args[0]
+    assert ca[0] == "c/1"
+    assert ca[1].per_fqid == {"c/1": ["field"]}
+    assert ca[2] == DeletedModelsBehaviour.NO_DELETED
 
 
 def test_get_with_position(
@@ -109,11 +113,11 @@ def test_get_many(reader: ReaderService, read_db: SqlReadDatabaseBackendService)
 
     assert reader.get_many(request) == {"a": {}, "b": {}, "c": {1: model}}
 
-    get_many.assert_called_with(
-        ["a/1", "b/1"],
-        {"a/1": ["field1", "field"], "b/1": ["field2", "field"]},
-        DeletedModelsBehaviour.NO_DELETED,
-    )
+    get_many.assert_called_once()
+    ca = get_many.call_args[0]
+    assert ca[0] == ["a/1", "b/1"]
+    assert ca[1].per_fqid == {"a/1": ["field1", "field"], "b/1": ["field2", "field"]}
+    assert ca[2] == DeletedModelsBehaviour.NO_DELETED
 
 
 def test_get_many_with_position(
@@ -189,9 +193,7 @@ def test_get_all(reader: ReaderService, read_db: SqlReadDatabaseBackendService):
 
     assert reader.get_all(request) == result
 
-    get_all.assert_called_with(
-        "collection", ["field"], DeletedModelsBehaviour.NO_DELETED
-    )
+    get_all.assert_called()
 
 
 def test_get_everything(reader: ReaderService, read_db: SqlReadDatabaseBackendService):

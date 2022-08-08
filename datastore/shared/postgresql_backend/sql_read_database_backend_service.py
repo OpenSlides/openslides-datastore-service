@@ -24,6 +24,7 @@ from datastore.shared.util import (
     get_exception_for_deleted_models_behaviour,
     id_from_fqid,
 )
+from datastore.shared.util.mapped_fields import MappedFields
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPE
@@ -46,10 +47,10 @@ class SqlReadDatabaseBackendService:
     def get(
         self,
         fqid: Fqid,
-        mapped_fields: List[Field] = [],
+        mapped_fields: MappedFields = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
-        models = self.get_many([fqid], {fqid: mapped_fields}, get_deleted_models)
+        models = self.get_many([fqid], mapped_fields, get_deleted_models)
         try:
             return models[fqid]
         except KeyError:
@@ -58,41 +59,40 @@ class SqlReadDatabaseBackendService:
     def get_many(
         self,
         fqids: Iterable[Fqid],
-        mapped_fields_per_fqid: Dict[Fqid, List[Field]] = {},
+        mapped_fields: MappedFields = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Fqid, Model]:
         if not fqids:
             return {}
+        if mapped_fields is None:
+            mapped_fields = MappedFields()
 
         arguments: List[Any] = [tuple(fqids)]
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
-        unique_mapped_fields = self.query_helper.get_unique_mapped_fields(
-            mapped_fields_per_fqid
-        )
 
         (
             mapped_fields_str,
             mapped_field_args,
-        ) = self.query_helper.build_select_from_mapped_fields(
-            unique_mapped_fields, mapped_fields_per_fqid
-        )
+        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
 
         query = f"""
             select fqid, {mapped_fields_str} from models
             where fqid in %s {del_cond}"""
         result = self.connection.query(
-            query, mapped_field_args + arguments, unique_mapped_fields
+            query, mapped_field_args + arguments, mapped_fields.unique_fields
         )
 
-        models = self.build_models_from_result(result, mapped_fields_per_fqid)
+        models = self.build_models_from_result(result, mapped_fields)
         return models
 
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: List[Field],
+        mapped_fields: MappedFields = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Id, Model]:
+        if mapped_fields is None:
+            mapped_fields = MappedFields()
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
         (
             mapped_fields_str,
@@ -104,8 +104,8 @@ class SqlReadDatabaseBackendService:
         models = self.fetch_models(
             query,
             mapped_field_args + [fqid_from_collection_and_id(collection, "%")],
-            mapped_fields,
-            mapped_fields,
+            mapped_fields.unique_fields,
+            mapped_fields.unique_fields,
         )
         return models
 
@@ -174,22 +174,19 @@ class SqlReadDatabaseBackendService:
         return models
 
     def build_models_from_result(
-        self, result, mapped_fields_per_fqid: Dict[str, List[str]]
+        self, result, mapped_fields: MappedFields
     ) -> Dict[str, Model]:
         result_map = {}
-        has_empty_entries = self.query_helper.mapped_fields_map_has_empty_entry(
-            mapped_fields_per_fqid
-        )
         for row in result:
             fqid = row["fqid"]
 
-            if has_empty_entries:
+            if mapped_fields.needs_whole_model:
                 # at least one collection needs all fields, so we need to select data
                 row = row["data"]
 
-            if fqid in mapped_fields_per_fqid and len(mapped_fields_per_fqid[fqid]) > 0:
+            if fqid in mapped_fields.per_fqid and len(mapped_fields.per_fqid[fqid]) > 0:
                 model = {}
-                for field in mapped_fields_per_fqid[fqid]:
+                for field in mapped_fields.per_fqid[fqid]:
                     if row.get(field) is not None:
                         model[field] = row[field]
             else:

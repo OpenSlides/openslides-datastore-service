@@ -21,6 +21,7 @@ from datastore.shared.util import (
     FilterOperator,
     ModelDoesNotExist,
 )
+from datastore.shared.util.mapped_fields import MappedFields
 from tests import reset_di  # noqa
 
 
@@ -85,7 +86,6 @@ def test_get_invalid(read_database: ReadDatabase):
 def test_get_many(
     read_database: ReadDatabase,
     connection: ConnectionHandler,
-    query_helper: SqlQueryHelper,
 ):
     fqid1 = "c/1"
     model1 = MagicMock()
@@ -115,7 +115,7 @@ def test_get_all(read_database: ReadDatabase):
     res = MagicMock()
     read_database.fetch_models = f = MagicMock(return_value=res)
 
-    models = read_database.get_all("c", ["f"])
+    models = read_database.get_all("c", MappedFields(["f"]))
 
     f.assert_called()
     assert models == res
@@ -183,12 +183,13 @@ def test_fetch_models_mapped_fields(
     assert list(models.values()) == [row]
 
 
-def test_build_models_from_result(
-    read_database: ReadDatabase, query_helper: SqlQueryHelper
-):
+def test_build_models_from_result(read_database: ReadDatabase):
     row = {"fqid": "a/1", "field": "a"}
-    mfpc = {"a/1": ["field"]}
-    result = read_database.build_models_from_result([row], mfpc)
+    mapped_fields = MappedFields()
+    mapped_fields.per_fqid = {"a/1": ["field"]}
+    mapped_fields.unique_fields = ["field"]
+    mapped_fields.post_init()
+    result = read_database.build_models_from_result([row], mapped_fields)
     assert result == {row["fqid"]: {"field": "a"}}
 
 

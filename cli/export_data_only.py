@@ -9,7 +9,7 @@ from datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
     EnvironmentService,
 )
-from datastore.shared.util import is_reserved_field
+from datastore.shared.util import strip_reserved_fields
 
 
 def main():
@@ -24,11 +24,9 @@ def main():
         migration_index = read_database.get_current_migration_index()
 
     # strip meta fields
-    for collection, models in response.items():
+    for models in response.values():
         for model in models.values():
-            for field in list(model.keys()):
-                if is_reserved_field(field):
-                    del model[field]
+            strip_reserved_fields(model)
 
     response["_migration_index"] = cast(Any, migration_index)
     print(json.dumps(response))
