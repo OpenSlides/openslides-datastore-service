@@ -121,6 +121,16 @@ def test_get_all(read_database: ReadDatabase):
     assert models == res
 
 
+def test_get_all_without_mapped_fields(read_database: ReadDatabase):
+    res = MagicMock()
+    read_database.fetch_models = f = MagicMock(return_value=res)
+
+    models = read_database.get_all("c")
+
+    f.assert_called()
+    assert models == res
+
+
 def test_get_everything(read_database: ReadDatabase, connection: ConnectionHandler):
     res = [{"__fqid__": "a/2", "data": {}}, {"__fqid__": "a/1", "data": {}}]
     connection.query = f = MagicMock(return_value=res)
