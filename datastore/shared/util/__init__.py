@@ -37,8 +37,10 @@ from .key_transforms import (  # noqa
     collectionfield_and_fqid_from_fqfield,
     collectionfield_from_fqid_and_field,
     field_from_collectionfield,
+    field_from_fqfield,
     fqfield_from_fqid_and_field,
     fqid_from_collection_and_id,
+    fqid_from_fqfield,
     id_from_fqid,
 )
 from .key_types import (  # noqa
@@ -54,4 +56,5 @@ from .key_types import (  # noqa
     get_key_type,
 )
 from .logging import logger  # noqa
+from .mapped_fields import MappedFields  # noqa
 from .self_validating_dataclass import SelfValidatingDataclass  # noqa

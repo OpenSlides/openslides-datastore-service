@@ -6,7 +6,7 @@ from datastore.shared.di import injector
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.util import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour, MappedFields
 from datastore.writer.flask_frontend.routes import WRITE_URL
 from tests.util import assert_error_response, assert_response_code
 from tests.writer.system.util import (
@@ -44,7 +44,9 @@ def test_single_delete(json_client, data, redis_connection, reset_redis_data):
         # read from read db
         read_db: ReadDatabase = injector.get(ReadDatabase)
         model = read_db.get(
-            "a/1", get_deleted_models=DeletedModelsBehaviour.ONLY_DELETED
+            "a/1",
+            MappedFields(),
+            get_deleted_models=DeletedModelsBehaviour.ONLY_DELETED,
         )
         assert model == {"f": 1, "meta_deleted": True, "meta_position": 2}
         assert read_db.is_deleted("a/1")

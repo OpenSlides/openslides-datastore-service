@@ -12,7 +12,7 @@ from typing import (
 
 from datastore.shared.di import service_interface
 from datastore.shared.typing import JSON, Collection, Field, Fqid, Id, Model, Position
-from datastore.shared.util import DeletedModelsBehaviour, Filter
+from datastore.shared.util import DeletedModelsBehaviour, Filter, MappedFields
 
 
 class HistoryInformation(TypedDict):
@@ -26,9 +26,13 @@ class BaseFilterQueryFieldsParameters:
     pass
 
 
-@dataclass
 class MappedFieldsFilterQueryFieldsParameters(BaseFilterQueryFieldsParameters):
-    mapped_fields: List[str]
+    mapped_fields: MappedFields
+
+    def __init__(self, mapped_fields: List[Field]) -> None:
+        self.mapped_fields = MappedFields()
+        self.mapped_fields.unique_fields = mapped_fields
+        self.mapped_fields.post_init()
 
 
 @dataclass
@@ -58,7 +62,7 @@ class ReadDatabase(Protocol):
     def get(
         self,
         fqid: Fqid,
-        mapped_fields: List[Field] = [],
+        mapped_fields: MappedFields = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         """
@@ -69,7 +73,7 @@ class ReadDatabase(Protocol):
     def get_many(
         self,
         fqids: Iterable[Fqid],
-        mapped_fields_per_fqid: Dict[Fqid, List[Field]] = {},
+        mapped_fields: MappedFields = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Fqid, Model]:
         """
@@ -81,7 +85,7 @@ class ReadDatabase(Protocol):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: List[Field],
+        mapped_fields: MappedFields = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Id, Model]:
         """

@@ -16,6 +16,7 @@ from datastore.shared.util import (
     BadCodingError,
     DeletedModelsBehaviour,
     InvalidFormat,
+    MappedFields,
     collection_and_id_from_fqid,
     collectionfield_from_fqid_and_field,
     logger,
@@ -158,7 +159,7 @@ class SqlDatabaseBackendService:
 
             fqids.add(event.fqid)
         return self.read_database.get_many(
-            fqids, get_deleted_models=DeletedModelsBehaviour.ALL_MODELS
+            fqids, MappedFields(), get_deleted_models=DeletedModelsBehaviour.ALL_MODELS
         )
 
     def apply_event_to_models(

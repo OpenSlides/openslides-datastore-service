@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, Tuple
+from typing import List, Tuple
 
 from datastore.shared.di import service_as_singleton
 from datastore.shared.services.read_database import (
@@ -18,6 +18,7 @@ from datastore.shared.util import (
     Not,
     Or,
 )
+from datastore.shared.util.mapped_fields import MappedFields
 
 
 # extend if neccessary. first is always the default (should be int)
@@ -30,24 +31,6 @@ VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
 
 @service_as_singleton
 class SqlQueryHelper:
-    def get_unique_mapped_fields(
-        self, mapped_fields_per_fqid: Dict[str, List[str]]
-    ) -> List[str]:
-        if len(mapped_fields_per_fqid):
-            unique_mapped_fields: Set[str] = set.union(
-                *[set(fields) for fields in mapped_fields_per_fqid.values()]
-            )
-            return list(unique_mapped_fields)
-        else:
-            return []
-
-    def mapped_fields_map_has_empty_entry(
-        self, mapped_fields_per_fqid: Dict[str, List[str]]
-    ) -> bool:
-        return not len(mapped_fields_per_fqid) or any(
-            len(fields) == 0 for fields in mapped_fields_per_fqid.values()
-        )
-
     def get_deleted_condition(
         self, flag: DeletedModelsBehaviour, prepend_and: bool = True
     ) -> str:
@@ -61,21 +44,16 @@ class SqlQueryHelper:
         )
 
     def build_select_from_mapped_fields(
-        self,
-        unique_mapped_fields: List[str],
-        mapped_fields_per_fqid: Dict[str, List[str]] = None,
+        self, mapped_fields: MappedFields
     ) -> Tuple[str, List[str]]:
-        if len(unique_mapped_fields) == 0 or (
-            mapped_fields_per_fqid
-            and self.mapped_fields_map_has_empty_entry(mapped_fields_per_fqid)
-        ):
+        if mapped_fields.needs_whole_model:
             # at least one collection needs all fields, so we just select data and
             # calculate the mapped_fields later
             return "data", []
         else:
             return (
-                ", ".join(["data->%s AS {}"] * len(unique_mapped_fields)),
-                unique_mapped_fields,
+                ", ".join(["data->%s AS {}"] * len(mapped_fields.unique_fields)),
+                mapped_fields.unique_fields,
             )
 
     def build_filter_query(
@@ -96,7 +74,7 @@ class SqlQueryHelper:
                 fields_params.mapped_fields
             )
             arguments = mapped_field_args + arguments
-            sql_parameters = fields_params.mapped_fields
+            sql_parameters = fields_params.mapped_fields.unique_fields
         else:
             if isinstance(fields_params, CountFilterQueryFieldsParameters):
                 fields = "count(*)"
