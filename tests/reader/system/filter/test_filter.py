@@ -165,6 +165,19 @@ def test_like_multiple_matches(json_client, db_connection, db_cur):
     }
 
 
+def test_like_case_insensitive(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_1", "operator": "%=", "value": "DAT%"},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
+
+
 @performance
 def test_like_performance(json_client, db_connection, db_cur):
     MODEL_COUNT = 100000
