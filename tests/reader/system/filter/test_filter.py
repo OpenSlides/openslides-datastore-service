@@ -2,7 +2,7 @@ from datastore.reader.flask_frontend.routes import Route
 from datastore.shared.flask_frontend import ERROR_CODES
 from tests import assert_error_response
 from tests.reader.system.util import setup_data
-from tests.util import assert_success_response
+from tests.util import TestPerformance, assert_success_response, performance
 
 
 data = {
@@ -134,6 +134,100 @@ def test_eq_ignore_case(json_client, db_connection, db_cur):
     )
     assert_success_response(response)
     assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
+
+
+def test_like(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_1", "operator": "%=", "value": "dat%"},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
+
+
+def test_like_multiple_matches(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_1", "operator": "%=", "value": "%t%"},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {
+        "data": {"1": data["a/1"], "2": data["a/2"]},
+        "position": 3,
+    }
+
+
+def test_like_case_insensitive(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.FILTER.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_1", "operator": "%=", "value": "DAT%"},
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {"data": {"1": data["a/1"]}, "position": 3}
+
+
+@performance
+def test_like_performance(json_client, db_connection, db_cur):
+    MODEL_COUNT = 100000
+    setup_data(
+        db_connection,
+        db_cur,
+        {
+            f"c/{i}": {"field_1": f"data{i}", "field_2": i, "meta_position": i + 1}
+            for i in range(MODEL_COUNT)
+        },
+    )
+    with TestPerformance() as perf_equal:
+        response = json_client.post(
+            Route.FILTER.URL,
+            {
+                "collection": "c",
+                "filter": {"field": "field_1", "operator": "=", "value": "data4242"},
+            },
+        )
+    assert_success_response(response)
+    assert len(response.json["data"]) == 1
+
+    with TestPerformance() as perf_like:
+        response = json_client.post(
+            Route.FILTER.URL,
+            {
+                "collection": "c",
+                "filter": {
+                    "field": "field_1",
+                    "operator": "%=",
+                    "value": f"%{MODEL_COUNT - 1}%",
+                },
+            },
+        )
+    assert_success_response(response)
+    assert len(response.json["data"]) == 1
+
+    with TestPerformance() as perf_like_many:
+        response = json_client.post(
+            Route.FILTER.URL,
+            {
+                "collection": "c",
+                "filter": {"field": "field_1", "operator": "%=", "value": "%ta42%"},
+            },
+        )
+    assert_success_response(response)
+
+    print(f"Equal: {perf_equal['total_time']} seconds")
+    print(f"Like: {perf_like['total_time']} seconds")
+    print(f"Like with many results: {perf_like_many['total_time']} seconds")
 
 
 def test_and(json_client, db_connection, db_cur):
