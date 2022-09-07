@@ -110,6 +110,12 @@ class WriterService:
                 return ids
 
     @retry_on_db_failure
+    def delete_history_information(self) -> None:
+        with self.database.get_context():
+            self.database.delete_history_information()
+            logger.info("History information deleted")
+
+    @retry_on_db_failure
     def truncate_db(self) -> None:
         with self.database.get_context():
             self.database.truncate_db()

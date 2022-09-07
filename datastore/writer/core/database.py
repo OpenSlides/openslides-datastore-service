@@ -31,5 +31,8 @@ class Database(Protocol):
         May Raises InvalidFormat, is collection is malformed or amount too high
         """
 
+    def delete_history_information(self) -> None:
+        """Delete all history information from all positions."""
+
     def truncate_db(self) -> None:
         """Truncate all tables. Only for dev purposes!"""
