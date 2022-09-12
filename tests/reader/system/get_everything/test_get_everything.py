@@ -7,7 +7,7 @@ from datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
 )
 from datastore.shared.util import DeletedModelsBehaviour, id_from_fqid
-from tests.util import assert_response_code, assert_success_response
+from tests.util import assert_success_response
 
 
 data = {
@@ -81,7 +81,12 @@ def test_deleted_all_models(json_client, db_connection, db_cur):
     }
 
 
-def test_not_found_in_non_dev(json_client):
+def test_prod(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur)
     injector.get(EnvironmentService).set(DATASTORE_DEV_MODE_ENVIRONMENT_VAR, "0")
     response = json_client.post(Route.GET_EVERYTHING.URL, {})
-    assert_response_code(response, 404)
+    assert_success_response(response)
+    assert response.json == {
+        "a": {"1": get_data_with_id("a/1")},
+        "b": {"1": get_data_with_id("b/1")},
+    }

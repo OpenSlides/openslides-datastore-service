@@ -209,7 +209,7 @@ route_configurations: Dict[Route, RouteConfiguration] = {
         schema=get_all_schema, request_class=GetAllRequest
     ),
     Route.GET_EVERYTHING: RouteConfiguration(
-        schema=get_everything_schema, request_class=GetEverythingRequest, dev_only=True
+        schema=get_everything_schema, request_class=GetEverythingRequest
     ),
     Route.FILTER: RouteConfiguration(
         schema=filter_schema,
