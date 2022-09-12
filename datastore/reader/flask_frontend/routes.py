@@ -196,7 +196,6 @@ class RouteConfiguration:
     schema_error_handler: Optional[
         Callable[[fastjsonschema.JsonSchemaException], None]
     ] = None
-    dev_only: bool = False
 
 
 # maps all available routes to the respective schema
