@@ -196,7 +196,6 @@ class RouteConfiguration:
     schema_error_handler: Optional[
         Callable[[fastjsonschema.JsonSchemaException], None]
     ] = None
-    dev_only: bool = False
 
 
 # maps all available routes to the respective schema
@@ -209,7 +208,7 @@ route_configurations: Dict[Route, RouteConfiguration] = {
         schema=get_all_schema, request_class=GetAllRequest
     ),
     Route.GET_EVERYTHING: RouteConfiguration(
-        schema=get_everything_schema, request_class=GetEverythingRequest, dev_only=True
+        schema=get_everything_schema, request_class=GetEverythingRequest
     ),
     Route.FILTER: RouteConfiguration(
         schema=filter_schema,

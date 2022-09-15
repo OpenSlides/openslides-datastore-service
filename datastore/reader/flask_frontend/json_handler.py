@@ -6,7 +6,7 @@ from dacite.exceptions import MissingValueError
 
 from datastore.reader.core import Reader
 from datastore.shared.di import injector
-from datastore.shared.flask_frontend import InvalidRequest, dev_only_route
+from datastore.shared.flask_frontend import InvalidRequest
 from datastore.shared.typing import JSON
 from datastore.shared.util import BadCodingError, logger
 
@@ -45,9 +45,6 @@ class JSONHandler:
 
         reader = injector.get(Reader)
         route_handler = getattr(reader, route)
-
-        if route_configuration.dev_only:
-            route_handler = dev_only_route(route_handler)
 
         with reader.get_database_context():
             return route_handler(request_object)
