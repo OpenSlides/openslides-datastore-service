@@ -12,5 +12,6 @@ RUN pip install -U -r requirements-testing.txt
 COPY scripts/* scripts/system/* tests/entrypoint.sh ./
 COPY scripts/ci/* ./ci/
 
+STOPSIGNAL SIGKILL
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["pytest"]
+CMD ["sleep", "inf"]
