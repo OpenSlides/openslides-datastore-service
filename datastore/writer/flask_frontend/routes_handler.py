@@ -11,7 +11,8 @@ from datastore.shared.flask_frontend import (
 )
 from datastore.shared.util.key_transforms import collection_from_fqid
 from datastore.writer.core import Writer
-from datastore.writer.flask_frontend.routes import (
+from datastore.writer.flask_frontend.routes import (  # noqa
+    DELETE_HISTORY_INFORMATION_URL,
     RESERVE_IDS_URL,
     TRUNCATE_DB_URL,
     WRITE_ACTION_WORKER_URL,
@@ -66,29 +67,25 @@ def truncate_db():
     return "", 204
 
 
+@handle_internal_errors
+def delete_history_information():
+    writer = injector.get(Writer)
+    writer.delete_history_information()
+    return "", 204
+
+
 def register_routes(app, url_prefix):
-    app.add_url_rule(WRITE_URL, "write", write, methods=["POST"], strict_slashes=False)
-
-    app.add_url_rule(
-        RESERVE_IDS_URL,
+    for route in (
+        "write",
         "reserve_ids",
-        reserve_ids,
-        methods=["POST"],
-        strict_slashes=False,
-    )
-
-    app.add_url_rule(
-        TRUNCATE_DB_URL,
+        "delete_history_information",
         "truncate_db",
-        truncate_db,
-        methods=["POST"],
-        strict_slashes=False,
-    )
-
-    app.add_url_rule(
-        WRITE_ACTION_WORKER_URL,
         "write_action_worker",
-        write_action_worker,
-        methods=["POST"],
-        strict_slashes=False,
-    )
+    ):
+        app.add_url_rule(
+            globals()[f"{route.upper()}_URL"],
+            route,
+            globals()[route],
+            methods=["POST"],
+            strict_slashes=False,
+        )

@@ -287,6 +287,9 @@ class SqlDatabaseBackendService:
 
         return list(range(new_max_id - amount, new_max_id))
 
+    def delete_history_information(self) -> None:
+        self.connection.execute("UPDATE positions SET information = NULL;", [])
+
     def truncate_db(self) -> None:
         for table in ALL_TABLES:
             self.connection.execute(f"DELETE FROM {table} CASCADE;", [])

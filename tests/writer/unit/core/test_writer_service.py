@@ -89,6 +89,12 @@ def test_writer_reserve_ids(writer, database):
     database.reserve_next_ids.assert_called_with("collection", 4)
 
 
+def test_writer_delete_history_information(writer, database):
+    writer.delete_history_information()
+    database.get_context.assert_called()
+    database.delete_history_information.assert_called()
+
+
 def test_writer_truncate_db(writer, database):
     writer.truncate_db()
     database.get_context.assert_called()

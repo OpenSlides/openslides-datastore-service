@@ -16,6 +16,9 @@ class Writer(Protocol):
     def reserve_ids(self, collection: str, amount: int) -> List[int]:
         """Gets multiple reserved ids"""
 
+    def delete_history_information(self) -> None:
+        """Delete all history information from all positions."""
+
     def truncate_db(self) -> None:
         """Truncate all tables. Dev mode only"""
 

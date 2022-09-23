@@ -366,6 +366,13 @@ class TestReserveNextIds:
         assert args == ["my_collection", 4]
 
 
+def test_delete_history_information(sql_backend, connection):
+    connection.execute = ex = MagicMock()
+    sql_backend.delete_history_information()
+    assert ex.call_count == 1
+    assert ex.call_args[0][0] == "UPDATE positions SET information = NULL;"
+
+
 def test_truncate_db(sql_backend, connection):
     connection.execute = ex = MagicMock()
     sql_backend.truncate_db()
