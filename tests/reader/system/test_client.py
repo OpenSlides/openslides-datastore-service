@@ -66,7 +66,7 @@ class TestConcurrentRequests:
         self.database = injector.get(ReadDatabase)
         connection_handler = injector.get(ConnectionHandler)
 
-        patcher = patch.object(connection_handler.connection_pool, "maxconn", 2)
+        patcher = patch.object(connection_handler, "max_conn", 2)
         patcher.start()
         self.patches.append(patcher)
 

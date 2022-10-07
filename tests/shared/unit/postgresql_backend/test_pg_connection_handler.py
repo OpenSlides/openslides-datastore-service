@@ -68,7 +68,8 @@ def test_init_error():
     connect.side_effect = psycopg2.Error
     with patch("psycopg2.connect", new=connect):
         with pytest.raises(DatabaseError):
-            PgConnectionHandlerService()
+            handler = PgConnectionHandlerService()
+            handler.create_connection_pool()
 
 
 def test_get_connection(handler):
@@ -299,7 +300,7 @@ def test_sync_event_for_getter():
     injector.get(EnvironmentService).cache = {}
     handler = service(PgConnectionHandlerService)()
 
-    assert handler.connection_pool.maxconn == 2
+    assert handler.max_conn == 2
     block_event = threading.Event()
     block_event.clear()
     conn = handler.get_connection()
