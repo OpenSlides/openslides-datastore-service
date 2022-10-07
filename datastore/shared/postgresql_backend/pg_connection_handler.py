@@ -112,7 +112,7 @@ class PgConnectionHandlerService:
     def create_connection_pool(self):
         try:
             self.connection_pool = ThreadedConnectionPool(
-                self.min_conn, self.max_conn, **self.kwargs()
+                self.min_conn, self.max_conn, **self.kwargs
             )
         except psycopg2.Error as e:
             self.raise_error(e)
