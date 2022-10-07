@@ -1,3 +1,4 @@
+import os
 import threading
 from functools import wraps
 from threading import Event, Lock
@@ -91,6 +92,7 @@ class PgConnectionHandlerService:
     shutdown_service: ShutdownService
 
     def __init__(self, shutdown_service: ShutdownService):
+        self.process_id = os.getpid()
         shutdown_service.register(self)
         self._storage = threading.local()
         self.sync_lock = Lock()
@@ -134,6 +136,8 @@ class PgConnectionHandlerService:
         }
 
     def get_connection(self):
+        if self.process_id != (current_process_id:=os.getpid()):
+            raise BadCodingError(f"try to get postgres-connection from other process: old:{self.process_id} current:{current_process_id}")
         while True:
             self.sync_event.wait()
             with self.sync_lock:
