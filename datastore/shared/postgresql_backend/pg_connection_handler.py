@@ -1,7 +1,8 @@
+from typing import Any, Dict, Optional
 import os
 import threading
 from functools import wraps
-from threading import Event, Lock
+from threading import Event, Lock, Thread
 from time import sleep
 
 import psycopg2
@@ -99,15 +100,19 @@ class PgConnectionHandlerService:
         self.sync_event = Event()
         self.sync_event.set()
 
-        min_conn = max(
+        self.min_conn:int = max(
             int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 2), 2
         )
-        max_conn = max(
+        self.max_conn:int = max(
             int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 2), 2
         )
+        self.kwargs:Dict[str, Any] = self.get_connection_params()
+        self.connection_pool: Optional[ThreadedConnectionPool] = None
+
+    def create_connection_pool(self):
         try:
             self.connection_pool = ThreadedConnectionPool(
-                min_conn, max_conn, **self.get_connection_params()
+                self.min_conn, self.max_conn, **self.kwargs()
             )
         except psycopg2.Error as e:
             self.raise_error(e)
@@ -136,8 +141,9 @@ class PgConnectionHandlerService:
         }
 
     def get_connection(self):
-        if self.process_id != (current_process_id:=os.getpid()):
-            raise BadCodingError(f"try to get postgres-connection from other process: old:{self.process_id} current:{current_process_id}")
+        logger.error(f"pg-get_connection: old:{self.process_id} current:{os.getpid()} con-pool=None:{bool(self.connection_pool)}")
+        if self.connection_pool is None:
+            self.create_connection_pool()
         while True:
             self.sync_event.wait()
             with self.sync_lock:
