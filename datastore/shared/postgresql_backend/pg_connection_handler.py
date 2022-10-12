@@ -1,3 +1,4 @@
+import multiprocessing
 import threading
 from functools import wraps
 from time import sleep
@@ -139,6 +140,12 @@ class PgConnectionHandlerService:
     def get_connection(self):
         if self.connection_pool is None:
             self.create_connection_pool()
+            self.process_id = multiprocessing.current_process()
+        else:
+            if self.process_id != (process_id := multiprocessing.current_process()):
+                msg = f"Got db-connection from pool for process {process_id} from pool of process {self.process_id}"
+                logger.error(msg)
+                raise BadCodingError(msg)
         while True:
             self.sync_event.wait()
             with self.sync_lock:
@@ -180,9 +187,15 @@ class PgConnectionHandlerService:
         if connection != self.get_current_connection():
             raise BadCodingError("Invalid connection")
 
-        cast(ThreadedConnectionPool, self.connection_pool).putconn(
-            connection, close=has_error
-        )
+        if self.connection_pool:
+            try:
+                cast(ThreadedConnectionPool, self.connection_pool).putconn(
+                    connection, close=has_error
+                )
+            except PoolError as e:
+                raise e
+        else:
+            raise BadCodingError("putconn on empty connection pool")
         self.set_current_connection(None)
         self.sync_event.set()
 
