@@ -141,10 +141,9 @@ class WriterService:
             self.position_to_modified_models = {}
             with self.database.get_context():
                 event = write_request.events[0]
-                fields_with_delete = copy.deepcopy(event.fields).update({META_DELETED: False}) 
-                data = {event.fqid:copy.deepcopy(event.fields)}
-                self.database.write_model_updates(data)
-            self.position_to_modified_models[0] = {event.fqid:event.fields}
+                fields_with_delete = copy.deepcopy(event.fields).update({META_DELETED: False})  # type: ignore
+                self.database.write_model_updates(fields_with_delete)
+            self.position_to_modified_models[0] = {event.fqid:event.fields}  # type: ignore
             self.propagate_updates_to_redis(False)
 
         self.print_stats()
