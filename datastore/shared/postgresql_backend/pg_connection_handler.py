@@ -101,7 +101,7 @@ class PgConnectionHandlerService:
             int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 2), 2
         )
         self.max_conn: int = max(
-            int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 2), 2
+            int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 5), 5
         )
         self.kwargs: Dict[str, Any] = self.get_connection_params()
         self.connection_pool: Optional[ThreadedConnectionPool] = None
