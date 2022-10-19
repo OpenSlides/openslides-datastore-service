@@ -138,19 +138,19 @@ class PgConnectionHandlerService:
         }
 
     def get_connection(self):
-        if self.connection_pool is None:
-            self.create_connection_pool()
-            self.process_id = multiprocessing.current_process().pid
-        else:
-            if self.process_id != (process_id := multiprocessing.current_process().pid):
-                msg = f"Got db-connection from pool for process {process_id} from pool of process {self.process_id}"
-                logger.error(msg)
-                raise BadCodingError(msg)
         while True:
             self.sync_event.wait()
             with self.sync_lock:
                 if not self.sync_event.is_set():
                     continue
+                if self.connection_pool is None:
+                    self.create_connection_pool()
+                    self.process_id = multiprocessing.current_process().pid
+                else:
+                    if self.process_id != (process_id := multiprocessing.current_process().pid):
+                        msg = f"Got db-connection from pool for process {process_id} from pool of process {self.process_id}"
+                        logger.error(msg)
+                        raise BadCodingError(msg)
                 if old_conn := self.get_current_connection():
                     if old_conn.closed:
                         # If an error happens while returning the connection to the pool, it
