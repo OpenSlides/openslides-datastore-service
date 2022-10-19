@@ -37,5 +37,5 @@ class Database(Protocol):
     def truncate_db(self) -> None:
         """Truncate all tables. Only for dev purposes!"""
 
-    def write_model_updates(self, models: Dict[Fqid, Model]) -> None:
-        """ For writing directly to models-table """
+    def write_model_updates_action_worker(self, models: Dict[Fqid, Model]) -> None:
+        """ For writing directly to models-table used for action_workers """

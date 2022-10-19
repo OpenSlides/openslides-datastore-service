@@ -194,6 +194,21 @@ class SqlDatabaseBackendService:
             use_execute_values=True,
         )
 
+    def write_model_updates_action_worker(self, models: Dict[Fqid, Model]) -> None:
+        statement = dedent(
+            """\
+            insert into models (fqid, data, deleted) values %s
+            on conflict(fqid) do update set data=models.data || excluded.data, deleted=excluded.deleted;"""
+        )
+        self.connection.execute(
+            statement,
+            [
+                (fqid, self.json(model), model[META_DELETED])
+                for fqid, model in models.items()
+            ],
+            use_execute_values=True,
+        )
+
     def update_id_sequences(self, max_id_per_collection: Dict[Collection, int]) -> None:
         statement = dedent(
             """\
