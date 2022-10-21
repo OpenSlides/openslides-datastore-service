@@ -7,7 +7,7 @@ from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import retry_on_db_failure
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Field, Fqid
-from datastore.shared.util import DatastoreNotEmpty, META_DELETED, logger
+from datastore.shared.util import META_DELETED, DatastoreNotEmpty, logger
 from datastore.shared.util.otel import make_span
 
 from .database import Database
@@ -143,8 +143,10 @@ class WriterService:
                 event = write_request.events[0]
                 fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
                 fields_with_delete.update({META_DELETED: False})
-                self.database.write_model_updates_action_worker({event.fqid:fields_with_delete})
-            self.position_to_modified_models[0] = {event.fqid:event.fields}  # type: ignore
+                self.database.write_model_updates_action_worker(
+                    {event.fqid: fields_with_delete}
+                )
+            self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
             self.propagate_updates_to_redis(False)
 
         self.print_stats()

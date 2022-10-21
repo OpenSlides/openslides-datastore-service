@@ -105,6 +105,7 @@ class PgConnectionHandlerService:
         )
         self.kwargs: Dict[str, Any] = self.get_connection_params()
         self.connection_pool: Optional[ThreadedConnectionPool] = None
+        self.process_id: Optional[int] = 0
 
     def create_connection_pool(self):
         try:
@@ -147,8 +148,10 @@ class PgConnectionHandlerService:
                     self.create_connection_pool()
                     self.process_id = multiprocessing.current_process().pid
                 else:
-                    if self.process_id != (process_id := multiprocessing.current_process().pid):
-                        msg = f"Got db-connection from pool for process {process_id} from pool of process {self.process_id}"
+                    if self.process_id != (
+                        process_id := multiprocessing.current_process().pid
+                    ):
+                        msg = f"Try to change db-connection-pool process from {self.process_id} to {process_id}"
                         logger.error(msg)
                         raise BadCodingError(msg)
                 if old_conn := self.get_current_connection():
