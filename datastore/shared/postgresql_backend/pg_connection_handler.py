@@ -1,7 +1,8 @@
+import multiprocessing
 import threading
 from functools import wraps
-from threading import Event, Lock
 from time import sleep
+from typing import Any, Dict, Optional, cast
 
 import psycopg2
 from psycopg2 import sql
@@ -83,9 +84,8 @@ class ConnectionContext:
 class PgConnectionHandlerService:
 
     _storage: threading.local
-    sync_lock: Lock
-    sync_event: Event
-    connection_pool: ThreadedConnectionPool
+    sync_lock: threading.Lock
+    sync_event: threading.Event
 
     environment: EnvironmentService
     shutdown_service: ShutdownService
@@ -93,19 +93,24 @@ class PgConnectionHandlerService:
     def __init__(self, shutdown_service: ShutdownService):
         shutdown_service.register(self)
         self._storage = threading.local()
-        self.sync_lock = Lock()
-        self.sync_event = Event()
+        self.sync_lock = threading.Lock()
+        self.sync_event = threading.Event()
         self.sync_event.set()
 
-        min_conn = max(
+        self.min_conn: int = max(
             int(self.environment.try_get("DATASTORE_MIN_CONNECTIONS") or 2), 2
         )
-        max_conn = max(
-            int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 2), 2
+        self.max_conn: int = max(
+            int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 5), 5
         )
+        self.kwargs: Dict[str, Any] = self.get_connection_params()
+        self.connection_pool: Optional[ThreadedConnectionPool] = None
+        self.process_id: Optional[int] = 0
+
+    def create_connection_pool(self):
         try:
             self.connection_pool = ThreadedConnectionPool(
-                min_conn, max_conn, **self.get_connection_params()
+                self.min_conn, self.max_conn, **self.kwargs
             )
         except psycopg2.Error as e:
             self.raise_error(e)
@@ -139,6 +144,16 @@ class PgConnectionHandlerService:
             with self.sync_lock:
                 if not self.sync_event.is_set():
                     continue
+                if self.connection_pool is None:
+                    self.create_connection_pool()
+                    self.process_id = multiprocessing.current_process().pid
+                else:
+                    if self.process_id != (
+                        process_id := multiprocessing.current_process().pid
+                    ):
+                        msg = f"Try to change db-connection-pool process from {self.process_id} to {process_id}"
+                        logger.error(msg)
+                        raise BadCodingError(msg)
                 if old_conn := self.get_current_connection():
                     if old_conn.closed:
                         # If an error happens while returning the connection to the pool, it
@@ -156,7 +171,9 @@ class PgConnectionHandlerService:
                             "You cannot start multiple transactions in one thread!"
                         )
                 try:
-                    connection = self.connection_pool.getconn()
+                    connection = cast(
+                        ThreadedConnectionPool, self.connection_pool
+                    ).getconn()
                 except PoolError:
                     self.sync_event.clear()
                     continue
@@ -173,7 +190,15 @@ class PgConnectionHandlerService:
         if connection != self.get_current_connection():
             raise BadCodingError("Invalid connection")
 
-        self.connection_pool.putconn(connection, close=has_error)
+        if self.connection_pool:
+            try:
+                cast(ThreadedConnectionPool, self.connection_pool).putconn(
+                    connection, close=has_error
+                )
+            except PoolError as e:
+                raise e
+        else:
+            raise BadCodingError("putconn on empty connection pool")
         self.set_current_connection(None)
         self.sync_event.set()
 
@@ -240,4 +265,4 @@ class PgConnectionHandlerService:
         raise DatabaseError(msg, e)
 
     def shutdown(self):
-        self.connection_pool.closeall()
+        cast(ThreadedConnectionPool, self.connection_pool).closeall()

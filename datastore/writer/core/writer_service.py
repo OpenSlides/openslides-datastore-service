@@ -1,3 +1,4 @@
+import copy
 import threading
 from collections import defaultdict
 from typing import Dict, List, Set, Tuple
@@ -6,7 +7,7 @@ from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import retry_on_db_failure
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Field, Fqid
-from datastore.shared.util import DatastoreNotEmpty, logger
+from datastore.shared.util import META_DELETED, DatastoreNotEmpty, logger
 from datastore.shared.util.otel import make_span
 
 from .database import Database
@@ -126,18 +127,26 @@ class WriterService:
         self,
         write_request: WriteRequest,
     ) -> None:
-        """Writes or updates an action_worker-object"""
+        """Writes or updates an action_worker-object
+        The action_worker record will be written to
+        the models-table only, because there is no history
+        needed and after the acton is finished and notified,
+        isn't needed anymore.
+        There is no position available or needed,
+        for redis notifying the 0 is used therefore.
+        """
         self.write_requests = [write_request]
 
         with make_span("write action worker"):
             self.position_to_modified_models = {}
             with self.database.get_context():
-                position, modified_models = self.write_with_database_context(
-                    write_request
+                event = write_request.events[0]
+                fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
+                fields_with_delete.update({META_DELETED: False})
+                self.database.write_model_updates_action_worker(
+                    {event.fqid: fields_with_delete}
                 )
-                self.position_to_modified_models[position] = modified_models
-
-            # Only propagate updates to redis after the transaction has finished
+            self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
             self.propagate_updates_to_redis(False)
 
         self.print_stats()

@@ -1,4 +1,5 @@
 import concurrent.futures
+import multiprocessing
 import os
 import threading
 from datetime import datetime
@@ -68,19 +69,27 @@ def test_init_error():
     connect.side_effect = psycopg2.Error
     with patch("psycopg2.connect", new=connect):
         with pytest.raises(DatabaseError):
-            PgConnectionHandlerService()
+            handler = PgConnectionHandlerService()
+            handler.create_connection_pool()
 
 
 def test_get_connection(handler):
     connection = MagicMock()
     handler.connection_pool = pool = MagicMock()
-
+    handler.process_id = multiprocessing.current_process().pid
     pool.getconn = gc = MagicMock(return_value=connection)
 
     assert handler.get_connection() == connection
     gc.assert_called()
     assert connection.autocommit is False
     assert handler.get_current_connection() == connection
+
+
+def test_change_process_id(handler):
+    handler.connection_pool = MagicMock()
+    with pytest.raises(BadCodingError) as e:
+        handler.get_connection()
+    assert "Try to change db-connection-pool process from 0" in str(e)
 
 
 def test_get_connection_twice_error(handler):
@@ -161,6 +170,7 @@ def test_connection_error_in_context(handler):
     connection = MagicMock()
     connection.closed = 1
     handler.connection_pool = pool = MagicMock()
+    handler.process_id = multiprocessing.current_process().pid
     pool.getconn = gc = MagicMock(return_value=connection)
     pool.putconn = pc = MagicMock()
 
@@ -295,11 +305,12 @@ def test_sync_event_for_getter():
     Test the 5.line "continue" in get_connection of the handler,
     leaving the lock, if sync_event is not set
     """
-    os.environ["DATASTORE_MAX_CONNECTIONS"] = "2"
     injector.get(EnvironmentService).cache = {}
     handler = service(PgConnectionHandlerService)()
 
-    assert handler.connection_pool.maxconn == 2
+    handler.max_conn = (
+        2  # possible, because connection_pool will be created on first get_connection
+    )
     block_event = threading.Event()
     block_event.clear()
     conn = handler.get_connection()
@@ -310,18 +321,40 @@ def test_sync_event_for_getter():
     thread_blocking_conn.start()
     handler.sync_event.clear()
 
-    thread1 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
-    thread1.start()
-    thread2 = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
-    thread2.start()
+    threads: Thread = []
+    for i in range(handler.max_conn):
+        thread = Thread(target=thread_method, kwargs={"handler": handler, "secs": 0.1})
+        thread.start()
+        threads.append(thread)
     handler.sync_event.set()
     sleep(0.1)
     assert not handler.sync_event.is_set()
     handler.put_connection(conn)
     block_event.set()
-    thread1.join()
-    thread2.join()
+    for i in range(handler.max_conn):
+        threads[i].join()
     thread_blocking_conn.join()
+
+
+def test_error_in_putconn_2_times():
+    injector.get(EnvironmentService).cache = {}
+    handler = service(PgConnectionHandlerService)()
+
+    conn = handler.get_connection()
+    handler.put_connection(conn)
+    handler._storage.connection = conn  # for testing this error
+    with pytest.raises(psycopg2.pool.PoolError):
+        handler.put_connection(conn)
+
+
+def test_error_in_putconn_without_connection_pool():
+    injector.get(EnvironmentService).cache = {}
+    handler = service(PgConnectionHandlerService)()
+
+    conn = "dummy"
+    handler._storage.connection = conn  # for testing this error
+    with pytest.raises(BadCodingError):
+        handler.put_connection(conn)
 
 
 @pytest.mark.skip(reason="Just to play with threads, locking, performance")

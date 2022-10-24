@@ -1,7 +1,7 @@
 from typing import ContextManager, Dict, List, Protocol, Tuple
 
 from datastore.shared.di import service_interface
-from datastore.shared.typing import JSON, Field, Fqid, Id, Position
+from datastore.shared.typing import JSON, Field, Fqid, Id, Model, Position
 from datastore.writer.core.write_request import BaseRequestEvent
 
 
@@ -36,3 +36,6 @@ class Database(Protocol):
 
     def truncate_db(self) -> None:
         """Truncate all tables. Only for dev purposes!"""
+
+    def write_model_updates_action_worker(self, models: Dict[Fqid, Model]) -> None:
+        """For writing directly to models-table used for action_workers"""
