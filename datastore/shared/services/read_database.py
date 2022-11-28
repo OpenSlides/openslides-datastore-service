@@ -62,7 +62,7 @@ class ReadDatabase(Protocol):
     def get(
         self,
         fqid: Fqid,
-        mapped_fields: MappedFields = None,
+        mapped_fields: Optional[MappedFields] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         """
@@ -73,7 +73,7 @@ class ReadDatabase(Protocol):
     def get_many(
         self,
         fqids: Iterable[Fqid],
-        mapped_fields: MappedFields = None,
+        mapped_fields: Optional[MappedFields] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Fqid, Model]:
         """
@@ -85,7 +85,7 @@ class ReadDatabase(Protocol):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: MappedFields = None,
+        mapped_fields: Optional[MappedFields] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Id, Model]:
         """

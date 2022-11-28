@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from datastore.shared.di import service_as_singleton
 from datastore.shared.services.read_database import (
@@ -60,7 +60,7 @@ class SqlQueryHelper:
         self,
         collection: str,
         filter: Filter,
-        fields_params: BaseFilterQueryFieldsParameters = None,
+        fields_params: Optional[BaseFilterQueryFieldsParameters] = None,
         select_fqid: bool = False,
     ) -> Tuple[str, List[str], List[str]]:
         arguments: List[str] = []
