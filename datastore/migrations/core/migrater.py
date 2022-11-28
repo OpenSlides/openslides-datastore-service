@@ -220,9 +220,15 @@ class MigraterImplementation:
                 # after the first event use the migration table
                 events_from_migration_table = True
             old_events = [to_event(row) for row in _old_events]
-            new_events = migration.migrate(
-                old_events, old_accessor, new_accessor, position.to_position_data()
-            )
+            try:
+                new_events = migration.migrate(
+                    old_events, old_accessor, new_accessor, position.to_position_data()
+                )
+            except Exception:
+                self.logger.info(
+                    f"Migration from MI {source_migration_index} to MI {target_migration_index} failed!"
+                )
+                raise
             self.write_new_events(new_events, position.position)
 
             old_accessor.move_to_next_position()

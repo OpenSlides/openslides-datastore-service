@@ -47,7 +47,7 @@ class SqlReadDatabaseBackendService:
     def get(
         self,
         fqid: Fqid,
-        mapped_fields: MappedFields = None,
+        mapped_fields: Optional[MappedFields] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
         models = self.get_many([fqid], mapped_fields, get_deleted_models)
@@ -59,7 +59,7 @@ class SqlReadDatabaseBackendService:
     def get_many(
         self,
         fqids: Iterable[Fqid],
-        mapped_fields: MappedFields = None,
+        mapped_fields: Optional[MappedFields] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Fqid, Model]:
         if not fqids:
@@ -88,7 +88,7 @@ class SqlReadDatabaseBackendService:
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: MappedFields = None,
+        mapped_fields: Optional[MappedFields] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Dict[Id, Model]:
         if mapped_fields is None:

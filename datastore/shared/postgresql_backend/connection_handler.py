@@ -1,10 +1,10 @@
-from typing import Protocol
+from typing import Optional, Protocol
 
 from datastore.shared.di import service_interface
 
 
 class DatabaseError(Exception):
-    def __init__(self, msg, base_exception: Exception = None):
+    def __init__(self, msg, base_exception: Optional[Exception] = None):
         self.msg = msg
         self.base_exception = base_exception
 
