@@ -46,7 +46,7 @@ The datastore can be configured with the following environment variables:
 - `DATASTORE_MIN_CONNECTIONS`: The minimum amount of connections to the database that will be created. Default: 0
 - `DATASTORE_MAX_CONNECTIONS`: The maximum amount of connections to the database that will be created. If this is set to 1, only one connection can access the database at a time. The writer always runs in single-access mode, so no write errors occur. Default: 1
 - `DATASTORE_MAX_RETRIES`: The amount of times a request to the database is retried before giving up. Minimum: 1, Default: 3
-- `DATASTORE_RETRY_TIMEOUT`: How long to wait before retrying a request to the database, in ms. Set 0 to disable waiting
+- `DATASTORE_RETRY_TIMEOUT`: How long to wait before retrying a request to the database, in sec as int or float. Set 0 to disable waiting
   between requests. Default: 10
 - `OPENSLIDES_DEVELOPMENT`: If set to a truthy value, the datastore runs in development mode (see [development docs](docs/development.md)
   for the implications).
