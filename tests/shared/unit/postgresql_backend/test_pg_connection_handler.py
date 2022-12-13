@@ -267,7 +267,7 @@ def test_retry_on_db_failure():
     counter = MagicMock()
     with pytest.raises(DatabaseError):
         test(counter)
-    assert counter.call_count == 3
+    assert counter.call_count == 5
 
 
 def test_retry_on_db_failure_raise_on_other_error():
@@ -296,8 +296,8 @@ def test_retry_on_db_failure_with_timeout():
     ) as sleep:
         with pytest.raises(DatabaseError):
             test(counter)
-    assert counter.call_count == 3
-    assert sleep.call_count == 2
+    assert counter.call_count == 5
+    assert sleep.call_count == 4
 
 
 def test_sync_event_for_getter():
