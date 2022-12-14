@@ -10,9 +10,9 @@ services:
         environment:
             - OPENSLIDES_DEVELOPMENT=1
         depends_on:
-            - postgresql
+            - postgres
         networks:
-            - postgresql
+            - postgres
         stdin_open: true
         tty: true
     writer:
@@ -28,18 +28,18 @@ services:
             - COMMAND=create_initial_data
             - DATASTORE_INITIAL_DATA_FILE=https://raw.githubusercontent.com/OpenSlides/openslides-backend/main/global/data/example-data.json
         depends_on:
-            - postgresql
+            - postgres
             - redis
         networks:
-            - postgresql
+            - postgres
             - redis
         stdin_open: true
         tty: true
-    postgresql:
+    postgres:
         image: postgres:11
         env_file: database.env
         networks:
-            - postgresql
+            - postgres
     redis:
         image: redis:alpine
         ports:
@@ -47,5 +47,5 @@ services:
         networks:
             - redis
 networks:
-    postgresql:
+    postgres:
     redis:

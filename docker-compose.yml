@@ -8,9 +8,9 @@ services:
             - PORT=${OPENSLIDES_DATASTORE_READER_PORT}
             - NUM_WORKERS=8
         depends_on:
-            - postgresql
+            - postgres
         networks:
-            - postgresql
+            - postgres
         secrets:
             - postgres_password
     writer:
@@ -20,18 +20,18 @@ services:
         environment:
             - PORT=${OPENSLIDES_DATASTORE_WRITER_PORT}
         depends_on:
-            - postgresql
+            - postgres
             - redis
         networks:
-            - postgresql
+            - postgres
             - redis
         secrets:
             - postgres_password
-    postgresql:
+    postgres:
         image: postgres:11
         env_file: database.env
         networks:
-            - postgresql
+            - postgres
     redis:
         image: redis:alpine
         ports:
@@ -39,7 +39,7 @@ services:
         networks:
             - redis
 networks:
-    postgresql:
+    postgres:
     redis:
 secrets:
     postgres_password:
