@@ -118,8 +118,8 @@ class PgConnectionHandlerService:
         counter = 0
         log = True
         if timeout:
-            start = monotonic()
-            raise_ = False
+            start = monotonic()  # pragma: no cover
+            raise_ = False  # pragma: no cover
         else:
             raise_ = True
         while True:
@@ -129,17 +129,17 @@ class PgConnectionHandlerService:
                 )
             except psycopg2.Error as e:
                 if timeout and (monotonic() - start > timeout):
-                    raise_ = True
+                    raise_ = True  # pragma: no cover
                 self.raise_error(e, log=log, raise_=raise_)
-                sleep(10)
-                if log:
-                    log = False
-                    counter = 1
-                elif counter == 60:
-                    counter = 0
-                    log = True
-                else:
-                    counter += 1
+                sleep(10)  # pragma: no cover
+                if log:  # pragma: no cover
+                    log = False  # pragma: no cover
+                    counter = 1  # pragma: no cover
+                elif counter == 60:  # pragma: no cover
+                    counter = 0  # pragma: no cover
+                    log = True  # pragma: no cover
+                else:  # pragma: no cover
+                    counter += 1  # pragma: no cover
             finally:
                 if self.connection_pool:
                     break
@@ -235,8 +235,10 @@ class PgConnectionHandlerService:
             and not self.connection_pool._used
             and not self.connection_pool._rused
         ):
-            self.shutdown()
-            self.create_connection_pool(self.failover_connection_pool_timeout)
+            self.shutdown()  # pragma: no cover
+            self.create_connection_pool(
+                self.failover_connection_pool_timeout
+            )  # pragma: no cover
         self.sync_event.set()
 
     def get_connection_context(self):
