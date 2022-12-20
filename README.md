@@ -52,7 +52,7 @@ The datastore can be configured with the following environment variables:
   for the implications).
 - `DATASTORE_LOG_LEVEL`: Set the log level for the datastore. If not provided, it defaults to `DEBUG` in development
   mode and `INFO` otherwise.
-- `DATASTORE_DATABASE_HOST`: Host of the underlying database. Default: `postgresql`
+- `DATASTORE_DATABASE_HOST`: Host of the underlying database. Default: `postgres`
 - `DATASTORE_DATABASE_PORT`: Port of the underlying database. Default: `5432`
 - `DATASTORE_DATABASE_NAME`: Name of the underlying database. Default: `openslides`
 - `DATASTORE_DATABASE_USER`: User to use to login to the database. Default: `openslides`
