@@ -13,10 +13,10 @@ services:
         environment:
             - OPENSLIDES_DEVELOPMENT=1
         depends_on:
-            - postgresql
+            - postgres
         networks:
             - datastore
-            - postgresql
+            - postgres
     writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
@@ -32,20 +32,20 @@ services:
             - COMMAND=create_initial_data
             - DATASTORE_INITIAL_DATA_FILE=https://raw.githubusercontent.com/OpenSlides/openslides-backend/main/global/data/example-data.json
         depends_on:
-            - postgresql
+            - postgres
             - redis
         networks:
             - datastore
-            - postgresql
+            - postgres
             - redis
-    postgresql:
+    postgres:
         image: postgres:11
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides
             - POSTGRES_DB=openslides
         networks:
-            - postgresql
+            - postgres
     redis:
         image: redis:alpine
         ports:
@@ -54,5 +54,5 @@ services:
             - redis
 networks:
     datastore:
-    postgresql:
+    postgres:
     redis:

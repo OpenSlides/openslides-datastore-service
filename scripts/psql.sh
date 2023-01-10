@@ -1,3 +1,3 @@
 #!/bin/bash
 export PGPASSWORD=openslides
-psql -h postgresql -U openslides
+psql -h postgres -U openslides

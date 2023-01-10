@@ -10,22 +10,22 @@ services:
         environment:
             - OPENSLIDES_DEVELOPMENT=1
         depends_on:
-            - postgresql
+            - postgres
             - redis
         networks:
-            - postgresql
+            - postgres
             - redis
         ports:
             - "5679:5678"
-    postgresql:
+    postgres:
         image: postgres:11
         env_file: database.env
         networks:
-            - postgresql
+            - postgres
     redis:
         image: redis:alpine
         networks:
             - redis
 networks:
-    postgresql:
+    postgres:
     redis:
