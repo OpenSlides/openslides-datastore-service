@@ -239,6 +239,7 @@ class PgConnectionHandlerService:
             self.create_connection_pool(
                 self.failover_connection_pool_timeout
             )  # pragma: no cover
+            logger.info("Successfully recreated DB connection pool.")
         self.sync_event.set()
 
     def get_connection_context(self):
