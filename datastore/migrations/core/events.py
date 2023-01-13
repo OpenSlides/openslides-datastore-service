@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, List
 
 from datastore.shared.postgresql_backend import EVENT_TYPE, ListUpdatesDict
-from datastore.shared.typing import Field, Fqid, Model
+from datastore.shared.typing import JSON, Field, Fqid, Model
 from datastore.shared.util import (
     InvalidKeyFormat,
     assert_is_field,
@@ -78,6 +78,9 @@ class DeleteFieldsEvent(BaseEvent):
 
 class ListUpdateEvent(BaseEvent):
     type = EVENT_TYPE.LIST_FIELDS
+
+    add: Dict[str, List[JSON]]
+    remove: Dict[str, List[JSON]]
 
     def __init__(self, fqid: Fqid, data: Dict[str, ListUpdatesDict]) -> None:
         self.add = data.pop("add", {})
