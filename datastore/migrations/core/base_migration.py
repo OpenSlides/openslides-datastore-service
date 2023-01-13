@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from datastore.shared.typing import JSON
 
-from .events import BaseEvent
+from .events import BaseEvent, DeleteFieldsEvent, ListUpdateEvent, UpdateEvent
 from .exceptions import MigrationSetupException
 from .migration_keyframes import MigrationKeyframeAccessor
 
@@ -63,6 +63,8 @@ class BaseMigration:
         self.old_accessor = old_accessor
         self.new_accessor = new_accessor
         self.position_data = position_data
+        # sort by type to migrate create events first
+        events.sort(key=lambda e: e.type)
         self.position_init()
 
         new_events: List[BaseEvent] = []
@@ -72,11 +74,13 @@ class BaseMigration:
             if translated_events is None:
                 translated_events = [old_event]  # noop
 
-            old_accessor.apply_event(old_event)
-            for translated_event in translated_events:
-                new_accessor.apply_event(translated_event)
+            # filter out empty events
+            filtered_events = self.filter_noop_events(translated_events)
 
-            new_events.extend(translated_events)
+            old_accessor.apply_event(old_event)
+            for translated_event in filtered_events:
+                new_accessor.apply_event(translated_event)
+                new_events.append(translated_event)
 
         # After migrating every event of this position, some
         # additional events to append to the position can be created
@@ -88,6 +92,23 @@ class BaseMigration:
         new_events.extend(additional_events)
 
         return new_events
+
+    def filter_noop_events(self, events: Iterable[BaseEvent]) -> Iterable[BaseEvent]:
+        for event in events:
+            if isinstance(event, UpdateEvent):
+                if not event.data:
+                    continue
+            elif isinstance(event, ListUpdateEvent):
+                if not any(
+                    value
+                    for field in (event.add, event.remove)
+                    for value in field.values()
+                ):
+                    continue
+            elif isinstance(event, DeleteFieldsEvent):
+                if not event.data:
+                    continue
+            yield event
 
     def position_init(self) -> None:
         """

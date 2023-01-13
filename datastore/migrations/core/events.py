@@ -43,6 +43,8 @@ class BaseEvent:
 
 
 class _ModelEvent(BaseEvent):
+    data: Model
+
     def __init__(self, fqid: Fqid, data: Model) -> None:
         super().__init__(fqid, data)
 
@@ -66,6 +68,8 @@ class UpdateEvent(_ModelEvent):
 class DeleteFieldsEvent(BaseEvent):
     type = EVENT_TYPE.DELETE_FIELDS
 
+    data: List[Field]
+
     def __init__(self, fqid: Fqid, data: List[Field]) -> None:
         super().__init__(fqid, data)
 
@@ -78,6 +82,9 @@ class DeleteFieldsEvent(BaseEvent):
 
 class ListUpdateEvent(BaseEvent):
     type = EVENT_TYPE.LIST_FIELDS
+
+    add: ListUpdatesDict
+    remove: ListUpdatesDict
 
     def __init__(self, fqid: Fqid, data: Dict[str, ListUpdatesDict]) -> None:
         self.add = data.pop("add", {})

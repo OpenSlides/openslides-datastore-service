@@ -350,7 +350,9 @@ class TestInitialMigrationKeyframeModifier(BaseTest):
     meta_position = 1
 
     def _write(self, write, *data):
-        write(*data, {"type": "create", "fqid": "trigger/1", "fields": {}})
+        if data:
+            write(*data)
+        write({"type": "create", "fqid": "trigger/1", "fields": {}})
 
 
 class TestDatabaseMigrationKeyframeModifier(BaseTest):
@@ -358,7 +360,9 @@ class TestDatabaseMigrationKeyframeModifier(BaseTest):
 
     def _write(self, write, *data):
         write({"type": "create", "fqid": "dummy/1", "fields": {}})
-        write(*data, {"type": "create", "fqid": "trigger/1", "fields": {}})
+        if data:
+            write(*data)
+        write({"type": "create", "fqid": "trigger/1", "fields": {}})
 
 
 class TestSkippedPositionMigrationKeyframeModifier(BaseTest):
@@ -372,4 +376,6 @@ class TestSkippedPositionMigrationKeyframeModifier(BaseTest):
             connection_handler.execute(
                 "ALTER SEQUENCE positions_position_seq RESTART WITH 3", []
             )
-        write(*data, {"type": "create", "fqid": "trigger/1", "fields": {"f": 1}})
+        if data:
+            write(*data)
+        write({"type": "create", "fqid": "trigger/1", "fields": {"f": 1}})
