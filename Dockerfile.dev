@@ -4,7 +4,7 @@ RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it gcc libpq-dev libc-dev postgresql-client redis-tools
 
 WORKDIR /app
-COPY requirements/requirements-* scripts/system/* ./
+COPY requirements/requirements-* scripts/system/* scripts/* ./
 
 RUN pip install -U -r requirements-testing.txt
 
