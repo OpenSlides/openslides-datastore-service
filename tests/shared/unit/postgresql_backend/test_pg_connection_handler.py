@@ -59,7 +59,7 @@ def test_connection_context(handler):
         connection.__exit__.assert_not_called()
         gc.assert_called()
     connection.__exit__.assert_called()
-    pc.assert_called_with(connection, False)
+    pc.assert_called_with(connection, False, False)
 
 
 def test_init_error():

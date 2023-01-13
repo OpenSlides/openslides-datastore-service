@@ -68,13 +68,19 @@ class ConnectionContext:
         self.connection.__enter__()
 
     def __exit__(self, exception, exception_value, traceback):
-        has_pg_error = exception is not None and issubclass(exception, psycopg2.Error)
+        new_connection_pool = False
+        if has_pg_error := (
+            exception is not None and issubclass(exception, psycopg2.Error)
+        ):
+            new_connection_pool = issubclass(exception, psycopg2.OperationalError)
         # connection which were already closed will raise an InterfaceError in __exit__
         if not self.connection.closed:
             self.connection.__exit__(exception, exception_value, traceback)
         # some errors are not correctly recognized by the connection pool, soto be save we dispose
         # all connection which errored out, even though some might still be usable
-        self.connection_handler.put_connection(self.connection, has_pg_error)
+        self.connection_handler.put_connection(
+            self.connection, has_pg_error, new_connection_pool
+        )
         # Handle errors by ourselves
         if has_pg_error:
             self.connection_handler.raise_error(exception_value)
@@ -194,7 +200,7 @@ class PgConnectionHandlerService:
                         logger.debug(
                             "This indicates a previous error, please check the logs"
                         )
-                        self._put_connection(old_conn, True)
+                        self._put_connection(old_conn, True, False)
                     else:
                         raise BadCodingError(
                             "You cannot start multiple transactions in one thread!"
@@ -211,11 +217,11 @@ class PgConnectionHandlerService:
                 break
         return connection
 
-    def put_connection(self, connection, has_error=False):
+    def put_connection(self, connection, has_error=False, new_connection_pool=False):
         with self.sync_lock:
-            self._put_connection(connection, has_error)
+            self._put_connection(connection, has_error, new_connection_pool)
 
-    def _put_connection(self, connection, has_error):
+    def _put_connection(self, connection, has_error, new_connection_pool):
         if connection != self.get_current_connection():
             raise BadCodingError("Invalid connection")
 
@@ -229,7 +235,7 @@ class PgConnectionHandlerService:
         else:
             raise BadCodingError("putconn on empty connection pool")
         self.set_current_connection(None)
-        if (
+        if new_connection_pool or (
             has_error
             and not self.connection_pool._pool
             and not self.connection_pool._used
