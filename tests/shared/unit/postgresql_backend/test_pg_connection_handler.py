@@ -188,6 +188,18 @@ def test_connection_error_in_context(handler):
     pc.assert_called_with(connection, close=True)
 
 
+def test_operational_error_in_context(handler):
+    handler.connection_pool = MagicMock()
+    handler.process_id = multiprocessing.current_process().pid
+
+    context = ConnectionContext(handler)
+    with pytest.raises(DatabaseError):
+        with context:
+            raise psycopg2.OperationalError()
+
+    assert handler.get_current_connection() is None
+
+
 # Query methods
 
 

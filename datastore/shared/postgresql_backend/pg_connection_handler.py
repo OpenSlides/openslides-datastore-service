@@ -116,7 +116,7 @@ class PgConnectionHandlerService:
         self.connection_pool: Optional[ThreadedConnectionPool] = None
         self.process_id: Optional[int] = 0
 
-    def create_connection_pool(self, timeout: int = 0):
+    def create_connection_pool(self, timeout: int = 0):  # pragma: no cover
         """
         If timeout is set, the first psycopg2-execption will be logged
         immediately, subsequently all 10 minutes (counter 60 * sleep(10))
@@ -124,8 +124,8 @@ class PgConnectionHandlerService:
         counter = 0
         log = True
         if timeout:
-            start = monotonic()  # pragma: no cover
-            raise_ = False  # pragma: no cover
+            start = monotonic()
+            raise_ = False
         else:
             raise_ = True
         while True:
@@ -135,17 +135,17 @@ class PgConnectionHandlerService:
                 )
             except psycopg2.Error as e:
                 if timeout and (monotonic() - start > timeout):
-                    raise_ = True  # pragma: no cover
+                    raise_ = True
                 self.raise_error(e, log=log, raise_=raise_)
-                sleep(10)  # pragma: no cover
-                if log:  # pragma: no cover
-                    log = False  # pragma: no cover
-                    counter = 1  # pragma: no cover
-                elif counter == 60:  # pragma: no cover
-                    counter = 0  # pragma: no cover
-                    log = True  # pragma: no cover
-                else:  # pragma: no cover
-                    counter += 1  # pragma: no cover
+                sleep(10)
+                if log:
+                    log = False
+                    counter = 1
+                elif counter == 60:
+                    counter = 0
+                    log = True
+                else:
+                    counter += 1
             finally:
                 if self.connection_pool:
                     break
@@ -242,9 +242,7 @@ class PgConnectionHandlerService:
             and not self.connection_pool._rused
         ):
             self.shutdown()  # pragma: no cover
-            self.create_connection_pool(
-                self.failover_connection_pool_timeout
-            )  # pragma: no cover
+            self.create_connection_pool(self.failover_connection_pool_timeout)
             logger.info("Successfully recreated DB connection pool.")
         self.sync_event.set()
 
@@ -258,7 +256,7 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             if use_execute_values:
-                execute_values(
+                execute_values(  # pragma: no cover
                     cursor,
                     prepared_query,
                     arguments,
@@ -271,7 +269,7 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             if use_execute_values:
-                result = execute_values(
+                result = execute_values(  # pragma: no cover
                     cursor,
                     prepared_query,
                     arguments,
