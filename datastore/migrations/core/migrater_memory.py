@@ -1,3 +1,5 @@
+import copy
+from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Tuple, cast
 
@@ -10,15 +12,19 @@ from .base_migration import BaseMigration
 from .events import BaseEvent, CreateEvent
 from .exceptions import MismatchingMigrationIndicesException
 from .migrater import RawPosition
-from .migration_keyframes import (
-    InitialMigrationKeyframeModifier,
-    MigrationKeyframeModifier,
-)
+from .migration_keyframes import InitialMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
 
 @service_as_factory
 class MigraterImplementationMemory:
+    """
+    This migrater is made for in memory migrations of meeting imports.
+    The whole import will be imported on 1 position. Unlike the database
+    migration there is no need to have keyframes/baselines for all
+    migrationlevels for the last position.
+    """
+
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger
@@ -73,6 +79,15 @@ class MigraterImplementationMemory:
         self.logger.info(
             f"Migrate import data from MI {migration_index} to MI {self.target_migration_index} ..."
         )
+        old_accessor, new_accessor = self.get_accessors(
+            last_position_value,
+            migration_index,
+            migration_index + 1,
+            position.position,
+            False,
+        )
+        events = cast(List[BaseEvent], self.import_create_events)
+
         for source_migration_index in range(
             migration_index, self.target_migration_index
         ):
@@ -80,21 +95,16 @@ class MigraterImplementationMemory:
             self.logger.debug(
                 f"\tRunning migration with target migration index {target_migration_index}"
             )
-            old_accessor, new_accessor = self.get_accessors(
-                last_position_value,
-                source_migration_index,
-                target_migration_index,
-                position.position,
-                False,
-            )
+            self._reuse_accessor(old_accessor, source_migration_index)
+            self._reuse_accessor(new_accessor, target_migration_index)
 
             migration = self.migrations[target_migration_index]
 
-            old_events = cast(List[BaseEvent], self.import_create_events)
-            new_events = migration.migrate(
-                old_events, old_accessor, new_accessor, position.to_position_data()
+            events = migration.migrate(
+                events, old_accessor, new_accessor, position.to_position_data()
             )
-            self.migrated_events = new_events
+
+        self.migrated_events = events
 
     def get_accessors(
         self,
@@ -103,7 +113,7 @@ class MigraterImplementationMemory:
         target_migration_index: int,
         position: Position,
         is_last_migration_index: bool,
-    ) -> Tuple[MigrationKeyframeModifier, MigrationKeyframeModifier]:
+    ) -> Tuple[InitialMigrationKeyframeModifier, InitialMigrationKeyframeModifier]:
         old_accessor = self._get_accessor(
             last_position_value,
             source_migration_index,
@@ -118,16 +128,22 @@ class MigraterImplementationMemory:
 
     def _get_accessor(
         self, last_position_value: Position, migration_index, position: Position
-    ) -> MigrationKeyframeModifier:
+    ) -> InitialMigrationKeyframeModifier:
         accessor = InitialMigrationKeyframeModifier(
             self.connection,
             last_position_value,
             migration_index,
             position,
         )
-        accessor.models.update(self.imported_models)
-        accessor.deleted.update({key: False for key in self.imported_models})
         return accessor
+
+    def _reuse_accessor(
+        self, accessor: InitialMigrationKeyframeModifier, migration_index
+    ) -> None:
+        accessor.migration_index = migration_index
+        accessor.models = copy.deepcopy(self.imported_models)
+        accessor.deleted = {key: False for key in self.imported_models}
+        accessor.collection_ids = defaultdict(set)
 
     def set_additional_data(
         self,
