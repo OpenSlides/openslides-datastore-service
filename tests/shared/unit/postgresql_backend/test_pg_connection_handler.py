@@ -59,7 +59,7 @@ def test_connection_context(handler):
         connection.__exit__.assert_not_called()
         gc.assert_called()
     connection.__exit__.assert_called()
-    pc.assert_called_with(connection, False)
+    pc.assert_called_with(connection, False, False)
 
 
 def test_init_error():
@@ -188,6 +188,18 @@ def test_connection_error_in_context(handler):
     pc.assert_called_with(connection, close=True)
 
 
+def test_operational_error_in_context(handler):
+    handler.connection_pool = MagicMock()
+    handler.process_id = multiprocessing.current_process().pid
+
+    context = ConnectionContext(handler)
+    with pytest.raises(DatabaseError):
+        with context:
+            raise psycopg2.OperationalError()
+
+    assert handler.get_current_connection() is None
+
+
 # Query methods
 
 
@@ -267,7 +279,7 @@ def test_retry_on_db_failure():
     counter = MagicMock()
     with pytest.raises(DatabaseError):
         test(counter)
-    assert counter.call_count == 3
+    assert counter.call_count == 5
 
 
 def test_retry_on_db_failure_raise_on_other_error():
@@ -296,8 +308,8 @@ def test_retry_on_db_failure_with_timeout():
     ) as sleep:
         with pytest.raises(DatabaseError):
             test(counter)
-    assert counter.call_count == 3
-    assert sleep.call_count == 2
+    assert counter.call_count == 5
+    assert sleep.call_count == 4
 
 
 def test_sync_event_for_getter():

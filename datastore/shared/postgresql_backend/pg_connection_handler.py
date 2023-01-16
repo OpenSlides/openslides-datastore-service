@@ -1,7 +1,7 @@
 import multiprocessing
 import threading
 from functools import wraps
-from time import sleep
+from time import monotonic, sleep
 from typing import Any, Dict, Optional, cast
 
 import psycopg2
@@ -20,8 +20,8 @@ def retry_on_db_failure(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         env_service: EnvironmentService = injector.get(EnvironmentService)
-        RETRY_TIMEOUT = int(env_service.try_get("DATASTORE_RETRY_TIMEOUT") or 10)
-        MAX_RETRIES = int(env_service.try_get("DATASTORE_MAX_RETRIES") or 3)
+        RETRY_TIMEOUT = float(env_service.try_get("DATASTORE_RETRY_TIMEOUT") or 0.4)
+        MAX_RETRIES = int(env_service.try_get("DATASTORE_MAX_RETRIES") or 5)
         tries = 0
         while True:
             try:
@@ -43,7 +43,7 @@ def retry_on_db_failure(fn):
                 else:
                     raise
             if RETRY_TIMEOUT:
-                sleep(RETRY_TIMEOUT / 1000)
+                sleep(RETRY_TIMEOUT)
 
     return wrapper
 
@@ -68,13 +68,19 @@ class ConnectionContext:
         self.connection.__enter__()
 
     def __exit__(self, exception, exception_value, traceback):
-        has_pg_error = exception is not None and issubclass(exception, psycopg2.Error)
+        new_connection_pool = False
+        if has_pg_error := (
+            exception is not None and issubclass(exception, psycopg2.Error)
+        ):
+            new_connection_pool = issubclass(exception, psycopg2.OperationalError)
         # connection which were already closed will raise an InterfaceError in __exit__
         if not self.connection.closed:
             self.connection.__exit__(exception, exception_value, traceback)
         # some errors are not correctly recognized by the connection pool, soto be save we dispose
         # all connection which errored out, even though some might still be usable
-        self.connection_handler.put_connection(self.connection, has_pg_error)
+        self.connection_handler.put_connection(
+            self.connection, has_pg_error, new_connection_pool
+        )
         # Handle errors by ourselves
         if has_pg_error:
             self.connection_handler.raise_error(exception_value)
@@ -103,17 +109,46 @@ class PgConnectionHandlerService:
         self.max_conn: int = max(
             int(self.environment.try_get("DATASTORE_MAX_CONNECTIONS") or 5), 5
         )
+        self.failover_connection_pool_timeout = int(
+            self.environment.try_get("FAILOVER_CONNECTION_POOL_TIMEOUT") or 3600
+        )
         self.kwargs: Dict[str, Any] = self.get_connection_params()
         self.connection_pool: Optional[ThreadedConnectionPool] = None
         self.process_id: Optional[int] = 0
 
-    def create_connection_pool(self):
-        try:
-            self.connection_pool = ThreadedConnectionPool(
-                self.min_conn, self.max_conn, **self.kwargs
-            )
-        except psycopg2.Error as e:
-            self.raise_error(e)
+    def create_connection_pool(self, timeout: int = 0):  # pragma: no cover
+        """
+        If timeout is set, the first psycopg2-execption will be logged
+        immediately, subsequently all 10 minutes (counter 60 * sleep(10))
+        """
+        counter = 0
+        log = True
+        if timeout:
+            start = monotonic()
+            raise_ = False
+        else:
+            raise_ = True
+        while True:
+            try:
+                self.connection_pool = ThreadedConnectionPool(
+                    self.min_conn, self.max_conn, **self.kwargs
+                )
+            except psycopg2.Error as e:
+                if timeout and (monotonic() - start > timeout):
+                    raise_ = True
+                self.raise_error(e, log=log, raise_=raise_)
+                sleep(10)
+                if log:
+                    log = False
+                    counter = 1
+                elif counter == 60:
+                    counter = 0
+                    log = True
+                else:
+                    counter += 1
+            finally:
+                if self.connection_pool:
+                    break
 
     def get_current_connection(self):
         try:
@@ -165,7 +200,7 @@ class PgConnectionHandlerService:
                         logger.debug(
                             "This indicates a previous error, please check the logs"
                         )
-                        self._put_connection(old_conn, True)
+                        self._put_connection(old_conn, True, False)
                     else:
                         raise BadCodingError(
                             "You cannot start multiple transactions in one thread!"
@@ -182,11 +217,11 @@ class PgConnectionHandlerService:
                 break
         return connection
 
-    def put_connection(self, connection, has_error=False):
+    def put_connection(self, connection, has_error=False, new_connection_pool=False):
         with self.sync_lock:
-            self._put_connection(connection, has_error)
+            self._put_connection(connection, has_error, new_connection_pool)
 
-    def _put_connection(self, connection, has_error):
+    def _put_connection(self, connection, has_error, new_connection_pool):
         if connection != self.get_current_connection():
             raise BadCodingError("Invalid connection")
 
@@ -200,6 +235,15 @@ class PgConnectionHandlerService:
         else:
             raise BadCodingError("putconn on empty connection pool")
         self.set_current_connection(None)
+        if new_connection_pool or (
+            has_error
+            and not self.connection_pool._pool
+            and not self.connection_pool._used
+            and not self.connection_pool._rused
+        ):
+            self.shutdown()  # pragma: no cover
+            self.create_connection_pool(self.failover_connection_pool_timeout)
+            logger.info("Successfully recreated DB connection pool.")
         self.sync_event.set()
 
     def get_connection_context(self):
@@ -212,7 +256,7 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             if use_execute_values:
-                execute_values(
+                execute_values(  # pragma: no cover
                     cursor,
                     prepared_query,
                     arguments,
@@ -225,7 +269,7 @@ class PgConnectionHandlerService:
         prepared_query = self.prepare_query(query, sql_parameters)
         with self.get_current_connection().cursor() as cursor:
             if use_execute_values:
-                result = execute_values(
+                result = execute_values(  # pragma: no cover
                     cursor,
                     prepared_query,
                     arguments,
@@ -259,10 +303,13 @@ class PgConnectionHandlerService:
         )
         return prepared_query
 
-    def raise_error(self, e: psycopg2.Error):
-        msg = f"Database connection error ({type(e).__name__}, code {e.pgcode}): {e.pgerror}"  # noqa
-        logger.error(msg)
-        raise DatabaseError(msg, e)
+    def raise_error(self, e: psycopg2.Error, log: bool = True, raise_: bool = True):
+        if log or raise_:
+            msg = f"Database connection error ({type(e).__name__}, code {e.pgcode}): {e.pgerror}"  # noqa
+            logger.error(msg)
+        if raise_:
+            raise DatabaseError(msg, e)
 
     def shutdown(self):
         cast(ThreadedConnectionPool, self.connection_pool).closeall()
+        self.connection_pool = None
