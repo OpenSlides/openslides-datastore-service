@@ -102,3 +102,30 @@ def test_filter_empty_deletefields(
             "meta_position": 1,
         },
     )
+
+
+def test_filter_no_events(
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_count,
+    assert_model,
+):
+    write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
+    write({"type": "update", "fqid": "a/1", "fields": {"f": 2}})
+    set_migration_index_to_1()
+
+    migration_handler.register_migrations(
+        get_lambda_migration(lambda e: [] if isinstance(e, UpdateEvent) else None)
+    )
+    migration_handler.finalize()
+
+    assert_count("events", 1)
+    assert_model(
+        "a/1",
+        {
+            "f": 1,
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+    )

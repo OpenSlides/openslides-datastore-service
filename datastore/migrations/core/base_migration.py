@@ -63,12 +63,10 @@ class BaseMigration:
         self.old_accessor = old_accessor
         self.new_accessor = new_accessor
         self.position_data = position_data
-        # sort by type to migrate create events first
-        events.sort(key=lambda e: e.type)
         self.position_init()
 
         new_events: List[BaseEvent] = []
-        for event in events:
+        for event in self.order_events(events):
             old_event = event.clone()
             translated_events = self.migrate_event(event)
             if translated_events is None:
@@ -92,6 +90,21 @@ class BaseMigration:
         new_events.extend(additional_events)
 
         return new_events
+
+    def order_events(self, events: List[BaseEvent]) -> Iterable[BaseEvent]:
+        """
+        Yield create events first, everything else afterwards. This guarantees that all referenced
+        models are created before any other are updated.
+        This is the runtime-optimal approach by using a generator - the list is only iterared ~1.5
+        times.
+        """
+        events_queue = []
+        for event in events:
+            if event.type == "create":
+                yield event
+            else:
+                events_queue.append(event)
+        yield from events_queue
 
     def filter_noop_events(self, events: Iterable[BaseEvent]) -> Iterable[BaseEvent]:
         for event in events:
