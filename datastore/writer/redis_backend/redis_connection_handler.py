@@ -19,7 +19,6 @@ class ENVIRONMENT_VARIABLES:
 
 @service_as_singleton
 class RedisConnectionHandlerService:
-
     environment: EnvironmentService
     shutdown_service: ShutdownService
     connection: Optional[Any] = None

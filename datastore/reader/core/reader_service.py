@@ -40,7 +40,6 @@ from .requests import (
 
 @service_as_factory
 class ReaderService:
-
     connection: ConnectionHandler
     database: ReadDatabase
 

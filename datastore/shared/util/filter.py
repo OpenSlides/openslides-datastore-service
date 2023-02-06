@@ -34,10 +34,10 @@ Filter = Union[And, Or, Not, FilterOperator]
 filter_definitions_schema = {
     "filter": {
         "anyOf": [
-            {"$ref": "#/definitions/filter_operator"},
-            {"$ref": "#/definitions/not_filter"},
-            {"$ref": "#/definitions/and_filter"},
-            {"$ref": "#/definitions/or_filter"},
+            {"$ref": "#/$defs/filter_operator"},
+            {"$ref": "#/$defs/not_filter"},
+            {"$ref": "#/$defs/and_filter"},
+            {"$ref": "#/$defs/or_filter"},
         ],
     },
     "filter_operator": {
@@ -54,7 +54,7 @@ filter_definitions_schema = {
     },
     "not_filter": {
         "type": "object",
-        "properties": {"not_filter": {"$ref": "#/definitions/filter"}},
+        "properties": {"not_filter": {"$ref": "#/$defs/filter"}},
         "required": ["not_filter"],
     },
     "and_filter": {
@@ -62,7 +62,7 @@ filter_definitions_schema = {
         "properties": {
             "and_filter": {
                 "type": "array",
-                "items": {"$ref": "#/definitions/filter"},
+                "items": {"$ref": "#/$defs/filter"},
                 "minItems": 2,
             },
         },
@@ -73,7 +73,7 @@ filter_definitions_schema = {
         "properties": {
             "or_filter": {
                 "type": "array",
-                "items": {"$ref": "#/definitions/filter"},
+                "items": {"$ref": "#/$defs/filter"},
                 "minItems": 2,
             },
         },

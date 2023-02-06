@@ -27,7 +27,7 @@ collectionfield_lock_with_filter_schema = {
     "type": "object",
     "properties": {
         "position": {"type": "integer"},
-        "filter": filter_definitions_schema,
+        "filter": {"$ref": "#/$defs/filter"},
     },
     "required": ["position"],
 }
@@ -35,6 +35,7 @@ collectionfield_lock_with_filter_schema = {
 write_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
+        "$defs": filter_definitions_schema,
         "type": "object",
         "properties": {
             "user_id": {"type": "integer"},

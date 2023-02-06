@@ -63,7 +63,6 @@ class MigrationHandler(Protocol):
 
 @service_as_factory
 class MigrationHandlerImplementation:
-
     read_database: ReadDatabase
     connection: ConnectionHandler
     migrater: Migrater

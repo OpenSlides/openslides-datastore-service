@@ -41,7 +41,6 @@ class EventTranslator(Protocol):
 
 @service_as_singleton
 class EventTranslatorService:
-
     read_database: ReadDatabase
 
     def translate(
