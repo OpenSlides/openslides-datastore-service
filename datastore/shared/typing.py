@@ -4,7 +4,7 @@ from typing import Any, Dict, List, NewType, TypeAlias, Union
 JSON = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 
 
-Model = Dict[str, JSON]
+Model = Dict[str, Any]
 
 _Collection = NewType("_Collection", str)
 _Field = NewType("_Field", str)

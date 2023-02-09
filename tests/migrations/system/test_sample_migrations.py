@@ -117,10 +117,10 @@ def test_remove_field(
 
     assert_finalized()
     assert_model("a/1", {"meta_deleted": False, "meta_position": 1}, position=1)
-    assert_model("a/1", {"meta_deleted": False, "meta_position": 2}, position=2)
-    assert_model("a/1", {"meta_deleted": False, "meta_position": 3}, position=3)
-    assert_model("a/1", {"meta_deleted": False, "meta_position": 4}, position=4)
-    assert_model("a/1", {"meta_deleted": False, "meta_position": 5}, position=5)
+    assert_model("a/1", {"meta_deleted": False, "meta_position": 1}, position=2)
+    assert_model("a/1", {"meta_deleted": False, "meta_position": 1}, position=3)
+    assert_model("a/1", {"meta_deleted": False, "meta_position": 1}, position=4)
+    assert_model("a/1", {"meta_deleted": False, "meta_position": 1}, position=5)
 
 
 def test_add_required_field_based_on_migrated_data(

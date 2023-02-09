@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from datastore.shared.typing import JSON
 
-from .events import BaseEvent
+from .events import BaseEvent, DeleteFieldsEvent, ListUpdateEvent, UpdateEvent
 from .exceptions import MigrationSetupException
 from .migration_keyframes import MigrationKeyframeAccessor
 
@@ -66,17 +66,19 @@ class BaseMigration:
         self.position_init()
 
         new_events: List[BaseEvent] = []
-        for event in events:
+        for event in self.order_events(events):
             old_event = event.clone()
             translated_events = self.migrate_event(event)
             if translated_events is None:
                 translated_events = [old_event]  # noop
 
-            old_accessor.apply_event(old_event)
-            for translated_event in translated_events:
-                new_accessor.apply_event(translated_event)
+            # filter out empty events
+            filtered_events = self.filter_noop_events(translated_events)
 
-            new_events.extend(translated_events)
+            old_accessor.apply_event(old_event)
+            for translated_event in filtered_events:
+                new_accessor.apply_event(translated_event)
+                new_events.append(translated_event)
 
         # After migrating every event of this position, some
         # additional events to append to the position can be created
@@ -88,6 +90,38 @@ class BaseMigration:
         new_events.extend(additional_events)
 
         return new_events
+
+    def order_events(self, events: List[BaseEvent]) -> Iterable[BaseEvent]:
+        """
+        Yield create events first, everything else afterwards. This guarantees that all referenced
+        models are created before any other are updated.
+        This is the runtime-optimal approach by using a generator - the list is only iterared ~1.5
+        times.
+        """
+        events_queue = []
+        for event in events:
+            if event.type == "create":
+                yield event
+            else:
+                events_queue.append(event)
+        yield from events_queue
+
+    def filter_noop_events(self, events: Iterable[BaseEvent]) -> Iterable[BaseEvent]:
+        for event in events:
+            if isinstance(event, UpdateEvent):
+                if not event.data:
+                    continue
+            elif isinstance(event, ListUpdateEvent):
+                if not any(
+                    value
+                    for field in (event.add, event.remove)
+                    for value in field.values()
+                ):
+                    continue
+            elif isinstance(event, DeleteFieldsEvent):
+                if not event.data:
+                    continue
+            yield event
 
     def position_init(self) -> None:
         """
