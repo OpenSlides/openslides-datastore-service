@@ -2,6 +2,8 @@
 
 printf "Black:\n"
 black $1
+printf "Autoflake:\n"
+autoflake --verbose --in-place --remove-all-unused-imports --ignore-init-module-imports --recursive $1
 printf "\nIsort:\n"
 isort $1
 printf "\nFlake8:\n"

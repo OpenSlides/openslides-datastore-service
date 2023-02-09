@@ -35,7 +35,6 @@ MIGRATION_INDEX_NOT_INITIALIZED = -2
 
 @service_as_singleton
 class SqlReadDatabaseBackendService:
-
     connection: ConnectionHandler
     query_helper: SqlQueryHelper
 

@@ -1,4 +1,5 @@
 import copy
+from dataclasses import asdict
 from unittest.mock import MagicMock
 
 import pytest
@@ -113,7 +114,7 @@ def test_locked_collectionfield_with_filter(
     connection_handler.collectionfield = MagicMock(return_value=locked_collectionfield)
     valid_metadata["locked_fields"]["a/f"] = {
         "position": 42,
-        "filter": FilterOperator("field", "=", "value"),
+        "filter": asdict(FilterOperator("field", "=", "value")),
     }
 
     with pytest.raises(ModelLocked) as e:

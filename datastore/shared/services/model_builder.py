@@ -12,7 +12,6 @@ class ModelBuilder(Protocol):
 
 @service_as_singleton
 class SqlModelBuilder:
-
     connection: ConnectionHandler
 
     def build(self, fqid):

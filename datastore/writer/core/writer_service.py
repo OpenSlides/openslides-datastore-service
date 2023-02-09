@@ -18,7 +18,6 @@ from .write_request import BaseRequestEvent, WriteRequest
 
 @service_as_factory
 class WriterService:
-
     _lock = threading.Lock()
 
     database: Database

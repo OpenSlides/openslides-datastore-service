@@ -88,7 +88,6 @@ class ConnectionContext:
 
 @service_as_singleton
 class PgConnectionHandlerService:
-
     _storage: threading.local
     sync_lock: threading.Lock
     sync_event: threading.Event

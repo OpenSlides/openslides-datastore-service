@@ -50,7 +50,6 @@ class Migrater(Protocol):
 
 @service_as_factory
 class MigraterImplementation:
-
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger
