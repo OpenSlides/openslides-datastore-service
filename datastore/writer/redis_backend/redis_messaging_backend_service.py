@@ -22,7 +22,6 @@ MODIFIED_FIELDS_TOPIC = "ModifiedFields"
 
 @service_as_singleton
 class RedisMessagingBackendService(Messaging):
-
     connection: ConnectionHandler
 
     def handle_events(

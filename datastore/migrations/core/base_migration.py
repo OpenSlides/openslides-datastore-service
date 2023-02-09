@@ -93,7 +93,6 @@ class BaseMigration:
         """
         This hook can be used to setup initial data for each position.
         """
-        pass
 
     def migrate_event(
         self,

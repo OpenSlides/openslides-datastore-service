@@ -50,7 +50,6 @@ EventData = Tuple[Position, Fqid, EVENT_TYPE, JSON, int]
 
 @service_as_singleton
 class SqlDatabaseBackendService:
-
     connection: ConnectionHandler
     read_database: ReadDatabase
     event_translator: EventTranslator

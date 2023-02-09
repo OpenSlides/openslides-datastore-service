@@ -1,10 +1,16 @@
 -r requirements-general.txt
 
-pytest
-pytest-cov
-mypy
-black
-isort
-flake8
-pytest-flask
-debugpy
+# testing
+pytest==7.2.1
+pytest-cov==4.0.0
+pytest-flask==1.2.0
+
+# linting & formatting
+black==23.1.0
+autoflake==2.0.1
+isort==5.12.0
+flake8==6.0.0
+mypy==0.991
+
+# other dev stuff
+debugpy==1.6.6

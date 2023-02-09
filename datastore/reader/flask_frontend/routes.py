@@ -133,10 +133,10 @@ filter_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "definitions": filter_definitions_schema,
+        "$defs": filter_definitions_schema,
         "properties": {
             "collection": {"type": "string"},
-            "filter": {"$ref": "#/definitions/filter"},
+            "filter": {"$ref": "#/$defs/filter"},
             "mapped_fields": {"type": "array", "items": {"type": "string"}},
         },
         "required": ["collection", "filter"],
@@ -147,10 +147,10 @@ aggregate_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "definitions": filter_definitions_schema,
+        "$defs": filter_definitions_schema,
         "properties": {
             "collection": {"type": "string"},
-            "filter": {"$ref": "#/definitions/filter"},
+            "filter": {"$ref": "#/$defs/filter"},
         },
         "required": ["collection", "filter"],
     }
@@ -160,10 +160,10 @@ minmax_schema = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "definitions": filter_definitions_schema,
+        "$defs": filter_definitions_schema,
         "properties": {
             "collection": {"type": "string"},
-            "filter": {"$ref": "#/definitions/filter"},
+            "filter": {"$ref": "#/$defs/filter"},
             "field": {"type": "string"},
             "type": {"type": "string", "enum": VALID_AGGREGATE_CAST_TARGETS},
         },
