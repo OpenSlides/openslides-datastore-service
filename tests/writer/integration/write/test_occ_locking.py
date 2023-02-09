@@ -123,6 +123,27 @@ def test_locked_collectionfield_with_filter(
     assert e.value.keys == [locked_collectionfield]
 
 
+def test_locked_collectionfield_with_complex_filter(
+    write_handler, connection_handler, valid_metadata
+):
+    locked_collectionfield = MagicMock()
+    connection_handler.collectionfield = MagicMock(return_value=locked_collectionfield)
+    valid_metadata["locked_fields"]["a/f"] = {
+        "position": 42,
+        "filter": {
+            "and_filter": [
+                {"field": "field", "operator": "=", "value": "value"},
+                {"or_filter": [{"field": "field", "operator": "=", "value": "value"}]},
+            ]
+        },
+    }
+
+    with pytest.raises(ModelLocked) as e:
+        write_handler.write(valid_metadata)
+
+    assert e.value.keys == [locked_collectionfield]
+
+
 def test_locked_collectionfield_with_filter_without_filter(
     write_handler, connection_handler, valid_metadata
 ):

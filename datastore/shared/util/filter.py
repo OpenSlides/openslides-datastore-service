@@ -63,7 +63,6 @@ filter_definitions_schema = {
             "and_filter": {
                 "type": "array",
                 "items": {"$ref": "#/$defs/filter"},
-                "minItems": 2,
             },
         },
         "required": ["and_filter"],
@@ -74,7 +73,6 @@ filter_definitions_schema = {
             "or_filter": {
                 "type": "array",
                 "items": {"$ref": "#/$defs/filter"},
-                "minItems": 2,
             },
         },
         "required": ["or_filter"],
