@@ -96,6 +96,11 @@ class MigrationKeyframeAccessor:
         """regardless of the deleted-state"""
         return self._fetch_model(fqid) is not None
 
+    def model_not_deleted(self, fqid: Fqid) -> bool:
+        """Returns True if the model exists and is not deleted."""
+        model = self._fetch_model(fqid)
+        return model is not None and not model.deleted
+
     def get_all_ids_for_collection(self, collection: Collection) -> Set[Id]:
         """only from not deleted models"""
         raise NotImplementedError()

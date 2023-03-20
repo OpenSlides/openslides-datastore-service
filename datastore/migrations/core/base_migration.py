@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
-from datastore.shared.typing import JSON
+from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPE
+from datastore.shared.typing import JSON, Fqid
 
 from .events import BaseEvent, DeleteFieldsEvent, ListUpdateEvent, UpdateEvent
 from .exceptions import MigrationSetupException
@@ -35,6 +36,12 @@ class BaseMigration:
 
     target_migration_index = -1
 
+    old_accessor: MigrationKeyframeAccessor
+    new_accessor: MigrationKeyframeAccessor
+    position_data: PositionData
+    # The status all models would have after the original events of this position were applied
+    model_status: Dict[Fqid, EVENT_TYPE]
+
     def __init__(self):
         self.name = self.__class__.__name__
         if self.target_migration_index == -1:
@@ -63,6 +70,7 @@ class BaseMigration:
         self.old_accessor = old_accessor
         self.new_accessor = new_accessor
         self.position_data = position_data
+        self._set_model_status(events)
         self.position_init()
 
         new_events: List[BaseEvent] = []
@@ -73,7 +81,7 @@ class BaseMigration:
                 translated_events = [old_event]  # noop
 
             # filter out empty events
-            filtered_events = self.filter_noop_events(translated_events)
+            filtered_events = self._filter_noop_events(translated_events)
 
             old_accessor.apply_event(old_event)
             for translated_event in filtered_events:
@@ -91,6 +99,18 @@ class BaseMigration:
 
         return new_events
 
+    def _set_model_status(self, events: List[BaseEvent]) -> None:
+        """
+        Sets the model status for each model in this position.
+        """
+        self.model_status = {}
+        for event in events:
+            if (
+                event.type in (EVENT_TYPE.CREATE, EVENT_TYPE.DELETE)
+                and self.model_status.get(event.fqid) != EVENT_TYPE.DELETE
+            ):
+                self.model_status[event.fqid] = event.type
+
     def order_events(self, events: List[BaseEvent]) -> Iterable[BaseEvent]:
         """
         Yield create events first, everything else afterwards. This guarantees that all referenced
@@ -106,7 +126,7 @@ class BaseMigration:
                 events_queue.append(event)
         yield from events_queue
 
-    def filter_noop_events(self, events: Iterable[BaseEvent]) -> Iterable[BaseEvent]:
+    def _filter_noop_events(self, events: Iterable[BaseEvent]) -> Iterable[BaseEvent]:
         for event in events:
             if isinstance(event, UpdateEvent):
                 if not event.data:
@@ -145,3 +165,12 @@ class BaseMigration:
         also the default behavior.
         """
         return None
+
+    def is_model_deleted(self, fqid: Fqid) -> bool:
+        """
+        Returns True if the model would be deleted after this position.
+        """
+        return (
+            not self.new_accessor.model_not_deleted(fqid)
+            or self.model_status.get(fqid) == EVENT_TYPE.DELETE
+        )
