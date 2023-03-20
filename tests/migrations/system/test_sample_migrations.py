@@ -22,7 +22,6 @@ def test_move_id(
     set_migration_index_to_1,
     assert_model,
     exists_model,
-    query_single_value,
     assert_finalized,
 ):
     """
@@ -81,7 +80,6 @@ def test_remove_field(
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     """remove f"""
@@ -128,7 +126,6 @@ def test_add_required_field_based_on_migrated_data(
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     """First, rename f->f_new. Second migration adds `g`, which is f_new*2"""
@@ -164,7 +161,6 @@ def test_create_additional_model(
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     """Also a setup-for-tests scenario here."""
@@ -197,7 +193,6 @@ def test_access_field_after_rename(
     write,
     set_migration_index_to_1,
     assert_model,
-    query_single_value,
     assert_finalized,
 ):
     """First rename f->f_new. In a second migration access both fields via both accessors"""
@@ -252,4 +247,53 @@ def test_access_field_after_rename(
     )
     assert_model(
         "a/1", {"f_new": "Hello", "meta_deleted": False, "meta_position": 6}, position=6
+    )
+
+
+def test_filter_relation(
+    migration_handler,
+    write,
+    set_migration_index_to_1,
+    assert_model,
+    assert_finalized,
+):
+    """
+    Test that model creation status is correctly set. a/1/r will be interpreted as a relation and
+    filtered by existance of the other models:
+    - a/2 is created beforehand and deleted afterwards in the same position
+    - a/3 is created beforehand in the same position
+    - a/4 is created afterwards in the same position
+    - a/5 does not exist
+    So, the resulting array should be [3, 4].
+    """
+    write({"type": "create", "fqid": "a/2", "fields": {"f": "test"}})
+    write(
+        {"type": "create", "fqid": "a/3", "fields": {"f": "test"}},
+        {"type": "create", "fqid": "a/1", "fields": {"r": [2, 3, 4, 5]}},
+        {"type": "delete", "fqid": "a/2"},
+        {"type": "create", "fqid": "a/4", "fields": {"f": "test"}},
+    )
+    set_migration_index_to_1()
+
+    class FilterRelation(BaseMigration):
+        target_migration_index = 2
+
+        def migrate_event(
+            self,
+            event: BaseEvent,
+        ) -> Optional[List[BaseEvent]]:
+            if isinstance(event, CreateEvent) and event.fqid == "a/1":
+                event.data["r"] = [
+                    id
+                    for id in event.data["r"]
+                    if self.will_exist(fqid_from_collection_and_id("a", id))
+                ]
+            return [event]
+
+    migration_handler.register_migrations(FilterRelation)
+    migration_handler.finalize()
+
+    assert_finalized()
+    assert_model(
+        "a/1", {"r": [3, 4], "meta_deleted": False, "meta_position": 2}, position=2
     )

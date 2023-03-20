@@ -21,7 +21,9 @@ def assert_no_special_field(field: Any) -> None:
 
 
 class BaseEvent:
-    type: str
+    type: EVENT_TYPE
+    fqid: Fqid
+    data: Any
 
     def __init__(self, fqid: Fqid, data: Any) -> None:
         self.fqid = fqid
