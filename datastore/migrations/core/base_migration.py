@@ -166,11 +166,11 @@ class BaseMigration:
         """
         return None
 
-    def is_model_deleted(self, fqid: Fqid) -> bool:
+    def will_exist(self, fqid: Fqid) -> bool:
         """
-        Returns True if the model would be deleted after this position.
+        Returns True iff the model would exist after this position without the migration.
         """
         return (
-            not self.new_accessor.model_not_deleted(fqid)
-            or self.model_status.get(fqid) == EVENT_TYPE.DELETE
-        )
+            self.new_accessor.model_not_deleted(fqid)
+            and self.model_status.get(fqid) != EVENT_TYPE.DELETE
+        ) or self.model_status.get(fqid) == EVENT_TYPE.CREATE
