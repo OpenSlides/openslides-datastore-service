@@ -1,4 +1,4 @@
-version: '3.4'
+version: "3.4"
 services:
     reader:
         image: openslides-datastore-reader
@@ -28,7 +28,7 @@ services:
         secrets:
             - postgres_password
     postgres:
-        image: postgres:11
+        image: postgres:13
         env_file: database.env
         networks:
             - postgres
