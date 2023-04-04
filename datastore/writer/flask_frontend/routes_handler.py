@@ -60,7 +60,8 @@ def write_action_worker():
         raise InvalidRequest("Collection for write_action_worker must be action_worker")
     write_handler = WriteHandler()
     write_handler.write_action_worker(req_json)
-    return ("", 201)
+    return_code = 200 if req_json.get("events") [0]["type"] == "delete" else 201
+    return ("", return_code)
 
 
 @dev_only_route
