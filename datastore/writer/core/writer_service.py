@@ -13,7 +13,7 @@ from datastore.shared.util.otel import make_span
 from .database import Database
 from .messaging import Messaging
 from .occ_locker import OccLocker
-from .write_request import BaseRequestEvent, WriteRequest
+from .write_request import BaseRequestEvent, RequestDeleteEvent, WriteRequest
 
 
 @service_as_factory
@@ -138,15 +138,23 @@ class WriterService:
 
         with make_span("write action worker"):
             self.position_to_modified_models = {}
-            with self.database.get_context():
-                event = write_request.events[0]
-                fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
-                fields_with_delete.update({META_DELETED: False})
-                self.database.write_model_updates_action_worker(
-                    {event.fqid: fields_with_delete}
-                )
-            self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
-            self.propagate_updates_to_redis(False)
+            fqids_to_delete: List[Fqid] = []
+            if type(write_request.events[0]) == RequestDeleteEvent:
+                """delete requests will be handled all together"""
+                for event in write_request.events:
+                    fqids_to_delete.append(event.fqid)
+                with self.database.get_context():
+                    self.database.write_model_deletes_action_worker(fqids_to_delete)
+            else:
+                with self.database.get_context():
+                    for event in write_request.events:
+                        fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
+                        fields_with_delete.update({META_DELETED: False})
+                        self.database.write_model_updates_action_worker(
+                            {event.fqid: fields_with_delete}
+                        )
+                self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
+                self.propagate_updates_to_redis(False)
 
         self.print_stats()
         self.print_summary()
