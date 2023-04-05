@@ -208,6 +208,11 @@ class SqlDatabaseBackendService:
             use_execute_values=True,
         )
 
+    def write_model_deletes_action_worker(self, fqids: List[Fqid]) -> None:
+        """Physically delete of action_workers"""
+        statement = "delete from models where fqid in %s;"
+        self.connection.execute(statement, [fqids], use_execute_values=True)
+
     def update_id_sequences(self, max_id_per_collection: Dict[Collection, int]) -> None:
         statement = dedent(
             """\

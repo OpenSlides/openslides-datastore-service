@@ -39,3 +39,6 @@ class Database(Protocol):
 
     def write_model_updates_action_worker(self, models: Dict[Fqid, Model]) -> None:
         """For writing directly to models-table used for action_workers"""
+
+    def write_model_deletes_action_worker(self, fqids: List[Fqid]) -> None:
+        """For deleting directly to models-table used for action_workers"""

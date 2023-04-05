@@ -112,3 +112,54 @@ def test_create_action_worker_wrong_collection(json_client, data, db_cur):
         response.json["error"]["msg"]
         == "Collection for write_action_worker must be action_worker"
     )
+
+
+def test_delete_action_worker_wrong_collection(json_client, data, db_cur):
+    data = [
+        {
+            "events": [{"type": "delete", "fqid": "topic/1"}],
+            "user_id": 1,
+            "locked_fields": {},
+        }
+    ]
+
+    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    assert_response_code(response, 400)
+    assert (
+        response.json["error"]["msg"]
+        == "Collection for write_action_worker must be action_worker"
+    )
+
+
+def test_delete_action_worker_with_2_events(json_client, data, db_cur):
+    db_cur.execute(
+        "insert into models (fqid, data, deleted) values"
+        " ('action_worker/1', '{\"data\": \"content1\"}', false),"
+        " ('action_worker/2', '{\"data\": \"content2\"}', false);"
+    )
+    db_cur.connection.commit()
+    db_cur.execute(
+        "select fqid from models where fqid in ('action_worker/1', 'action_worker/2')"
+    )
+    result = db_cur.fetchall()
+    assert len(result) == 2, "There must be 2 records found"
+
+    data = [
+        {
+            "events": [
+                {"type": "delete", "fqid": "action_worker/1"},
+                {"type": "delete", "fqid": "action_worker/2"},
+            ],
+            "user_id": 1,
+            "information": "delete action_workers",
+            "locked_fields": {},
+        }
+    ]
+
+    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    assert_response_code(response, 200)
+    db_cur.execute(
+        "select fqid from models where fqid in ('action_worker/1', 'action_worker/2')"
+    )
+    result = db_cur.fetchall()
+    assert len(result) == 0, "There must be 0 records found"

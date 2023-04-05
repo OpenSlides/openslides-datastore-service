@@ -49,14 +49,19 @@ def write_action_worker():
     if type(request.json) != list:
         raise InvalidRequest("write_action_worker data internally must be a list!")
     req_json = cast(List[Dict[str, Any]], request.json)[0]
-    if len(req_json.get("events", ())) != 1:
+    if len(req_json.get("events", ())) != 1 and any(
+        event["type"] != "delete" for event in req_json.get("events", ())
+    ):
         raise InvalidRequest("write_action_worker may contain only 1 event!")
-    event = req_json["events"][0]
-    if collection_from_fqid(event["fqid"]) != "action_worker":
+    if any(
+        collection_from_fqid(event["fqid"]) != "action_worker"
+        for event in req_json.get("events", ())
+    ):
         raise InvalidRequest("Collection for write_action_worker must be action_worker")
     write_handler = WriteHandler()
     write_handler.write_action_worker(req_json)
-    return ("", 201)
+    return_code = 200 if req_json.get("events", ())[0]["type"] == "delete" else 201
+    return ("", return_code)
 
 
 @dev_only_route
