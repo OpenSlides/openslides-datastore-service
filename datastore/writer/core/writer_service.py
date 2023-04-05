@@ -138,9 +138,8 @@ class WriterService:
 
         with make_span("write action worker"):
             self.position_to_modified_models = {}
-            fqids_to_delete: List[Fqid] = []
-            if type(write_request.events[0]) == RequestDeleteEvent:
-                """delete requests will be handled all together"""
+            if isinstance(write_request.events[0], RequestDeleteEvent):
+                fqids_to_delete: List[Fqid] = []
                 for event in write_request.events:
                     fqids_to_delete.append(event.fqid)
                 with self.database.get_context():
