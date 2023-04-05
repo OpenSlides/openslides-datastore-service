@@ -131,6 +131,7 @@ def test_delete_action_worker_wrong_collection(json_client, data, db_cur):
 
 def test_delete_action_worker_with_2_events(json_client, data, db_cur):
     db_cur.execute("insert into models (fqid, data, deleted) values ('action_worker/1', '{\"data\": \"content1\"}', false), ('action_worker/2', '{\"data\": \"content2\"}', false);")
+    db_cur.connection.commit()
     db_cur.execute("select fqid from models where fqid in ('action_worker/1', 'action_worker/2')")
     result = db_cur.fetchall()
     assert len(result) == 2, "There must be 2 records found"
