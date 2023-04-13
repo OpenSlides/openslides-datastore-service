@@ -89,9 +89,10 @@ def test_invalid_migration_index(
     # DS MI is -1
 
     migrater = injector.get(EventMigrater)
+    migrater.init(2, {2: get_noop_migration(2)()})
 
     with pytest.raises(MismatchingMigrationIndicesException) as e:
-        migrater.migrate(2, {2: get_noop_migration(2)()})
+        migrater.migrate()
 
     assert (
         str(e.value)

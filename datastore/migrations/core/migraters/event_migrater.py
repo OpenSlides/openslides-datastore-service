@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Position
 
-from ..base_migrations import BaseMigration, PositionData
+from ..base_migrations import PositionData
 from ..events import BaseEvent, to_event
 from ..exceptions import MismatchingMigrationIndicesException
 from ..migration_keyframes import (
@@ -16,7 +16,7 @@ from ..migration_keyframes import (
     MigrationKeyframeModifier,
 )
 from ..migration_logger import MigrationLogger
-from .interface import EventMigrater
+from .migrater import EventMigrater
 
 
 @dataclass
@@ -41,16 +41,8 @@ class EventMigraterImplementation(EventMigrater):
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger
-    target_migration_index: int
 
-    def migrate(
-        self,
-        target_migration_index: int,
-        migrations: Dict[int, BaseMigration],
-    ) -> bool:
-        self.target_migration_index = target_migration_index
-        self.migrations = migrations
-
+    def migrate(self) -> bool:
         with self.connection.get_connection_context():
             # get min migration index
             min_mi_positions = (

@@ -5,12 +5,19 @@ from datastore.shared.di import service_interface
 from ..base_migrations import BaseMigration
 
 
-class Migrater(Protocol):
-    def migrate(
+class BaseMigrater(Protocol):
+    target_migration_index: int
+    migrations: Dict[int, BaseMigration]
+
+    def init(
         self,
         target_migration_index: int,
         migrations: Dict[int, BaseMigration],
-    ) -> bool:
+    ) -> None:
+        self.target_migration_index = target_migration_index
+        self.migrations = migrations
+
+    def migrate(self) -> bool:
         """
         Runs the actual migrations of the datastore up to the target migration index.
         Returns true, if finalizing is needed.
@@ -18,10 +25,10 @@ class Migrater(Protocol):
 
 
 @service_interface
-class EventMigrater(Migrater):
+class EventMigrater(BaseMigrater):
     """Marker class for an event migrater."""
 
 
 @service_interface
-class ModelMigrater(Migrater):
+class ModelMigrater(BaseMigrater):
     """Marker class for a model migrater."""

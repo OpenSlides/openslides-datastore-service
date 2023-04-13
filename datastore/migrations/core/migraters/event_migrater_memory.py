@@ -8,13 +8,12 @@ from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import Fqid, Model, Position
 
-from ..base_migrations import BaseMigration
 from ..events import BaseEvent, CreateEvent
 from ..exceptions import MismatchingMigrationIndicesException
 from ..migration_keyframes import InitialMigrationKeyframeModifier
 from ..migration_logger import MigrationLogger
 from .event_migrater import RawPosition
-from .interface import EventMigrater
+from .migrater import EventMigrater
 
 
 @service_as_factory
@@ -30,19 +29,11 @@ class EventMigraterImplementationMemory(EventMigrater):
     connection: ConnectionHandler
     logger: MigrationLogger
     start_migration_index: int
-    target_migration_index: int
     import_create_events: List[CreateEvent]
     migrated_events: List[BaseEvent] = []
     imported_models: Dict[Fqid, Model]
 
-    def migrate(
-        self,
-        target_migration_index: int,
-        migrations: Dict[int, BaseMigration],
-    ) -> bool:
-        self.target_migration_index = target_migration_index
-        self.migrations = migrations
-
+    def migrate(self) -> bool:
         if (
             self.start_migration_index < 1
             or self.start_migration_index > self.target_migration_index

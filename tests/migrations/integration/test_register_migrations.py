@@ -6,6 +6,8 @@ from datastore.migrations import MigrationHandler, MigrationSetupException
 from datastore.migrations.core.migraters import (
     EventMigrater,
     EventMigraterImplementation,
+    ModelMigrater,
+    ModelMigraterImplementation,
 )
 from datastore.migrations.core.migration_handler import MigrationHandlerImplementation
 from datastore.migrations.core.migration_logger import (
@@ -26,6 +28,7 @@ def migration_handler(reset_di):  # noqa
     injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register_as_singleton(MigrationLogger, MigrationLoggerImplementation)
     injector.register_as_singleton(EventMigrater, EventMigraterImplementation)
+    injector.register_as_singleton(ModelMigrater, ModelMigraterImplementation)
     injector.register_as_singleton(MigrationHandler, MigrationHandlerImplementation)
     yield injector.get(MigrationHandler)
 

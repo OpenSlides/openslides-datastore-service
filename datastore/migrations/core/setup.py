@@ -10,7 +10,7 @@ from .migration_logger import MigrationLogger, PrintFunction
 
 
 def register_services(memory_only: bool = False):
-    from .migraters.interface import EventMigrater
+    from .migraters import EventMigrater, ModelMigrater, ModelMigraterImplementation
     from .migration_logger import MigrationLogger, MigrationLoggerImplementation
 
     if memory_only:
@@ -38,6 +38,7 @@ def register_services(memory_only: bool = False):
     injector.register(MigrationLogger, MigrationLoggerImplementation)
     injector.register(MigrationHandler, MigrationHandlerImplementation)
     injector.register(EventMigrater, MigraterImplementation)
+    injector.register(ModelMigrater, ModelMigraterImplementation)
 
 
 def setup(

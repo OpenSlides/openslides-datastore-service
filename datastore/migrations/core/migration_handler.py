@@ -1,6 +1,9 @@
 from enum import Enum
-from typing import Any, Dict, Protocol, Type
+from typing import Any, Dict, Optional, Protocol, Type
 
+from datastore.migrations.core.base_migrations.base_event_migration import (
+    BaseEventMigration,
+)
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
@@ -8,7 +11,7 @@ from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 
 from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
-from .migraters.interface import EventMigrater
+from .migraters.migrater import EventMigrater, ModelMigrater
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
@@ -65,11 +68,15 @@ class MigrationHandlerImplementation(MigrationHandler):
     read_database: ReadDatabase
     connection: ConnectionHandler
     event_migrater: EventMigrater
+    model_migrater: ModelMigrater
     logger: MigrationLogger
-    target_migration_index: int = 1  # initial index, no migrations to apply
+    target_migration_index: int
+    last_event_migration_target_index: int
 
     def __init__(self):
         self.migrations_by_target_migration_index = {}
+        self.target_migration_index = 1
+        self.last_event_migration_target_index = 1
 
     def register_migrations(self, *migrations: Type[BaseMigration]) -> None:
         if self.migrations_by_target_migration_index:
@@ -85,6 +92,18 @@ class MigrationHandlerImplementation(MigrationHandler):
                     + f"target_migration_index {migration.target_migration_index}, "
                     + f"expected migration index {i+2}"
                 )
+            if isinstance(migration, BaseEventMigration):
+                if (
+                    self.last_event_migration_target_index
+                    < migration.target_migration_index - 1
+                ):
+                    raise MigrationSetupException(
+                        f"All migrations with target_migration_index > {self.last_event_migration_target_index} "
+                        + f"must be model migrations. Invalid event migration: {migration.name}."
+                    )
+                self.last_event_migration_target_index = (
+                    migration.target_migration_index
+                )
             self.migrations_by_target_migration_index[
                 migration.target_migration_index
             ] = migration
@@ -94,13 +113,24 @@ class MigrationHandlerImplementation(MigrationHandler):
         self.logger.info("Running migrations.")
         if self.run_checks():
             return
-        if self.run_migrations():
+        if self.run_event_migrations():
             self.logger.info("Done. Finalizing is still needed.")
 
-    def run_migrations(self) -> bool:
-        return self.event_migrater.migrate(
-            self.target_migration_index, self.migrations_by_target_migration_index
+    def run_event_migrations(self) -> bool:
+        if self.last_event_migration_target_index:
+            event_migrations_target_index = self.last_event_migration_target_index
+        else:
+            event_migrations_target_index = self.target_migration_index
+
+        self.event_migrater.init(
+            event_migrations_target_index, self.migrations_by_target_migration_index
         )
+        result = self.event_migrater.migrate()
+        # finalizing is needed if model migrations exist or if the event migrations need them
+        return event_migrations_target_index != self.target_migration_index or result
+
+    def run_model_migrations(self) -> None:
+        pass
 
     def run_checks(self) -> bool:
         with self.connection.get_connection_context():
@@ -166,33 +196,39 @@ class MigrationHandlerImplementation(MigrationHandler):
         if self.run_checks():
             self.delete_collectionfield_aux_tables()
             return
-        if not self.run_migrations():
+        if not self.run_event_migrations():
             return
 
-        self.delete_collectionfield_aux_tables()
+        current_mi = self.read_database.get_current_migration_index()
+        if current_mi < self.last_event_migration_target_index:
+            self.delete_collectionfield_aux_tables()
 
-        self.logger.info("Calculate helper tables...")
-        with self.connection.get_connection_context():
-            self.fill_models_aux_tables()
-            self.fill_id_sequences_table()
+            self.logger.info("Calculate helper tables...")
+            with self.connection.get_connection_context():
+                self.fill_models_aux_tables()
+                self.fill_id_sequences_table()
 
-        self._delete_migration_keyframes()
+            self._delete_migration_keyframes()
 
-        self.logger.info("Swap events and migration_events tables...")
-        with self.connection.get_connection_context():
-            self.connection.execute("alter table events rename to events_swap", [])
-            self.connection.execute("alter table migration_events rename to events", [])
-            self.connection.execute(
-                "alter table events_swap rename to migration_events", []
+            self.logger.info("Swap events and migration_events tables...")
+            with self.connection.get_connection_context():
+                self.connection.execute("alter table events rename to events_swap", [])
+                self.connection.execute(
+                    "alter table migration_events rename to events", []
+                )
+                self.connection.execute(
+                    "alter table events_swap rename to migration_events", []
+                )
+            self.logger.info(
+                f"Set the new migration index to {self.last_event_migration_target_index}..."
             )
+            with self.connection.get_connection_context():
+                self._update_migration_index(self.last_event_migration_target_index)
 
-        self.logger.info(
-            f"Set the new migration index to {self.target_migration_index}..."
-        )
-        with self.connection.get_connection_context():
-            self._update_migration_index()
+            self._clean_migration_data()
 
-        self._clean_migration_data()
+        if self.last_event_migration_target_index < self.target_migration_index:
+            self.run_model_migrations()
 
     def reset(self) -> None:
         self.logger.info("Reset migrations.")
@@ -205,10 +241,14 @@ class MigrationHandlerImplementation(MigrationHandler):
         self._delete_migration_keyframes()
         self._clean_migration_data()
 
-    def _update_migration_index(self) -> None:
+    def _update_migration_index(
+        self, target_migration_index: Optional[int] = None
+    ) -> None:
+        if target_migration_index is None:
+            target_migration_index = self.target_migration_index
         self.connection.execute(
             "update positions set migration_index=%s",
-            [self.target_migration_index],
+            [target_migration_index],
         )
         # update migration index cache
         self.read_database.reset()
@@ -348,12 +388,14 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
 
     def finalize(self) -> None:
         self.logger.info("Finalize in memory migrations.")
-        self.run_migrations()
+        self.run_event_migrations()
+        self.run_model_migrations()
         self.logger.info("Finalize in memory migrations ready.")
 
-    def run_migrations(self) -> bool:
-        self.event_migrater.migrate(
-            self.target_migration_index,
+    def run_event_migrations(self) -> bool:
+        self.event_migrater.init(
+            self.last_event_migration_target_index,
             self.migrations_by_target_migration_index,
         )
+        self.event_migrater.migrate()
         return False
