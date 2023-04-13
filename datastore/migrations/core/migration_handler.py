@@ -6,10 +6,9 @@ from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 
-from .base_migration import BaseMigration
+from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
-from .migrater import Migrater
-from .migrater_memory import MigraterImplementationMemory
+from .migraters.interface import EventMigrater
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
@@ -62,10 +61,10 @@ class MigrationHandler(Protocol):
 
 
 @service_as_factory
-class MigrationHandlerImplementation:
+class MigrationHandlerImplementation(MigrationHandler):
     read_database: ReadDatabase
     connection: ConnectionHandler
-    migrater: Migrater
+    event_migrater: EventMigrater
     logger: MigrationLogger
     target_migration_index: int = 1  # initial index, no migrations to apply
 
@@ -99,7 +98,7 @@ class MigrationHandlerImplementation:
             self.logger.info("Done. Finalizing is still needed.")
 
     def run_migrations(self) -> bool:
-        return self.migrater.migrate(
+        return self.event_migrater.migrate(
             self.target_migration_index, self.migrations_by_target_migration_index
         )
 
@@ -344,10 +343,8 @@ class MigrationHandlerImplementation:
 
 class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
-    All Migrations are made in memory only for the import of meetings
+    All migrations are made in-memory only for the import of meetings.
     """
-
-    migrater: MigraterImplementationMemory
 
     def finalize(self) -> None:
         self.logger.info("Finalize in memory migrations.")
@@ -355,7 +352,7 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
         self.logger.info("Finalize in memory migrations ready.")
 
     def run_migrations(self) -> bool:
-        self.migrater.migrate(
+        self.event_migrater.migrate(
             self.target_migration_index,
             self.migrations_by_target_migration_index,
         )

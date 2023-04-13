@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from datastore.migrations import MismatchingMigrationIndicesException
-from datastore.migrations.core.migrater import Migrater
+from datastore.migrations.core.migraters import EventMigrater
 from datastore.shared.di import injector
 
 from ..util import get_noop_migration
@@ -84,12 +84,11 @@ def test_finalizing_not_needed(
 
 def test_invalid_migration_index(
     write,
-    connection_handler,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     # DS MI is -1
 
-    migrater = injector.get(Migrater)
+    migrater = injector.get(EventMigrater)
 
     with pytest.raises(MismatchingMigrationIndicesException) as e:
         migrater.migrate(2, {2: get_noop_migration(2)()})

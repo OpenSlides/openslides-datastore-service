@@ -1,1 +1,1 @@
-from .flask_frontend import FlaskFrontend  # noqa
+from .flask_frontend import FlaskFrontend

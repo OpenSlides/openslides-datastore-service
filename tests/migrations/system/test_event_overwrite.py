@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent, UpdateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent, UpdateEvent
 from datastore.shared.di import injector
 from datastore.shared.services import ReadDatabase
 
@@ -181,7 +181,7 @@ def test_additional_events(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
 
-    class TestMigration(BaseMigration):
+    class TestMigration(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(

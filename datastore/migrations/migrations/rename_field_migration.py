@@ -4,7 +4,7 @@ from datastore.shared.util import collection_from_fqid
 
 from .. import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
@@ -12,7 +12,7 @@ from .. import (
 )
 
 
-class RenameFieldMigration(BaseMigration):
+class RenameFieldMigration(BaseEventMigration):
     """
     This migration renames a field from old_name to new_name for one collection.
     """

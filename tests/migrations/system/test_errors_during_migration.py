@@ -2,7 +2,7 @@
 
 import pytest
 
-from datastore.migrations import BaseMigration
+from datastore.migrations import BaseEventMigration
 
 from ..util import get_lambda_migration, get_noop_migration
 
@@ -152,7 +152,7 @@ def test_use_basemigration(
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
     set_migration_index_to_1()
 
-    class MyBaseMigration(BaseMigration):
+    class MyBaseMigration(BaseEventMigration):
         target_migration_index = 2
 
     migration_handler.register_migrations(MyBaseMigration)

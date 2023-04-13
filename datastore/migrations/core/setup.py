@@ -10,29 +10,34 @@ from .migration_logger import MigrationLogger, PrintFunction
 
 
 def register_services(memory_only: bool = False):
-    if not memory_only:
+    from .migraters.interface import EventMigrater
+    from .migration_logger import MigrationLogger, MigrationLoggerImplementation
+
+    if memory_only:
+        from .migraters.event_migrater_memory import (
+            EventMigraterImplementationMemory as MigraterImplementation,
+        )
+        from .migration_handler import (
+            MigrationHandlerImplementationMemory as MigrationHandlerImplementation,
+        )
+    else:
+        # type-ignoring comments necessary because of https://github.com/python/mypy/issues/13914
+        from .migraters.event_migrater import (  # type: ignore[no-redef]
+            EventMigraterImplementation as MigraterImplementation,
+        )
+        from .migration_handler import (  # type: ignore[no-redef]
+            MigrationHandlerImplementation,
+        )
+
         util_setup_di()
         postgresql_setup_di()
         redis_setup_di()
         writer_setup_di()
         reader_setup_di()
 
-    from .migrater import Migrater, MigraterImplementation
-    from .migration_handler import (
-        MigrationHandlerImplementation,
-        MigrationHandlerImplementationMemory,
-    )
-    from .migration_logger import MigrationLogger, MigrationLoggerImplementation
-
     injector.register(MigrationLogger, MigrationLoggerImplementation)
-    if memory_only:
-        from .migrater_memory import MigraterImplementationMemory
-
-        injector.register(MigrationHandler, MigrationHandlerImplementationMemory)
-        injector.register(Migrater, MigraterImplementationMemory)
-    else:
-        injector.register(MigrationHandler, MigrationHandlerImplementation)
-        injector.register(Migrater, MigraterImplementation)
+    injector.register(MigrationHandler, MigrationHandlerImplementation)
+    injector.register(EventMigrater, MigraterImplementation)
 
 
 def setup(

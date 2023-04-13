@@ -3,14 +3,14 @@ from typing import Dict, List, Optional, Union
 from datastore.shared.typing import JSON
 from datastore.shared.util import collection_from_fqid
 
-from .. import BaseEvent, BaseMigration, CreateEvent
+from .. import BaseEvent, BaseEventMigration, CreateEvent
 
 
 class Calculated:
     """Marker class to indicate that a field should be calculated."""
 
 
-class AddFieldsMigration(BaseMigration):
+class AddFieldsMigration(BaseEventMigration):
     """
     This migration adds new fields to multiple collections with given default values.
     """

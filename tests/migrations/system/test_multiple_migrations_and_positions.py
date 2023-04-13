@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 
 from ..util import get_lambda_migration, get_noop_migration
 
@@ -50,7 +50,7 @@ def test_second_position_access_old_and_new_data(
     write({"type": "create", "fqid": "trigger/1", "fields": {}})
     set_migration_index_to_1()
 
-    class TestMigration(BaseMigration):
+    class TestMigration(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(

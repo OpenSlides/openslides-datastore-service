@@ -4,7 +4,7 @@ import pytest
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     MismatchingMigrationIndicesException,
 )
@@ -17,7 +17,7 @@ class TestInitialMigrationKeyframeModifier:
     def test_simple_migration(self, setup_memory_migration, migration_handler):
         data = [CreateEvent("a/1", {"f": 1})]
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -39,7 +39,7 @@ class TestInitialMigrationKeyframeModifier:
     ):
         data = [CreateEvent("a/1", {"f": 1})]
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(

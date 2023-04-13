@@ -5,9 +5,9 @@ from typing import Dict, Iterable, List, Optional
 from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPE
 from datastore.shared.typing import JSON, Fqid
 
-from .events import BaseEvent, DeleteFieldsEvent, ListUpdateEvent, UpdateEvent
-from .exceptions import MigrationSetupException
-from .migration_keyframes import MigrationKeyframeAccessor
+from ..events import BaseEvent, DeleteFieldsEvent, ListUpdateEvent, UpdateEvent
+from ..migration_keyframes import MigrationKeyframeAccessor
+from .base_migration import BaseMigration
 
 
 @dataclass
@@ -18,10 +18,9 @@ class PositionData:
     information: JSON
 
 
-class BaseMigration:
+class BaseEventMigration(BaseMigration):
     """
-    The base class to represent a migration. The `target_migration_index` must be set
-    by each migration.
+    The base class to represent an event migration.
 
     This class is instantiated once! `migrate` may be called many times, once for
     each position. To realize a per-position storage use the `position_init` method:
@@ -34,20 +33,11 @@ class BaseMigration:
     which are set for each position just before `position_init`.
     """
 
-    target_migration_index = -1
-
     old_accessor: MigrationKeyframeAccessor
     new_accessor: MigrationKeyframeAccessor
     position_data: PositionData
     # The status all models would have after the original events of this position were applied
     model_status: Dict[Fqid, EVENT_TYPE]
-
-    def __init__(self):
-        self.name = self.__class__.__name__
-        if self.target_migration_index == -1:
-            raise MigrationSetupException(
-                f"You need to specify target_migration_index of {self.name}"
-            )
 
     def migrate(
         self,

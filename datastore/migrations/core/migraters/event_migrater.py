@@ -1,21 +1,22 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from datastore.shared.di import service_as_factory, service_interface
+from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Position
 
-from .base_migration import BaseMigration, PositionData
-from .events import BaseEvent, to_event
-from .exceptions import MismatchingMigrationIndicesException
-from .migration_keyframes import (
+from ..base_migrations import BaseMigration, PositionData
+from ..events import BaseEvent, to_event
+from ..exceptions import MismatchingMigrationIndicesException
+from ..migration_keyframes import (
     DatabaseMigrationKeyframeModifier,
     InitialMigrationKeyframeModifier,
     MigrationKeyframeModifier,
 )
-from .migration_logger import MigrationLogger
+from ..migration_logger import MigrationLogger
+from .interface import EventMigrater
 
 
 @dataclass
@@ -35,21 +36,8 @@ class RawPosition:
         )
 
 
-@service_interface
-class Migrater(Protocol):
-    def migrate(
-        self,
-        target_migration_index: int,
-        migrations: Dict[int, BaseMigration],
-    ) -> bool:
-        """
-        Runs the actual migrations of the datastore up to the target migration index.
-        Returns true, if finalizing is needed.
-        """
-
-
 @service_as_factory
-class MigraterImplementation:
+class EventMigraterImplementation(EventMigrater):
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger

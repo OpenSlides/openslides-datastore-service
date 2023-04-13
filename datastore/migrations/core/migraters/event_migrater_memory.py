@@ -8,20 +8,21 @@ from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import Fqid, Model, Position
 
-from .base_migration import BaseMigration
-from .events import BaseEvent, CreateEvent
-from .exceptions import MismatchingMigrationIndicesException
-from .migrater import RawPosition
-from .migration_keyframes import InitialMigrationKeyframeModifier
-from .migration_logger import MigrationLogger
+from ..base_migrations import BaseMigration
+from ..events import BaseEvent, CreateEvent
+from ..exceptions import MismatchingMigrationIndicesException
+from ..migration_keyframes import InitialMigrationKeyframeModifier
+from ..migration_logger import MigrationLogger
+from .event_migrater import RawPosition
+from .interface import EventMigrater
 
 
 @service_as_factory
-class MigraterImplementationMemory:
+class EventMigraterImplementationMemory(EventMigrater):
     """
     This migrater is made for in memory migrations of meeting imports.
-    The whole import will be imported on 1 position. Unlike the database
-    migration there is no need to have keyframes/baselines for all
+    The whole import will be imported to 1 position. Unlike the database
+    migration, there is no need to have keyframes/baselines for all
     migrationlevels for the last position.
     """
 

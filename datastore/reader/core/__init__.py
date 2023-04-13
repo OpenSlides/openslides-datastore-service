@@ -1,5 +1,5 @@
 from .reader import Reader
-from .requests import (  # noqa
+from .requests import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
