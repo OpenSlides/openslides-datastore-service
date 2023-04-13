@@ -4,7 +4,7 @@ from datastore.migrations.core.events import (
     ListUpdateEvent,
     UpdateEvent,
 )
-from tests.migrations.util import get_lambda_migration
+from tests.migrations.util import get_lambda_event_migration
 
 
 def test_filter_empty_update(
@@ -23,7 +23,7 @@ def test_filter_empty_update(
             del event.data["f"]
         return [event]
 
-    migration_handler.register_migrations(get_lambda_migration(remove_f))
+    migration_handler.register_migrations(get_lambda_event_migration(remove_f))
     migration_handler.finalize()
 
     assert_count("events", 1)
@@ -60,7 +60,7 @@ def test_filter_empty_listupdate(
             del event.remove["f"]
         return [event]
 
-    migration_handler.register_migrations(get_lambda_migration(remove_f))
+    migration_handler.register_migrations(get_lambda_event_migration(remove_f))
     migration_handler.finalize()
 
     assert_count("events", 1)
@@ -90,7 +90,7 @@ def test_filter_empty_deletefields(
             event.data.remove("f")
         return [event]
 
-    migration_handler.register_migrations(get_lambda_migration(remove_f))
+    migration_handler.register_migrations(get_lambda_event_migration(remove_f))
     migration_handler.finalize()
 
     assert_count("events", 1)
@@ -116,7 +116,7 @@ def test_filter_no_events(
     set_migration_index_to_1()
 
     migration_handler.register_migrations(
-        get_lambda_migration(lambda e: [] if isinstance(e, UpdateEvent) else None)
+        get_lambda_event_migration(lambda e: [] if isinstance(e, UpdateEvent) else None)
     )
     migration_handler.finalize()
 

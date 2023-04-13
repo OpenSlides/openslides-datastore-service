@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseEventMigration
+from datastore.migrations import BaseEvent, BaseEventMigration, BaseModelMigration
 
 
-def get_noop_migration(target_migration_index: Optional[int]):
+def get_noop_event_migration(target_migration_index: Optional[int]):
     class NoopMigration(BaseEventMigration):
         def __init__(self):
             if target_migration_index is not None:
@@ -19,7 +19,7 @@ def get_noop_migration(target_migration_index: Optional[int]):
     return NoopMigration
 
 
-def get_lambda_migration(fn, target_migration_index=2):
+def get_lambda_event_migration(fn, target_migration_index=2):
     class LambdaMigration(BaseEventMigration):
         def __init__(self):
             self.target_migration_index = target_migration_index
@@ -32,3 +32,13 @@ def get_lambda_migration(fn, target_migration_index=2):
             return fn(event)
 
     return LambdaMigration
+
+
+def get_noop_model_migration(target_migration_index: Optional[int]):
+    class NoopMigration(BaseModelMigration):
+        def __init__(self):
+            if target_migration_index is not None:
+                self.target_migration_index = target_migration_index
+            super().__init__()
+
+    return NoopMigration

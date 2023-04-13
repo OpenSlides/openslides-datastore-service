@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from ..util import get_noop_migration
+from ..util import get_noop_event_migration
 
 
 def test_set_latest_migrate(
@@ -10,7 +10,7 @@ def test_set_latest_migrate(
     write({"type": "create", "fqid": "a/2", "fields": {}})
 
     migration_handler.run_migrations = rm = MagicMock()
-    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
     migration_handler.migrate()
 
     rm.assert_not_called()
@@ -25,7 +25,7 @@ def test_migration_index_too_high_finalize(
     write({"type": "create", "fqid": "a/2", "fields": {}})
 
     migration_handler.run_migrations = rm = MagicMock()
-    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
     migration_handler.finalize()
 
     rm.assert_not_called()

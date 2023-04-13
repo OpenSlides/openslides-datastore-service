@@ -4,7 +4,7 @@ from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent, Upd
 from datastore.shared.di import injector
 from datastore.shared.services import ReadDatabase
 
-from ..util import get_lambda_migration, get_noop_migration
+from ..util import get_lambda_event_migration, get_noop_event_migration
 
 
 def test_returning_original_events(
@@ -18,7 +18,7 @@ def test_returning_original_events(
             "select * from events order by id", []
         )
 
-    migration_handler.register_migrations(get_lambda_migration(lambda e: [e]))
+    migration_handler.register_migrations(get_lambda_event_migration(lambda e: [e]))
     migration_handler.finalize()
 
     with connection_handler.get_connection_context():
@@ -39,7 +39,7 @@ def test_new_events(
     set_migration_index_to_1()
 
     new_events = [CreateEvent(f"a/{i}", {}) for i in (2, 3, 4)]
-    migration_handler.register_migrations(get_lambda_migration(lambda e: new_events))
+    migration_handler.register_migrations(get_lambda_event_migration(lambda e: new_events))
     migration_handler.finalize()
 
     assert_count("events", 3)
@@ -66,7 +66,7 @@ def test_new_events_multiple_positions(
     a_new_events = [CreateEvent(f"a/{i}", {}) for i in (2, 3)]
     b_new_events = [CreateEvent(f"b/{i}", {}) for i in (2, 3)]
     migration_handler.register_migrations(
-        get_lambda_migration(
+        get_lambda_event_migration(
             lambda e: a_new_events if e.fqid == "a/1" else b_new_events
         )
     )
@@ -103,7 +103,7 @@ def test_new_events_rebuilding_order(
         UpdateEvent("a/1", {"f": 1}),
     ]
     migration_handler.register_migrations(
-        get_lambda_migration(
+        get_lambda_event_migration(
             lambda e: create_new_events if e.type == "create" else update_new_events
         )
     )
@@ -133,8 +133,8 @@ def test_less_events(
     assert_count("events", 3)
 
     migration_handler.register_migrations(
-        get_noop_migration(2),
-        get_lambda_migration(
+        get_noop_event_migration(2),
+        get_lambda_event_migration(
             lambda e: [e]
             if isinstance(e, CreateEvent) or isinstance(e, UpdateEvent)
             else [],
@@ -163,7 +163,7 @@ def test_return_none_with_modifications(
         event.data["f2"] = "Hi"
         return None
 
-    migration_handler.register_migrations(get_lambda_migration(handler))
+    migration_handler.register_migrations(get_lambda_event_migration(handler))
     migration_handler.finalize()
 
     assert_model("a/1", previous_model)

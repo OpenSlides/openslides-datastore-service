@@ -4,7 +4,7 @@ import pytest
 
 from datastore.migrations import BaseEventMigration
 
-from ..util import get_lambda_migration, get_noop_migration
+from ..util import get_lambda_event_migration, get_noop_event_migration
 
 
 def do_raise(exception):
@@ -37,7 +37,7 @@ def test_failing_migration(
     set_migration_index_to_1()
     previous_model = read_model("a/1")
 
-    fail_migration = get_lambda_migration(do_raise(AbortException()))
+    fail_migration = get_lambda_event_migration(do_raise(AbortException()))
     migration_handler.register_migrations(fail_migration)
 
     with pytest.raises(AbortException):
@@ -45,7 +45,7 @@ def test_failing_migration(
 
     # change migration to a successfull noop
     migration_handler.migrations_by_target_migration_index = {}
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
 
     migration_handler.finalize()
 
@@ -69,7 +69,7 @@ def test_failing_migration_multi_positions(
     set_migration_index_to_1()
     previous_models = (read_model("a/1"), read_model("a/2"), read_model("a/3"))
 
-    migration_handler.register_migrations(get_lambda_migration(fail_handler))
+    migration_handler.register_migrations(get_lambda_event_migration(fail_handler))
 
     with pytest.raises(AbortException):
         migration_handler.migrate()
@@ -79,7 +79,7 @@ def test_failing_migration_multi_positions(
 
     # change migration to a successfull noop
     migration_handler.migrations_by_target_migration_index = {}
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
 
     migration_handler.migrate()
     assert_count("migration_positions", 3)
@@ -110,7 +110,7 @@ def test_failing_migration_multi_positions_new_migration_after_fail(
     set_migration_index_to_1()
     previous_models = (read_model("a/1"), read_model("a/2"), read_model("a/3"))
 
-    migration_handler.register_migrations(get_lambda_migration(fail_handler))
+    migration_handler.register_migrations(get_lambda_event_migration(fail_handler))
 
     with pytest.raises(AbortException):
         migration_handler.migrate()
@@ -121,7 +121,7 @@ def test_failing_migration_multi_positions_new_migration_after_fail(
     # change migration to two successfull noops
     migration_handler.migrations_by_target_migration_index = {}
     migration_handler.register_migrations(
-        get_noop_migration(2), get_noop_migration(3)
+        get_noop_event_migration(2), get_noop_event_migration(3)
     )  # Here, a new migration is added!
 
     migration_handler.migrate()

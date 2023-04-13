@@ -6,7 +6,7 @@ from datastore.migrations import MismatchingMigrationIndicesException
 from datastore.migrations.core.migraters import EventMigrater
 from datastore.shared.di import injector
 
-from ..util import get_noop_migration
+from ..util import get_noop_event_migration
 
 
 def test_no_migrations_to_apply(
@@ -17,7 +17,7 @@ def test_no_migrations_to_apply(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
 
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.logger.info = i = MagicMock()
     migration_handler.finalize()
 
@@ -42,7 +42,7 @@ def test_finalizing_needed(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
 
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.logger.info = i = MagicMock()
     migration_handler.migrate()
 
@@ -69,7 +69,7 @@ def test_finalizing_not_needed(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
 
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.finalize()
 
     migration_handler.logger.info = i = MagicMock()
@@ -89,7 +89,7 @@ def test_invalid_migration_index(
     # DS MI is -1
 
     migrater = injector.get(EventMigrater)
-    migrater.init(2, {2: get_noop_migration(2)()})
+    migrater.init(2, {2: get_noop_event_migration(2)()})
 
     with pytest.raises(MismatchingMigrationIndicesException) as e:
         migrater.migrate()
@@ -109,7 +109,7 @@ def test_raising_migration_index(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     write({"type": "create", "fqid": "a/2", "fields": {}})
     set_migration_index_to_1()
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.migrate()
 
     with connection_handler.get_connection_context():
@@ -119,7 +119,7 @@ def test_raising_migration_index(
         )
 
     migration_handler.migrations_by_target_migration_index = {}
-    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
 
     with pytest.raises(MismatchingMigrationIndicesException) as e:
         migration_handler.migrate()
