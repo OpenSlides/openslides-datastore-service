@@ -17,10 +17,9 @@ class BaseMigrater(Protocol):
         self.target_migration_index = target_migration_index
         self.migrations = migrations
 
-    def migrate(self) -> bool:
+    def migrate(self) -> None:
         """
         Runs the actual migrations of the datastore up to the target migration index.
-        Returns true, if finalizing is needed.
         """
 
 

@@ -12,7 +12,9 @@ def test_migration_index_too_high_migrate(
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.migrate()
 
     migration_handler.run_migrations = rm = MagicMock()
@@ -32,7 +34,9 @@ def test_migration_index_too_high_finalize(
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     migration_handler.run_migrations = rm = MagicMock()
@@ -52,7 +56,9 @@ def test_migration_index_too_high_reset(
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     migration_handler._delete_migration_keyframes = dmk = MagicMock()
@@ -79,7 +85,9 @@ def test_migration_index_inconsistent(migration_handler, write, connection_handl
 
     migration_handler.run_migrations = rm = MagicMock()
     migration_handler.migrations_by_target_migration_index = {}
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
 
     with pytest.raises(MismatchingMigrationIndicesException):
         migration_handler.migrate()

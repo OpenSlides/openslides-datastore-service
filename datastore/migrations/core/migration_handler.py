@@ -107,27 +107,91 @@ class MigrationHandlerImplementation(MigrationHandler):
             self.migrations_by_target_migration_index[
                 migration.target_migration_index
             ] = migration
+        if self.last_event_migration_target_index == 1:
+            raise MigrationSetupException(
+                "No event migrations registered. At least one event migration is required."
+            )
         self.target_migration_index = len(_migrations) + 1
 
     def migrate(self) -> None:
         self.logger.info("Running migrations.")
         if self.run_checks():
             return
-        if self.run_event_migrations():
+        state = self.get_migration_state()
+        if state == MigrationState.MIGRATION_REQUIRED:
+            self.run_event_migrations()
             self.logger.info("Done. Finalizing is still needed.")
 
-    def run_event_migrations(self) -> bool:
-        if self.last_event_migration_target_index:
-            event_migrations_target_index = self.last_event_migration_target_index
+    def get_migration_state(self, verbose: bool = True) -> MigrationState:
+        if verbose:
+            log = self.logger.info
         else:
-            event_migrations_target_index = self.target_migration_index
+            log = lambda _: None  # noqa: E731
 
-        self.event_migrater.init(
-            event_migrations_target_index, self.migrations_by_target_migration_index
+        with self.connection.get_connection_context():
+            current_migration_index = self.read_database.get_current_migration_index()
+            count_positions = (
+                self.connection.query_single_value("select count(*) from positions", [])
+                or 0
+            )
+            min_mi_migration_positions = (
+                self.connection.query_single_value(
+                    "select min(migration_index) from migration_positions", []
+                )
+                or current_migration_index
+            )
+            count_migration_positions = (
+                self.connection.query_single_value(
+                    "select count(*) from migration_positions", []
+                )
+                or 0
+            )
+
+        if current_migration_index < 1 or min_mi_migration_positions < 1:
+            raise MismatchingMigrationIndicesException(
+                "Datastore has an invalid migration index: MI of positions table="
+                + f"{current_migration_index}; MI of migrations_position table="
+                + f"{min_mi_migration_positions}"
+            )
+
+        # Event migration state
+        state = MigrationState.NO_MIGRATION_REQUIRED
+        if current_migration_index >= self.last_event_migration_target_index:
+            log("No event migrations to apply.")
+        elif (
+            min_mi_migration_positions == self.last_event_migration_target_index
+            and count_positions == count_migration_positions
+        ):
+            log("No event migrations to apply, but finalizing is still needed.")
+            state = MigrationState.FINALIZATION_REQUIRED
+        else:
+            log(
+                f"{self.last_event_migration_target_index - min_mi_migration_positions} event migrations to apply."
+            )
+            state = MigrationState.MIGRATION_REQUIRED
+
+        # Model migration state
+        start_model_migration_index = max(
+            current_migration_index, self.last_event_migration_target_index
         )
-        result = self.event_migrater.migrate()
-        # finalizing is needed if model migrations exist or if the event migrations need them
-        return event_migrations_target_index != self.target_migration_index or result
+        if start_model_migration_index < self.target_migration_index:
+            log(
+                f"{self.target_migration_index - start_model_migration_index} model migrations to apply."
+            )
+            if state == MigrationState.NO_MIGRATION_REQUIRED:
+                state = MigrationState.FINALIZATION_REQUIRED
+        else:
+            log("No model migrations to apply.")
+
+        log(f"Current migration index: {current_migration_index}")
+        return state
+
+    def run_event_migrations(self) -> None:
+        self.event_migrater.init(
+            self.last_event_migration_target_index,
+            self.migrations_by_target_migration_index,
+        )
+        self.event_migrater.migrate()
 
     def run_model_migrations(self) -> None:
         pass
@@ -196,8 +260,11 @@ class MigrationHandlerImplementation(MigrationHandler):
         if self.run_checks():
             self.delete_collectionfield_aux_tables()
             return
-        if not self.run_event_migrations():
+        state = self.get_migration_state()
+        if state == MigrationState.NO_MIGRATION_REQUIRED:
             return
+        elif state == MigrationState.MIGRATION_REQUIRED:
+            self.run_event_migrations()
 
         current_mi = self.read_database.get_current_migration_index()
         if current_mi < self.last_event_migration_target_index:
@@ -391,11 +458,3 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
         self.run_event_migrations()
         self.run_model_migrations()
         self.logger.info("Finalize in memory migrations ready.")
-
-    def run_event_migrations(self) -> bool:
-        self.event_migrater.init(
-            self.last_event_migration_target_index,
-            self.migrations_by_target_migration_index,
-        )
-        self.event_migrater.migrate()
-        return False

@@ -40,7 +40,9 @@ def test_no_migration_index(migration_handler):
 
 def test_migration_index_ok(migration_handler):
     migration_handler.register_migrations(
-        get_noop_event_migration(2), get_noop_event_migration(3), get_noop_event_migration(4)
+        get_noop_event_migration(2),
+        get_noop_event_migration(3),
+        get_noop_event_migration(4),
     )
 
 
@@ -71,4 +73,6 @@ def test_duplicate_register(migration_handler):
 
 def test_event_after_model_migration(migration_handler):
     with pytest.raises(MigrationSetupException):
-        migration_handler.register_migrations(get_noop_model_migration(2), get_noop_event_migration(3))
+        migration_handler.register_migrations(
+            get_noop_model_migration(2), get_noop_event_migration(3)
+        )

@@ -39,7 +39,9 @@ def test_new_events(
     set_migration_index_to_1()
 
     new_events = [CreateEvent(f"a/{i}", {}) for i in (2, 3, 4)]
-    migration_handler.register_migrations(get_lambda_event_migration(lambda e: new_events))
+    migration_handler.register_migrations(
+        get_lambda_event_migration(lambda e: new_events)
+    )
     migration_handler.finalize()
 
     assert_count("events", 3)

@@ -42,60 +42,7 @@ class EventMigraterImplementation(EventMigrater):
     connection: ConnectionHandler
     logger: MigrationLogger
 
-    def migrate(self) -> bool:
-        with self.connection.get_connection_context():
-            # get min migration index
-            min_mi_positions = (
-                self.connection.query_single_value(
-                    "select min(migration_index) from positions", []
-                )
-                or 1
-            )
-            count_positions = (
-                self.connection.query_single_value("select count(*) from positions", [])
-                or 0
-            )
-            min_mi_migration_positions = (
-                self.connection.query_single_value(
-                    "select min(migration_index) from migration_positions", []
-                )
-                or 1
-            )
-            count_migration_positions = (
-                self.connection.query_single_value(
-                    "select count(*) from migration_positions", []
-                )
-                or 0
-            )
-
-        finalizing_needed = False
-        if min_mi_positions == self.target_migration_index:
-            self.logger.info(
-                "No migrations to apply. The productive database is up to date. "
-                + f"Current migration index: {self.target_migration_index}"
-            )
-        elif (
-            min_mi_migration_positions == self.target_migration_index
-            and count_positions == count_migration_positions
-        ):
-            self.logger.info(
-                "No migrations to apply, but finalizing is still needed. "
-                + f"Current migration index: {self.target_migration_index}"
-            )
-            finalizing_needed = True
-        elif min_mi_positions < 1 or min_mi_migration_positions < 1:
-            raise MismatchingMigrationIndicesException(
-                "Datastore has an invalid migration index: MI of positions table="
-                + f"{min_mi_positions}; MI of migrations_position table="
-                + f"{min_mi_migration_positions}"
-            )
-        else:
-            self.run_actual_migrations()
-            finalizing_needed = True
-
-        return finalizing_needed
-
-    def run_actual_migrations(self) -> None:
+    def migrate(self) -> None:
         # TODO: paginate and use "client-side cursor". We cannot use a server-side cursor since
         # currently the implementation of self.connection does nto allow nested transactions (=contexts)
         with self.connection.get_connection_context():

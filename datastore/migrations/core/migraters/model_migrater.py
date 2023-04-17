@@ -12,5 +12,10 @@ class ModelMigraterImplementation(ModelMigrater):
     connection: ConnectionHandler
     logger: MigrationLogger
 
-    def migrate(self) -> bool:
-        return False
+    def migrate(self) -> None:
+        current_mi = self.read_database.get_current_migration_index()
+        self.logger.info(
+            f"Models from MI {current_mi} to MI {self.target_migration_index} ..."
+        )
+        with self.connection.get_connection_context():
+            pass

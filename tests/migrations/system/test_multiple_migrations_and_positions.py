@@ -30,7 +30,9 @@ def test_multiple_migrations_together(
     previous_model = read_model("a/1")
 
     migration_handler.register_migrations(
-        get_noop_event_migration(2), get_noop_event_migration(3), get_noop_event_migration(4)
+        get_noop_event_migration(2),
+        get_noop_event_migration(3),
+        get_noop_event_migration(4),
     )
     migration_handler.finalize()
 
@@ -114,7 +116,9 @@ def test_amount_events(
     )
     set_migration_index_to_1()
 
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     assert_count("events", 1)
@@ -146,7 +150,9 @@ def test_migrate_finalize(
     previous_model = read_model("a/1")
 
     migration_handler.register_migrations(
-        get_noop_event_migration(2), get_noop_event_migration(3), get_noop_event_migration(4)
+        get_noop_event_migration(2),
+        get_noop_event_migration(3),
+        get_noop_event_migration(4),
     )
     migration_handler.migrate()
     migration_handler.finalize()
@@ -179,7 +185,9 @@ def test_multiple_migrations_following(
     set_migration_index_to_1()
     previous_model = read_model("a/1")
 
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     assert_model("a/1", previous_model)
@@ -215,7 +223,9 @@ def test_multiple_migrations_one_finalizing(
     migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.migrate()
     migration_handler.migrations_by_target_migration_index = {}
-    migration_handler.register_migrations(get_noop_event_migration(2), get_noop_event_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     assert_model("a/1", previous_model)

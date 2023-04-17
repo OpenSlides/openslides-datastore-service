@@ -33,7 +33,7 @@ class EventMigraterImplementationMemory(EventMigrater):
     migrated_events: List[BaseEvent] = []
     imported_models: Dict[Fqid, Model]
 
-    def migrate(self) -> bool:
+    def migrate(self) -> None:
         if (
             self.start_migration_index < 1
             or self.start_migration_index > self.target_migration_index
@@ -43,12 +43,7 @@ class EventMigraterImplementationMemory(EventMigrater):
                 + f"Given migration index of import data: {self.start_migration_index} "
                 + f"Current backend migration index: {self.target_migration_index}"
             )
-        else:
-            self.run_actual_migrations()
 
-        return False
-
-    def run_actual_migrations(self) -> None:
         position = RawPosition(
             position=1,
             migration_index=self.start_migration_index,
