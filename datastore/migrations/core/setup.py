@@ -10,12 +10,15 @@ from .migration_logger import MigrationLogger, PrintFunction
 
 
 def register_services(memory_only: bool = False):
-    from .migraters import EventMigrater, ModelMigrater, ModelMigraterImplementation
+    from .migraters import EventMigrater, ModelMigrater
     from .migration_logger import MigrationLogger, MigrationLoggerImplementation
 
     if memory_only:
         from .migraters.event_migrater_memory import (
-            EventMigraterImplementationMemory as MigraterImplementation,
+            EventMigraterImplementationMemory as EventMigraterImplementation,
+        )
+        from .migraters.model_migrater_memory import (
+            ModelMigraterImplementationMemory as ModelMigraterImplementation,
         )
         from .migration_handler import (
             MigrationHandlerImplementationMemory as MigrationHandlerImplementation,
@@ -23,7 +26,10 @@ def register_services(memory_only: bool = False):
     else:
         # type-ignoring comments necessary because of https://github.com/python/mypy/issues/13914
         from .migraters.event_migrater import (  # type: ignore[no-redef]
-            EventMigraterImplementation as MigraterImplementation,
+            EventMigraterImplementation,
+        )
+        from .migraters.model_migrater import (  # type: ignore[no-redef]
+            ModelMigraterImplementation,
         )
         from .migration_handler import (  # type: ignore[no-redef]
             MigrationHandlerImplementation,
@@ -37,7 +43,7 @@ def register_services(memory_only: bool = False):
 
     injector.register(MigrationLogger, MigrationLoggerImplementation)
     injector.register(MigrationHandler, MigrationHandlerImplementation)
-    injector.register(EventMigrater, MigraterImplementation)
+    injector.register(EventMigrater, EventMigraterImplementation)
     injector.register(ModelMigrater, ModelMigraterImplementation)
 
 

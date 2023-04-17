@@ -1,6 +1,3 @@
-from typing import Any, List
-
-from ..events import BaseEvent
 from ..exceptions import MigrationSetupException
 
 
@@ -18,6 +15,3 @@ class BaseMigration:
             raise MigrationSetupException(
                 f"You need to specify target_migration_index of {self.name}"
             )
-
-    def migrate(self, *args: Any, **kwargs: Any) -> List[BaseEvent]:
-        raise NotImplementedError()

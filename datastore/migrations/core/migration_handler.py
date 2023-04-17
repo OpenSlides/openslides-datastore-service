@@ -107,10 +107,6 @@ class MigrationHandlerImplementation(MigrationHandler):
             self.migrations_by_target_migration_index[
                 migration.target_migration_index
             ] = migration
-        if self.last_event_migration_target_index == 1:
-            raise MigrationSetupException(
-                "No event migrations registered. At least one event migration is required."
-            )
         self.target_migration_index = len(_migrations) + 1
 
     def migrate(self) -> None:
@@ -120,6 +116,7 @@ class MigrationHandlerImplementation(MigrationHandler):
         state = self.get_migration_state()
         if state == MigrationState.MIGRATION_REQUIRED:
             self.run_event_migrations()
+        if state != MigrationState.NO_MIGRATION_REQUIRED:
             self.logger.info("Done. Finalizing is still needed.")
 
     def get_migration_state(self, verbose: bool = True) -> MigrationState:
@@ -165,9 +162,8 @@ class MigrationHandlerImplementation(MigrationHandler):
             log("No event migrations to apply, but finalizing is still needed.")
             state = MigrationState.FINALIZATION_REQUIRED
         else:
-            log(
-                f"{self.last_event_migration_target_index - min_mi_migration_positions} event migrations to apply."
-            )
+            cnt = self.last_event_migration_target_index - min_mi_migration_positions
+            log(f"{cnt} event migration{'s' if cnt != 1 else ''} to apply.")
             state = MigrationState.MIGRATION_REQUIRED
 
         # Model migration state
@@ -175,9 +171,8 @@ class MigrationHandlerImplementation(MigrationHandler):
             current_migration_index, self.last_event_migration_target_index
         )
         if start_model_migration_index < self.target_migration_index:
-            log(
-                f"{self.target_migration_index - start_model_migration_index} model migrations to apply."
-            )
+            cnt = self.target_migration_index - start_model_migration_index
+            log(f"{cnt} model migration{'s' if cnt != 1 else ''} to apply.")
             if state == MigrationState.NO_MIGRATION_REQUIRED:
                 state = MigrationState.FINALIZATION_REQUIRED
         else:
@@ -194,7 +189,11 @@ class MigrationHandlerImplementation(MigrationHandler):
         self.event_migrater.migrate()
 
     def run_model_migrations(self) -> None:
-        pass
+        self.model_migrater.init(
+            self.target_migration_index,
+            self.migrations_by_target_migration_index,
+        )
+        self.model_migrater.migrate()
 
     def run_checks(self) -> bool:
         with self.connection.get_connection_context():
@@ -244,14 +243,13 @@ class MigrationHandlerImplementation(MigrationHandler):
             or 1
         )
         if min_migration_index == -1:
+            self.logger.info("The datastore has a migration index of -1.")
             self._update_migration_index()
             self.connection.execute("delete from migration_events", [])
             self.connection.execute("delete from migration_positions", [])
             self.connection.execute("delete from migration_keyframes", [])
             self.connection.execute("delete from migration_keyframe_models", [])
-            self.logger.info(
-                f"The datastore has a migration index of -1. Set the migration index to {self.target_migration_index}."
-            )
+
             return True
         return False
 
@@ -286,9 +284,6 @@ class MigrationHandlerImplementation(MigrationHandler):
                 self.connection.execute(
                     "alter table events_swap rename to migration_events", []
                 )
-            self.logger.info(
-                f"Set the new migration index to {self.last_event_migration_target_index}..."
-            )
             with self.connection.get_connection_context():
                 self._update_migration_index(self.last_event_migration_target_index)
 
@@ -296,6 +291,10 @@ class MigrationHandlerImplementation(MigrationHandler):
 
         if self.last_event_migration_target_index < self.target_migration_index:
             self.run_model_migrations()
+            self.delete_collectionfield_aux_tables()
+            with self.connection.get_connection_context():
+                self._update_migration_index()
+            self.logger.info("Done.")
 
     def reset(self) -> None:
         self.logger.info("Reset migrations.")
@@ -313,6 +312,7 @@ class MigrationHandlerImplementation(MigrationHandler):
     ) -> None:
         if target_migration_index is None:
             target_migration_index = self.target_migration_index
+        self.logger.info(f"Set the new migration index to {target_migration_index}...")
         self.connection.execute(
             "update positions set migration_index=%s",
             [target_migration_index],
@@ -395,25 +395,10 @@ class MigrationHandlerImplementation(MigrationHandler):
                 count_migration_positions - count_migration_positions_full
             )
 
-            max_mi_migration_positions = self.connection.query_single_value(
-                "select max(migration_index) from migration_positions", []
-            )
-            if (
-                max_mi_migration_positions
-                and current_migration_index != max_mi_migration_positions
-            ) or current_migration_index != self.target_migration_index:
-                if (
-                    count_positions == count_migration_positions
-                    and max_mi_migration_positions == self.target_migration_index
-                ):
-                    status = MigrationState.FINALIZATION_REQUIRED
-                else:
-                    status = MigrationState.MIGRATION_REQUIRED
-            else:
-                status = MigrationState.NO_MIGRATION_REQUIRED
+        state = self.get_migration_state(verbose=False)
 
         return {
-            "status": status,
+            "status": state,
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             "positions": count_positions,

@@ -1,10 +1,8 @@
-from unittest.mock import MagicMock
-
 import pytest
 
 from datastore.migrations import MismatchingMigrationIndicesException
 
-from ..util import get_noop_event_migration
+from ..util import LogMock, get_noop_event_migration
 
 
 def test_no_migrations_to_apply(
@@ -16,18 +14,18 @@ def test_no_migrations_to_apply(
     set_migration_index_to_1()
 
     migration_handler.register_migrations(get_noop_event_migration(2))
-    migration_handler.logger.info = i = MagicMock()
+    migration_handler.logger.info = i = LogMock()
     migration_handler.finalize()
 
     i.assert_called()
-    assert "Position 1 from MI 1 to MI 2 ..." in [c[0][0] for c in i.call_args_list]
+    assert "Position 1 from MI 1 to MI 2 ..." in i.output
 
     i.reset_mock()
     migration_handler.migrate()
 
     i.assert_called()
-    assert "No event migrations to apply." in [c[0][0] for c in i.call_args_list]
-    assert "No model migrations to apply." in [c[0][0] for c in i.call_args_list]
+    assert "No event migrations to apply." in i.output
+    assert "No model migrations to apply." in i.output
 
 
 def test_finalizing_needed(
@@ -39,12 +37,12 @@ def test_finalizing_needed(
     set_migration_index_to_1()
 
     migration_handler.register_migrations(get_noop_event_migration(2))
-    migration_handler.logger.info = i = MagicMock()
+    migration_handler.logger.info = i = LogMock()
     migration_handler.migrate()
 
     i.assert_called()
-    assert "Position 1 from MI 1 to MI 2 ..." in [c[0][0] for c in i.call_args_list]
-    assert "Done. Finalizing is still needed." in i.call_args.args[0]
+    assert "Position 1 from MI 1 to MI 2 ..." in i.output
+    assert "Done. Finalizing is still needed." in i.output
 
     i.reset_mock()
     migration_handler.migrate()
@@ -66,12 +64,12 @@ def test_finalizing_not_needed(
     migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.finalize()
 
-    migration_handler.logger.info = i = MagicMock()
+    migration_handler.logger.info = i = LogMock()
     migration_handler.finalize()
 
     i.assert_called()
-    assert "No event migrations to apply." in [c[0][0] for c in i.call_args_list]
-    assert "No model migrations to apply." in [c[0][0] for c in i.call_args_list]
+    assert "No event migrations to apply." in i.output
+    assert "No model migrations to apply." in i.output
 
 
 def test_migration_index_not_initialized(
@@ -82,14 +80,12 @@ def test_migration_index_not_initialized(
     # DS MI is -1
 
     migration_handler.register_migrations(get_noop_event_migration(2))
-    migration_handler.logger.info = i = MagicMock()
+    migration_handler.logger.info = i = LogMock()
     migration_handler.finalize()
 
     i.assert_called()
-    assert (
-        "The datastore has a migration index of -1. Set the migration index to 2."
-        in [c[0][0] for c in i.call_args_list]
-    )
+    assert "The datastore has a migration index of -1." in i.output
+    assert "Set the new migration index to 2..." in i.output
 
 
 def test_raising_migration_index(

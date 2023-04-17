@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import pytest
 
 from datastore.migrations import MigrationHandler, setup as migration_setup
@@ -20,6 +18,7 @@ from tests import (  # noqa
     reset_di,
     setup_db_connection,
 )
+from tests.migrations.util import LogMock
 from tests.util import assert_response_code, assert_success_response
 
 
@@ -158,12 +157,13 @@ def assert_finalized(assert_count):
 def set_migration_index_to_1(migration_handler):
     def _set_migration_index_to_1():
         previous_logger = migration_handler.logger.info
-        migration_handler.logger.info = i = MagicMock()
+        migration_handler.logger.info = i = LogMock()
         migration_handler.migrate()  # set target migration index to 1
         i.assert_called()
-        assert (
-            "The datastore has a migration index of -1. Set the migration index to 1."
-            in i.call_args.args[0]
+        assert i.output == (
+            "Running migrations.",
+            "The datastore has a migration index of -1.",
+            "Set the new migration index to 1...",
         )
         migration_handler.logger.info = previous_logger
 
