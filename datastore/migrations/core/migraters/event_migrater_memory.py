@@ -8,7 +8,6 @@ from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import Fqid, Model, Position
-from datastore.shared.util import BadCodingError
 
 from ..events import BaseEvent, CreateEvent
 from ..exceptions import MismatchingMigrationIndicesException
@@ -88,10 +87,7 @@ class EventMigraterImplementationMemory(EventMigrater):
             self._reuse_accessor(new_accessor, target_migration_index)
 
             migration = self.migrations[target_migration_index]
-            if not isinstance(migration, BaseEventMigration):
-                raise BadCodingError(
-                    "Event migrater cannot execute non-event migrations"
-                )
+            assert isinstance(migration, BaseEventMigration)
 
             events = migration.migrate(
                 events, old_accessor, new_accessor, position.to_position_data()

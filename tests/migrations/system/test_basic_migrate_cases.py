@@ -80,6 +80,9 @@ def test_migration_index_not_initialized(
     # DS MI is -1
 
     migration_handler.register_migrations(get_noop_event_migration(2))
+    with pytest.raises(MismatchingMigrationIndicesException):
+        migration_handler.get_migration_state(verbose=False)
+
     migration_handler.logger.info = i = LogMock()
     migration_handler.finalize()
 

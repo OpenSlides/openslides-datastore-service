@@ -7,7 +7,6 @@ from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Position
-from datastore.shared.util import BadCodingError
 
 from ..base_migrations import PositionData
 from ..events import BaseEvent, to_event
@@ -134,10 +133,7 @@ class EventMigraterImplementation(EventMigrater):
             )
 
             migration = self.migrations[target_migration_index]
-            if not isinstance(migration, BaseEventMigration):
-                raise BadCodingError(
-                    "Event migrater cannot execute non-event migrations"
-                )
+            assert isinstance(migration, BaseEventMigration)
 
             if events_from_migration_table:
                 _old_events = self.connection.query(
