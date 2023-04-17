@@ -348,7 +348,7 @@ class MigrationHandlerImplementation(MigrationHandler):
             "select max(position) from positions", []
         )
         keyframe_id = DatabaseMigrationKeyframeModifier.get_keyframe_id(
-            self.connection, max_position, self.target_migration_index
+            self.connection, max_position, self.last_event_migration_target_index
         )
         self.connection.execute("delete from models", [])
 
