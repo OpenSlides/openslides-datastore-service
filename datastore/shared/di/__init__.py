@@ -1,4 +1,4 @@
-from .dependency_provider import (  # noqa
+from .dependency_provider import (
     injector,
     service_as_factory,
     service_as_singleton,

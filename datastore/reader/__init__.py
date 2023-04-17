@@ -1,4 +1,4 @@
-from . import core, flask_frontend  # noqa
+from . import core, flask_frontend
 
 
 def setup_di():
