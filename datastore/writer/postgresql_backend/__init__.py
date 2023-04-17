@@ -1,4 +1,4 @@
-from .db_events import (  # noqa
+from .db_events import (
     BaseDbEvent,
     DbCreateEvent,
     DbDeleteEvent,
@@ -7,9 +7,9 @@ from .db_events import (  # noqa
     DbRestoreEvent,
     DbUpdateEvent,
 )
-from .event_translator import EventTranslator  # noqa
-from .sql_database_backend_service import SqlDatabaseBackendService  # noqa
-from .sql_occ_locker_backend_service import SqlOccLockerBackendService  # noqa
+from .event_translator import EventTranslator
+from .sql_database_backend_service import SqlDatabaseBackendService
+from .sql_occ_locker_backend_service import SqlOccLockerBackendService
 
 
 def setup_di():

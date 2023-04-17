@@ -1,4 +1,4 @@
-from .redis_messaging_backend_service import RedisMessagingBackendService  # noqa
+from .redis_messaging_backend_service import RedisMessagingBackendService
 
 
 def setup_di():
