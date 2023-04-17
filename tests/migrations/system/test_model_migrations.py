@@ -36,5 +36,5 @@ def test_model_migration(
         "Done.",
     )
 
-    assert_finalized()
+    assert_finalized(2)
     assert_model("a/2", {"f": 1, "meta_deleted": False, "meta_position": 2}, position=2)

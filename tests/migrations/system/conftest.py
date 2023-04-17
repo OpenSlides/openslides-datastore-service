@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytest
 
 from datastore.migrations import MigrationHandler, setup as migration_setup
@@ -141,8 +143,17 @@ def assert_count(query_single_value):
 
 
 @pytest.fixture()
-def assert_finalized(assert_count):
-    def _assert_finalized():
+def assert_finalized(assert_count, connection_handler):
+    def _assert_finalized(target_migration_index: Optional[int] = None):
+        with connection_handler.get_connection_context():
+            migration_indices = connection_handler.query_list_of_single_values(
+                "select distinct migration_index from positions", []
+            )
+        assert len(migration_indices) == 1
+        if target_migration_index is not None:
+            assert migration_indices[0] == target_migration_index
+        else:
+            assert migration_indices[0] > 0
         assert_count("migration_keyframes", 0)
         assert_count("migration_keyframe_models", 0)
         assert_count("collectionfields", 0)
