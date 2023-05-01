@@ -2,7 +2,7 @@
 dacite==1.7.0
 fastjsonschema==2.16.2
 # newer versions have problems with the concurrency tests
-flask==2.1.3
+flask==2.3.2
 gunicorn==20.1.0
 psycopg2==2.9.5
 redis==4.5.4
