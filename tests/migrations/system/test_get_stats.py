@@ -2,7 +2,7 @@ from datastore.migrations.core.events import CreateEvent
 from datastore.migrations.core.migration_handler import MigrationState
 from datastore.writer.core import RequestCreateEvent
 
-from ..util import LogMock, get_lambda_event_migration, get_static_model_migration
+from ..util import LogMock, get_lambda_event_migration, get_lambda_model_migration
 
 
 def test_get_stats(
@@ -13,7 +13,7 @@ def test_get_stats(
 
     migration_handler.register_migrations(
         get_lambda_event_migration(lambda e: [CreateEvent("a/1", {"f": 1})]),
-        get_static_model_migration([RequestCreateEvent("a/2", {"f": 1})], 3),
+        get_lambda_model_migration(lambda _: [RequestCreateEvent("a/2", {"f": 1})], 3),
     )
     migration_handler.logger.info = i = LogMock()
     assert migration_handler.get_stats() == {

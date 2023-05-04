@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Tuple
 
-from datastore.migrations.core.base_migrations import BaseEventMigration
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
@@ -114,13 +113,11 @@ class EventMigraterImplementation(EventMigrater):
             f"Position {position.position} from MI {migration_index} to MI {self.target_migration_index} ..."
         )
         events_from_migration_table = migration_index != position.migration_index
-        for source_migration_index in range(
-            migration_index, self.target_migration_index
-        ):
-            target_migration_index = source_migration_index + 1
-            self.logger.debug(
-                f"\tRunning migration with target migration index {target_migration_index}"
-            )
+        for (
+            source_migration_index,
+            target_migration_index,
+            migration,
+        ) in self.get_migrations(migration_index):
             is_last_migration_index = (
                 target_migration_index == self.target_migration_index
             )
@@ -131,9 +128,6 @@ class EventMigraterImplementation(EventMigrater):
                 position.position,
                 is_last_migration_index,
             )
-
-            migration = self.migrations[target_migration_index]
-            assert isinstance(migration, BaseEventMigration)
 
             if events_from_migration_table:
                 _old_events = self.connection.query(

@@ -1,24 +1,23 @@
 import copy
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Tuple, cast
+from typing import List, Tuple, cast
 
-from datastore.migrations.core.base_migrations import BaseEventMigration
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.typing import Fqid, Model, Position
+from datastore.shared.typing import Position
 
-from ..events import BaseEvent, CreateEvent
-from ..exceptions import MismatchingMigrationIndicesException
+from ..events import BaseEvent
 from ..migration_keyframes import InitialMigrationKeyframeModifier
 from ..migration_logger import MigrationLogger
 from .event_migrater import RawPosition
+from .memory_migrater import MemoryMigrater
 from .migrater import EventMigrater
 
 
 @service_as_factory
-class EventMigraterImplementationMemory(EventMigrater):
+class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
     """
     This migrater is made for in memory migrations of meeting imports.
     The whole import will be imported to 1 position. Unlike the database
@@ -29,22 +28,9 @@ class EventMigraterImplementationMemory(EventMigrater):
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger
-    start_migration_index: int
-    import_create_events: List[CreateEvent]
-    migrated_events: List[BaseEvent] = []
-    imported_models: Dict[Fqid, Model]
 
     def migrate(self) -> None:
-        if (
-            self.start_migration_index < 1
-            or self.start_migration_index > self.target_migration_index
-        ):
-            raise MismatchingMigrationIndicesException(
-                "The migration index of import data is invalid: "
-                + f"Given migration index of import data: {self.start_migration_index} "
-                + f"Current backend migration index: {self.target_migration_index}"
-            )
-
+        self.check_migration_index()
         position = RawPosition(
             position=1,
             migration_index=self.start_migration_index,
@@ -74,20 +60,16 @@ class EventMigraterImplementationMemory(EventMigrater):
             position.position,
             False,
         )
+        # TODO: Generate events from import data
         events = cast(List[BaseEvent], self.import_create_events)
 
-        for source_migration_index in range(
-            migration_index, self.target_migration_index
-        ):
-            target_migration_index = source_migration_index + 1
-            self.logger.debug(
-                f"\tRunning migration with target migration index {target_migration_index}"
-            )
+        for (
+            source_migration_index,
+            target_migration_index,
+            migration,
+        ) in self.get_migrations(migration_index):
             self._reuse_accessor(old_accessor, source_migration_index)
             self._reuse_accessor(new_accessor, target_migration_index)
-
-            migration = self.migrations[target_migration_index]
-            assert isinstance(migration, BaseEventMigration)
 
             events = migration.migrate(
                 events, old_accessor, new_accessor, position.to_position_data()
@@ -101,7 +83,7 @@ class EventMigraterImplementationMemory(EventMigrater):
         source_migration_index: int,
         target_migration_index: int,
         position: Position,
-        is_last_migration_index: bool,
+        _: bool,
     ) -> Tuple[InitialMigrationKeyframeModifier, InitialMigrationKeyframeModifier]:
         old_accessor = self._get_accessor(
             last_position_value,
@@ -133,16 +115,3 @@ class EventMigraterImplementationMemory(EventMigrater):
         accessor.models = copy.deepcopy(self.imported_models)
         accessor.deleted = {key: False for key in self.imported_models}
         accessor.collection_ids = defaultdict(set)
-
-    def set_additional_data(
-        self,
-        import_create_events: List[CreateEvent],
-        models: Dict[Fqid, Model],
-        start_migration_index: int,
-    ) -> None:
-        self.import_create_events = import_create_events
-        self.imported_models = models
-        self.start_migration_index = start_migration_index
-
-    def get_migrated_events(self) -> List[BaseEvent]:
-        return self.migrated_events

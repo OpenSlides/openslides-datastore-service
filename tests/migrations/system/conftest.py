@@ -30,11 +30,6 @@ def setup(reset_di):  # noqa
 
 
 @pytest.fixture()
-def setup_memory_migration(reset_di):  # noqa
-    migration_setup(memory_only=True)
-
-
-@pytest.fixture()
 def migration_handler():  # noqa
     yield injector.get(MigrationHandler)
 

@@ -1,3 +1,4 @@
+from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.reader import setup_di as reader_setup_di
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import setup_di as postgresql_setup_di
@@ -23,6 +24,9 @@ def register_services(memory_only: bool = False):
         from .migration_handler import (
             MigrationHandlerImplementationMemory as MigrationHandlerImplementation,
         )
+        from .migration_reader import (
+            MigrationReaderImplementationMemory as MigrationReaderImplementation,
+        )
     else:
         # type-ignoring comments necessary because of https://github.com/python/mypy/issues/13914
         from .migraters.event_migrater import (  # type: ignore[no-redef]
@@ -33,6 +37,9 @@ def register_services(memory_only: bool = False):
         )
         from .migration_handler import (  # type: ignore[no-redef]
             MigrationHandlerImplementation,
+        )
+        from .migration_reader import (  # type: ignore[no-redef]
+            MigrationReaderImplementation,
         )
 
         util_setup_di()
@@ -45,6 +52,7 @@ def register_services(memory_only: bool = False):
     injector.register(MigrationHandler, MigrationHandlerImplementation)
     injector.register(EventMigrater, EventMigraterImplementation)
     injector.register(ModelMigrater, ModelMigraterImplementation)
+    injector.register(MigrationReader, MigrationReaderImplementation)
 
 
 def setup(

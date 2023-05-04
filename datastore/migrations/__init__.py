@@ -1,4 +1,4 @@
-from .core.base_migrations import BaseEventMigration, BaseModelMigration
+from .core.base_migrations import BaseEventMigration, BaseMigration, BaseModelMigration
 from .core.events import (
     BadEventException,
     BaseEvent,
@@ -14,7 +14,11 @@ from .core.exceptions import (
     MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
-from .core.migration_handler import MigrationHandler, MigrationState
+from .core.migration_handler import (
+    MigrationHandler,
+    MigrationHandlerImplementationMemory,
+    MigrationState,
+)
 from .core.migration_keyframes import (
     BaseMigrationKeyframeException,
     MigrationKeyframeAccessor,

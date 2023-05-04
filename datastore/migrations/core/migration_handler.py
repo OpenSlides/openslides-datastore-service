@@ -1,12 +1,18 @@
 from enum import Enum
+from textwrap import dedent
 from typing import Any, Dict, Optional, Protocol, Type
 
 from datastore.migrations.core.base_migrations.base_event_migration import (
     BaseEventMigration,
 )
+from datastore.migrations.core.migraters import (
+    EventMigraterImplementationMemory,
+    ModelMigraterImplementationMemory,
+)
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
+from datastore.shared.typing import Fqid, Model
 from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
 
 from .base_migrations.base_migration import BaseMigration
@@ -420,16 +426,19 @@ class MigrationHandlerImplementation(MigrationHandler):
         elif stats["status"] == MigrationState.FINALIZATION_REQUIRED:
             migration_action = "Finalization needed"
         self.logger.info(
-            f"""\
-- Registered migrations for migration index {self.target_migration_index}
-- Datastore has {stats['positions']} positions with {stats['events']} events
-- The positions have a migration index of {stats['current_migration_index']}
-  -> {action}
-- There are {stats['fully_migrated_positions']} fully migrated positions and
-  {stats['partially_migrated_positions']} partially migrated ones
-  -> {migration_action}
-- {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
-  partially migrated ones)"""
+            dedent(
+                f"""\
+            - Registered migrations for migration index {self.target_migration_index}
+            - Datastore has {stats['positions']} positions with {stats['events']} events
+            - The positions have a migration index of {stats['current_migration_index']}
+            -> {action}
+            - There are {stats['fully_migrated_positions']} fully migrated positions and
+            {stats['partially_migrated_positions']} partially migrated ones
+            -> {migration_action}
+            - {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
+            partially migrated ones)\
+            """
+            )
         )
 
 
@@ -437,6 +446,18 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
     All migrations are made in-memory only for the import of meetings.
     """
+
+    event_migrater: EventMigraterImplementationMemory
+    model_migrater: ModelMigraterImplementationMemory
+
+    def set_import_data(
+        self, models: Dict[Fqid, Model], start_migration_index: int
+    ) -> None:
+        sorted_indices = sorted(
+            (self.last_event_migration_target_index, start_migration_index)
+        )
+        self.event_migrater.set_import_data(models, sorted_indices[0])
+        self.model_migrater.set_import_data(models, sorted_indices[1])
 
     def finalize(self) -> None:
         self.logger.info("Finalize in memory migrations.")

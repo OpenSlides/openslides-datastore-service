@@ -1,4 +1,4 @@
-from datastore.migrations.core.base_migrations import BaseModelMigration
+from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
@@ -10,6 +10,7 @@ from .migrater import ModelMigrater
 
 @service_as_factory
 class ModelMigraterImplementation(ModelMigrater):
+    reader: MigrationReader
     read_database: ReadDatabase
     write_database: Database
     connection: ConnectionHandler
@@ -21,18 +22,11 @@ class ModelMigraterImplementation(ModelMigrater):
         self.logger.info(
             f"Migrating models from MI {current_migration_index} to MI {self.target_migration_index} ..."
         )
-        for source_migration_index in range(
-            current_migration_index, self.target_migration_index
+        for _, target_migration_index, migration in self.get_migrations(
+            current_migration_index
         ):
-            target_migration_index = source_migration_index + 1
-            self.logger.debug(
-                f"\tRunning migration with target migration index {target_migration_index}"
-            )
-            migration = self.migrations[target_migration_index]
-            assert isinstance(migration, BaseModelMigration)
-
             with self.connection.get_connection_context():
-                events = migration.migrate()
+                events = migration.migrate(self.reader)
                 if events:
                     self.write_database.insert_events(
                         events, target_migration_index, None, 0

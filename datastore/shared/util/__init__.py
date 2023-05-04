@@ -15,6 +15,7 @@ from .exceptions import (
     ModelNotDeleted,
 )
 from .filter import And, Filter, FilterOperator, Not, Or, filter_definitions_schema
+from .filter_models import filter_models
 from .key_strings import (
     KEYSEPARATOR,
     META_DELETED,

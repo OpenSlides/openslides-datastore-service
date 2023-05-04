@@ -52,13 +52,13 @@ def get_noop_model_migration(target_migration_index: Optional[int]):
     return NoopMigration
 
 
-def get_static_model_migration(events, target_migration_index=2):
-    class StaticMigration(BaseModelMigration):
+def get_lambda_model_migration(fn, target_migration_index=2):
+    class LambdaMigration(BaseModelMigration):
         def __init__(self):
             self.target_migration_index = target_migration_index
             super().__init__()
 
-        def migrate(self) -> Optional[List[BaseRequestEvent]]:
-            return events
+        def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
+            return fn(self)
 
-    return StaticMigration
+    return LambdaMigration
