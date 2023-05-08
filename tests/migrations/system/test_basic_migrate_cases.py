@@ -1,6 +1,8 @@
 import pytest
 
 from datastore.migrations import MismatchingMigrationIndicesException
+from datastore.migrations.core.migraters.migrater import EventMigrater
+from datastore.shared.di import injector
 
 from ..util import LogMock, get_noop_event_migration
 
@@ -73,22 +75,22 @@ def test_finalizing_not_needed(
 
 
 def test_migration_index_not_initialized(
-    migration_handler,
     write,
+    migration_handler,
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     # DS MI is -1
 
-    migration_handler.register_migrations(get_noop_event_migration(2))
-    with pytest.raises(MismatchingMigrationIndicesException):
-        migration_handler.get_migration_state(verbose=False)
+    migrater = injector.get(EventMigrater)
+    migrater.init(2, {2: get_noop_event_migration(2)()})
 
-    migration_handler.logger.info = i = LogMock()
-    migration_handler.finalize()
+    with pytest.raises(MismatchingMigrationIndicesException) as e:
+        migrater.migrate()
 
-    i.assert_called()
-    assert "The datastore has a migration index of -1." in i.output
-    assert "Set the new migration index to 2..." in i.output
+    assert (
+        str(e.value)
+        == "Datastore has an invalid migration index: MI of positions table=-1; MI of migrations_position table=1"
+    )
 
 
 def test_raising_migration_index(

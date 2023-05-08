@@ -1,9 +1,10 @@
 from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.reader import setup_di as reader_setup_di
 from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import setup_di as postgresql_setup_di
+from datastore.shared.postgresql_backend import setup_di as shared_postgresql_setup_di
 from datastore.shared.services import setup_di as util_setup_di
 from datastore.writer import setup_di as writer_setup_di
+from datastore.writer.postgresql_backend import setup_di as writer_postgresql_setup_di
 from datastore.writer.redis_backend import setup_di as redis_setup_di
 
 from .migration_handler import MigrationHandler
@@ -27,6 +28,8 @@ def register_services(memory_only: bool = False):
         from .migration_reader import (
             MigrationReaderImplementationMemory as MigrationReaderImplementation,
         )
+
+        writer_postgresql_setup_di()
     else:
         # type-ignoring comments necessary because of https://github.com/python/mypy/issues/13914
         from .migraters.event_migrater import (  # type: ignore[no-redef]
@@ -43,7 +46,7 @@ def register_services(memory_only: bool = False):
         )
 
         util_setup_di()
-        postgresql_setup_di()
+        shared_postgresql_setup_di()
         redis_setup_di()
         writer_setup_di()
         reader_setup_di()

@@ -1,7 +1,6 @@
-from collections import defaultdict
-from typing import Dict, Tuple, Union
+from typing import Tuple, Union
 
-from ..typing import Collection, Field, Fqfield, Fqid, Id, Model
+from ..typing import Collection, Field, Fqfield, Fqid, Id
 from .key_strings import KEYSEPARATOR
 
 
@@ -49,13 +48,3 @@ def collection_from_collectionfield(collectionfield: str) -> Collection:
 
 def fqid_from_collection_and_id(collection: Collection, id: Union[str, Id]) -> Fqid:
     return f"{collection}{KEYSEPARATOR}{id}"
-
-
-def change_model_mapping(
-    models: Dict[Fqid, Model]
-) -> Dict[Collection, Dict[Id, Model]]:
-    new: Dict[Collection, Dict[Id, Model]] = defaultdict(dict)
-    for fqid, model in models.items():
-        collection, id = collection_and_id_from_fqid(fqid)
-        new[collection][id] = model
-    return new

@@ -65,6 +65,19 @@ class EventMigraterImplementation(EventMigrater):
             else:
                 min_position = min_position_1
 
+            min_mi_positions = (
+                self.connection.query_single_value(
+                    "select min(migration_index) from positions", []
+                )
+                or 1
+            )
+            min_mi_migration_positions = (
+                self.connection.query_single_value(
+                    "select min(migration_index) from migration_positions", []
+                )
+                or 1
+            )
+
             positions = self.connection.query(
                 "select * from positions where position >= %s order by position asc",
                 [min_position],
@@ -80,6 +93,13 @@ class EventMigraterImplementation(EventMigrater):
                 None
                 if last_position is None
                 else self.get_migration_index(last_position)
+            )
+
+        if min_mi_positions < 1 or min_mi_migration_positions < 1:
+            raise MismatchingMigrationIndicesException(
+                "Datastore has an invalid migration index: MI of positions table="
+                + f"{min_mi_positions}; MI of migrations_position table="
+                + f"{min_mi_migration_positions}"
             )
 
         for _position in positions:

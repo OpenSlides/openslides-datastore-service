@@ -136,10 +136,9 @@ class MigrationHandlerImplementation(MigrationHandler):
             self.logger.info("Done. Finalizing is still needed.")
 
     def get_migration_state(self, verbose: bool = True) -> MigrationState:
-        if verbose:
-            log = self.logger.info
-        else:
-            log = lambda _: None  # noqa: E731
+        def log(message: str) -> None:
+            if verbose:
+                self.logger.info(message)
 
         with self.connection.get_connection_context():
             current_migration_index = self.read_database.get_current_migration_index()
@@ -160,13 +159,6 @@ class MigrationHandlerImplementation(MigrationHandler):
                 or 0
             )
 
-        if current_migration_index < 1 or min_mi_migration_positions < 1:
-            raise MismatchingMigrationIndicesException(
-                "Datastore has an invalid migration index: MI of positions table="
-                + f"{current_migration_index}; MI of migrations_position table="
-                + f"{min_mi_migration_positions}"
-            )
-
         # Event migration state
         state = MigrationState.NO_MIGRATION_REQUIRED
         if current_migration_index >= self.last_event_migration_target_index:
@@ -174,7 +166,7 @@ class MigrationHandlerImplementation(MigrationHandler):
         elif (
             min_mi_migration_positions == self.last_event_migration_target_index
             and count_positions == count_migration_positions
-        ):
+        ) or current_migration_index == -1:
             log("No event migrations to apply, but finalizing is still needed.")
             state = MigrationState.FINALIZATION_REQUIRED
         else:
@@ -186,7 +178,10 @@ class MigrationHandlerImplementation(MigrationHandler):
         start_model_migration_index = max(
             current_migration_index, self.last_event_migration_target_index
         )
-        if start_model_migration_index < self.target_migration_index:
+        if (
+            current_migration_index > -1
+            and start_model_migration_index < self.target_migration_index
+        ):
             cnt = self.target_migration_index - start_model_migration_index
             log(f"{cnt} model migration{'s' if cnt != 1 else ''} to apply.")
             if state == MigrationState.NO_MIGRATION_REQUIRED:

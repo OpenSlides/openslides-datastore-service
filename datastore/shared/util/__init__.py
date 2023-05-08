@@ -24,7 +24,6 @@ from .key_strings import (
     strip_reserved_fields,
 )
 from .key_transforms import (
-    change_model_mapping,
     collection_and_id_from_fqid,
     collection_from_collectionfield,
     collection_from_fqid,

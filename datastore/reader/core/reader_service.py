@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, ContextManager, Dict, List, cast
 
 from datastore.reader.core.reader import (
@@ -22,7 +23,7 @@ from datastore.shared.util import (
     MappedFields,
     get_exception_for_deleted_models_behaviour,
 )
-from datastore.shared.util.key_transforms import change_model_mapping
+from datastore.shared.util.key_transforms import collection_and_id_from_fqid
 from datastore.shared.util.otel import make_span
 
 from .requests import (
@@ -103,7 +104,10 @@ class ReaderService:
 
             with make_span("change mapping"):
                 # change mapping fqid->model to collection->id->model
-                final = change_model_mapping(result)
+                final: Dict[Collection, Dict[Id, Model]] = defaultdict(dict)
+                for fqid, model in result.items():
+                    collection, id = collection_and_id_from_fqid(fqid)
+                    final[collection][id] = model
 
                 with make_span("add back empty collections"):
                     # add back empty collections
