@@ -103,7 +103,7 @@ def set_type(cls, type):
 def service(cls):
     annotations = cls.__dict__.get("__annotations__", {})
     service_mapping = {
-        name: cls for name, cls in annotations.items() if has_di_info(cls)
+        name: dep_cls for name, dep_cls in annotations.items() if has_di_info(dep_cls)
     }
 
     old_init = cls.__init__

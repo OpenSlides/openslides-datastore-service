@@ -6,6 +6,7 @@ from .db_events import (
     DbListUpdateEvent,
     DbRestoreEvent,
     DbUpdateEvent,
+    apply_event_to_models,
 )
 from .event_translator import EventTranslator
 from .sql_database_backend_service import SqlDatabaseBackendService

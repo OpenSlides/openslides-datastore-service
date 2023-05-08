@@ -1,14 +1,15 @@
-import copy
 from collections import defaultdict
 from datetime import datetime
-from typing import List, Tuple, cast
+from typing import Dict, List, Tuple
 
 from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.typing import Position
+from datastore.shared.typing import Fqid, Model, Position
+from datastore.shared.util import is_reserved_field
+from datastore.shared.util.key_transforms import collection_and_id_from_fqid
 
-from ..events import BaseEvent
+from ..events import BaseEvent, CreateEvent
 from ..migration_keyframes import InitialMigrationKeyframeModifier
 from ..migration_logger import MigrationLogger
 from .event_migrater import RawPosition
@@ -29,6 +30,15 @@ class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
     connection: ConnectionHandler
     logger: MigrationLogger
 
+    def set_import_data(
+        self, models: Dict[Fqid, Model], start_migration_index: int
+    ) -> None:
+        super().set_import_data(models, start_migration_index)
+        self.collection_ids = defaultdict(set)
+        for fqid in self.models.keys():
+            collection, id = collection_and_id_from_fqid(fqid)
+            self.collection_ids[collection].add(id)
+
     def migrate(self) -> None:
         self.check_migration_index()
         position = RawPosition(
@@ -48,34 +58,40 @@ class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
         Used for in memory migration of import data.
         All import data will be imported at one position.
         """
-        migration_index = position.migration_index
-
         self.logger.info(
-            f"Migrate import data from MI {migration_index} to MI {self.target_migration_index} ..."
+            f"Migrate import data from MI {self.start_migration_index} to MI {self.target_migration_index} ..."
         )
-        old_accessor, new_accessor = self.get_accessors(
-            last_position_value,
-            migration_index,
-            migration_index + 1,
-            position.position,
-            False,
-        )
-        # TODO: Generate events from import data
-        events = cast(List[BaseEvent], self.import_create_events)
+        events: List[BaseEvent] = [
+            CreateEvent(
+                fqid,
+                {
+                    field: value
+                    for field, value in model.items()
+                    if not is_reserved_field(field) and value is not None
+                },
+            )
+            for fqid, model in self.models.items()
+        ]
 
         for (
             source_migration_index,
             target_migration_index,
             migration,
-        ) in self.get_migrations(migration_index):
-            self._reuse_accessor(old_accessor, source_migration_index)
-            self._reuse_accessor(new_accessor, target_migration_index)
+        ) in self.get_migrations(self.start_migration_index):
+            old_accessor, new_accessor = self.get_accessors(
+                last_position_value,
+                source_migration_index,
+                target_migration_index,
+                position.position,
+            )
 
             events = migration.migrate(
                 events, old_accessor, new_accessor, position.to_position_data()
             )
+            self.migrated_models = new_accessor.models
 
-        self.migrated_events = events
+    def get_migrated_models(self) -> Dict[Fqid, Model]:
+        return self.migrated_models
 
     def get_accessors(
         self,
@@ -83,35 +99,18 @@ class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
         source_migration_index: int,
         target_migration_index: int,
         position: Position,
-        _: bool,
+        _: bool = False,
     ) -> Tuple[InitialMigrationKeyframeModifier, InitialMigrationKeyframeModifier]:
-        old_accessor = self._get_accessor(
+        old_accessor = InitialMigrationKeyframeModifier(
+            self.connection,
             last_position_value,
             source_migration_index,
             position,
         )
-        new_accessor = self._get_accessor(
+        new_accessor = InitialMigrationKeyframeModifier(
+            self.connection,
             last_position_value,
             target_migration_index,
             position,
         )
         return old_accessor, new_accessor
-
-    def _get_accessor(
-        self, last_position_value: Position, migration_index, position: Position
-    ) -> InitialMigrationKeyframeModifier:
-        accessor = InitialMigrationKeyframeModifier(
-            self.connection,
-            last_position_value,
-            migration_index,
-            position,
-        )
-        return accessor
-
-    def _reuse_accessor(
-        self, accessor: InitialMigrationKeyframeModifier, migration_index
-    ) -> None:
-        accessor.migration_index = migration_index
-        accessor.models = copy.deepcopy(self.imported_models)
-        accessor.deleted = {key: False for key in self.imported_models}
-        accessor.collection_ids = defaultdict(set)

@@ -14,6 +14,7 @@ from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import Fqid, Model
 from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
+from datastore.shared.util.key_strings import META_DELETED, strip_reserved_fields
 
 from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
@@ -115,13 +116,22 @@ class MigrationHandlerImplementation(MigrationHandler):
             ] = migration
         self.target_migration_index = len(_migrations) + 1
 
+        self.event_migrater.init(
+            self.last_event_migration_target_index,
+            self.migrations_by_target_migration_index,
+        )
+        self.model_migrater.init(
+            self.target_migration_index,
+            self.migrations_by_target_migration_index,
+        )
+
     def migrate(self) -> None:
         self.logger.info("Running migrations.")
         if self.run_checks():
             return
         state = self.get_migration_state()
         if state == MigrationState.MIGRATION_REQUIRED:
-            self.run_event_migrations()
+            self.event_migrater.migrate()
         if state != MigrationState.NO_MIGRATION_REQUIRED:
             self.logger.info("Done. Finalizing is still needed.")
 
@@ -186,20 +196,6 @@ class MigrationHandlerImplementation(MigrationHandler):
 
         log(f"Current migration index: {current_migration_index}")
         return state
-
-    def run_event_migrations(self) -> None:
-        self.event_migrater.init(
-            self.last_event_migration_target_index,
-            self.migrations_by_target_migration_index,
-        )
-        self.event_migrater.migrate()
-
-    def run_model_migrations(self) -> None:
-        self.model_migrater.init(
-            self.target_migration_index,
-            self.migrations_by_target_migration_index,
-        )
-        self.model_migrater.migrate()
 
     def run_checks(self) -> bool:
         with self.connection.get_connection_context():
@@ -268,7 +264,7 @@ class MigrationHandlerImplementation(MigrationHandler):
         if state == MigrationState.NO_MIGRATION_REQUIRED:
             return
         elif state == MigrationState.MIGRATION_REQUIRED:
-            self.run_event_migrations()
+            self.event_migrater.migrate()
 
         current_mi = self.read_database.get_current_migration_index()
         if current_mi < self.last_event_migration_target_index:
@@ -296,7 +292,7 @@ class MigrationHandlerImplementation(MigrationHandler):
             self._clean_migration_data()
 
         if self.last_event_migration_target_index < self.target_migration_index:
-            self.run_model_migrations()
+            self.model_migrater.migrate()
             self.delete_collectionfield_aux_tables()
             with self.connection.get_connection_context():
                 self._update_migration_index()
@@ -453,14 +449,33 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     def set_import_data(
         self, models: Dict[Fqid, Model], start_migration_index: int
     ) -> None:
-        sorted_indices = sorted(
-            (self.last_event_migration_target_index, start_migration_index)
-        )
-        self.event_migrater.set_import_data(models, sorted_indices[0])
-        self.model_migrater.set_import_data(models, sorted_indices[1])
+        self.models = {
+            fqid: {**model, META_DELETED: False} for fqid, model in models.items()
+        }
+        self.start_migration_index = start_migration_index
+        indices = (self.last_event_migration_target_index, start_migration_index)
+        self.event_migrater.start_migration_index = min(indices)
+        self.model_migrater.start_migration_index = max(indices)
 
     def finalize(self) -> None:
+        if (
+            self.start_migration_index < 1
+            or self.start_migration_index > self.target_migration_index
+        ):
+            raise MismatchingMigrationIndicesException(
+                "The migration index of import data is invalid: "
+                + f"Given migration index of import data: {self.start_migration_index}, "
+                + f"current backend migration index: {self.target_migration_index}"
+            )
         self.logger.info("Finalize in memory migrations.")
-        self.run_event_migrations()
-        self.run_model_migrations()
+        for migrater in (self.event_migrater, self.model_migrater):
+            if migrater.start_migration_index < migrater.target_migration_index:
+                migrater.models = self.models
+                migrater.migrate()
+                self.models = migrater.get_migrated_models()
         self.logger.info("Finalize in memory migrations ready.")
+
+    def get_migrated_models(self) -> Dict[Fqid, Model]:
+        for model in self.models.values():
+            strip_reserved_fields(model)
+        return self.models

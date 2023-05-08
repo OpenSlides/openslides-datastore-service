@@ -2,9 +2,9 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-from ..postgresql_backend import SqlQueryHelper
 from ..typing import Collection, Fqid, Model
-from . import Filter, collection_from_fqid
+from ..util import Filter, collection_from_fqid
+from .sql_query_helper import SqlQueryHelper
 
 
 MODEL_FIELD_SQL = "data->>%s"

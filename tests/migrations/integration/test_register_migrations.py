@@ -14,6 +14,7 @@ from datastore.migrations.core.migration_logger import (
     MigrationLogger,
     MigrationLoggerImplementation,
 )
+from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
@@ -28,6 +29,7 @@ def migration_handler(reset_di):  # noqa
     injector.register_as_singleton(ConnectionHandler, MagicMock)
     injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register_as_singleton(Database, MagicMock)
+    injector.register_as_singleton(MigrationReader, MagicMock)
     injector.register_as_singleton(MigrationLogger, MigrationLoggerImplementation)
     injector.register_as_singleton(EventMigrater, EventMigraterImplementation)
     injector.register_as_singleton(ModelMigrater, ModelMigraterImplementation)

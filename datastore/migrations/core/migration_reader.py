@@ -12,8 +12,9 @@ from datastore.reader.core import (
 )
 from datastore.reader.core.requests import GetManyRequestPart
 from datastore.shared.di import service_as_factory, service_interface
+from datastore.shared.postgresql_backend import filter_models
 from datastore.shared.typing import Collection, Field, Fqid, Id, Model
-from datastore.shared.util import ModelDoesNotExist, collection_from_fqid, filter_models
+from datastore.shared.util import ModelDoesNotExist, collection_from_fqid
 from datastore.shared.util.filter import Filter
 from datastore.shared.util.key_transforms import fqid_from_collection_and_id
 

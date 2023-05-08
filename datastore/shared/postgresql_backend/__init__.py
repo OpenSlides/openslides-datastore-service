@@ -1,5 +1,6 @@
 from .apply_list_updates import ListUpdatesDict, apply_fields
 from .connection_handler import ConnectionHandler, DatabaseError
+from .filter_models import filter_models
 from .pg_connection_handler import retry_on_db_failure
 from .sql_event_types import EVENT_TYPE
 from .sql_query_helper import SqlQueryHelper

@@ -23,15 +23,7 @@ from datastore.shared.util import (
 )
 from datastore.writer.core import BaseRequestEvent
 
-from .db_events import (
-    BaseDbEvent,
-    DbCreateEvent,
-    DbDeleteEvent,
-    DbDeleteFieldsEvent,
-    DbListUpdateEvent,
-    DbRestoreEvent,
-    DbUpdateEvent,
-)
+from .db_events import BaseDbEvent, DbCreateEvent, apply_event_to_models
 from .event_translator import EventTranslator
 
 
@@ -164,18 +156,7 @@ class SqlDatabaseBackendService:
     def apply_event_to_models(
         self, event: BaseDbEvent, models: Dict[Fqid, Model], position: Position
     ) -> None:
-        if isinstance(event, DbCreateEvent):
-            models[event.fqid] = {**event.field_data, META_DELETED: False}
-        elif isinstance(event, (DbUpdateEvent, DbListUpdateEvent)):
-            models[event.fqid].update(event.get_modified_fields())
-        elif isinstance(event, DbDeleteFieldsEvent):
-            for field in event.fields:
-                if field in models[event.fqid]:
-                    del models[event.fqid][field]
-        elif isinstance(event, (DbDeleteEvent, DbRestoreEvent)):
-            models[event.fqid][META_DELETED] = isinstance(event, DbDeleteEvent)
-        else:
-            raise BadCodingError()
+        apply_event_to_models(event, models)
         models[event.fqid][META_POSITION] = position
 
     def write_model_updates(self, models: Dict[Fqid, Model]) -> None:

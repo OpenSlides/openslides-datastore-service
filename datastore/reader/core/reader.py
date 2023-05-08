@@ -1,5 +1,6 @@
 from typing import Any, ContextManager, Dict, List, Protocol, TypedDict
 
+from datastore.shared.di import service_interface
 from datastore.shared.services import HistoryInformation
 from datastore.shared.typing import Collection, Fqid, Id, Model
 
@@ -40,6 +41,7 @@ class MaxResult(TypedDict):
     position: int
 
 
+@service_interface
 class Reader(Protocol):
     """An abstract class for the reader. For more details, see the specs."""
 

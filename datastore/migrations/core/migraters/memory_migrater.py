@@ -1,8 +1,8 @@
-from typing import Dict, List
+from typing import Dict
 
 from datastore.shared.typing import Fqid, Model
+from datastore.shared.util.key_strings import META_DELETED
 
-from ..events import BaseEvent
 from ..exceptions import MismatchingMigrationIndicesException
 from .migrater import BaseMigrater
 
@@ -16,8 +16,7 @@ class MemoryMigrater(BaseMigrater):
     """
 
     start_migration_index: int
-    imported_models: Dict[Fqid, Model]
-    migrated_events: List[BaseEvent]
+    models: Dict[Fqid, Model]
 
     def check_migration_index(self) -> None:
         if (
@@ -35,9 +34,10 @@ class MemoryMigrater(BaseMigrater):
         models: Dict[Fqid, Model],
         start_migration_index: int,
     ) -> None:
-        self.imported_models = models
+        for model in models.values():
+            model[META_DELETED] = False
+        self.models = models
         self.start_migration_index = start_migration_index
-        self.migrated_events = []
 
-    def get_migrated_events(self) -> List[BaseEvent]:
-        return self.migrated_events
+    def get_migrated_models(self) -> Dict[Fqid, Model]:
+        raise NotImplementedError()
