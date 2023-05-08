@@ -35,4 +35,4 @@ Development environment:
 All these commands are also available inside the modules and only affect the current module there. Additional commands available inside the modules (primarily for testing purposes):
 
 - `make run-bash`, `make run-dev`: opens a bash console in the container, so tests/cleanup can be run interactively
-- `make run-coverage`: creates a coverage report for all tests. The needed coverage to pass is defined in `scripts/.coveragerc`.
+- `make run-coverage`: creates a coverage report for all tests. The needed coverage to pass is defined in `scripts/setup.cfg`.

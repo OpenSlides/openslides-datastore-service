@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Tuple
 
@@ -7,7 +6,6 @@ from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import Fqid, Model, Position
 from datastore.shared.util import is_reserved_field
-from datastore.shared.util.key_transforms import collection_and_id_from_fqid
 
 from ..events import BaseEvent, CreateEvent
 from ..migration_keyframes import InitialMigrationKeyframeModifier
@@ -30,17 +28,7 @@ class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
     connection: ConnectionHandler
     logger: MigrationLogger
 
-    def set_import_data(
-        self, models: Dict[Fqid, Model], start_migration_index: int
-    ) -> None:
-        super().set_import_data(models, start_migration_index)
-        self.collection_ids = defaultdict(set)
-        for fqid in self.models.keys():
-            collection, id = collection_and_id_from_fqid(fqid)
-            self.collection_ids[collection].add(id)
-
     def migrate(self) -> None:
-        self.check_migration_index()
         position = RawPosition(
             position=1,
             migration_index=self.start_migration_index,
@@ -48,8 +36,7 @@ class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
             user_id=0,
             information=None,
         )
-        last_position_value = 0
-        self.migrate_position(position, last_position_value)
+        self.migrate_position(position, 0)
 
     def migrate_position(
         self, position: RawPosition, last_position_value: Position

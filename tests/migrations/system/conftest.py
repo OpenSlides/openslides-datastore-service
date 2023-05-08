@@ -3,6 +3,7 @@ from typing import Optional
 import pytest
 
 from datastore.migrations import MigrationHandler, setup as migration_setup
+from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.reader.flask_frontend import FlaskFrontend as ReaderFlaskFrontend
 from datastore.reader.flask_frontend.routes import Route
 from datastore.shared.di import injector
@@ -37,6 +38,11 @@ def migration_handler():  # noqa
 @pytest.fixture()
 def connection_handler():  # noqa
     yield injector.get(ConnectionHandler)
+
+
+@pytest.fixture()
+def migration_reader():  # noqa
+    yield injector.get(MigrationReader)
 
 
 @pytest.fixture()

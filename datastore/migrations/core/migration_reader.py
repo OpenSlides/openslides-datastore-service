@@ -22,11 +22,8 @@ from datastore.shared.util.key_transforms import fqid_from_collection_and_id
 @service_interface
 class MigrationReader(Protocol):
     """
-    Adaption of the Reader Protocol for ease of use in migrations. Has the following restriction to
-    support in-memory migrations, which should not really matter for the usage:
-    - Does not support deleted models, so `get_deleted_models` must always be `NO_DELETED` (the
-      default)
-    - Does not support position-based fetching, so `position` must always be `None` (the default)
+    Adaption of the Reader protocol for ease of use in migrations. Provides access to all current
+    models which are not deleted.
     """
 
     def get(self, fqid: Fqid, mapped_fields: List[Field] = []) -> Model:
@@ -62,42 +59,6 @@ class MigrationReader(Protocol):
         self, collection: Collection, filter: Filter, field: Field
     ) -> Optional[int]:
         ...
-
-
-# AnyRequest = (
-#     GetRequest
-#     | GetManyRequest
-#     | GetAllRequest
-#     | FilterRequest
-#     | AggregateRequest
-#     | MinMaxRequest
-# )
-# RequestType = TypeVar("RequestType", bound=AnyRequest)
-# ReaderType = TypeVar("ReaderType", bound=MigrationReader)
-# ReturnType = TypeVar("ReturnType")
-# ReaderFunc = Callable[[ReaderType, RequestType], ReturnType]
-
-
-# def check_request(
-#     fn: Callable[[ReaderType, RequestType], ReturnType]
-# ) -> Callable[[ReaderType, RequestType], ReturnType]:
-#     @wraps(fn)
-#     def wrapper(self: ReaderType, request: RequestType) -> ReturnType:
-#         if (
-#             isinstance(request, (GetRequest, GetManyRequest, GetAllRequest))
-#             and request.get_deleted_models != DeletedModelsBehaviour.NO_DELETED
-#         ):
-#             raise NotImplementedError("Deleted models are not supported in-memory")
-#         # if (
-#         #     isinstance(request, (GetRequest, GetManyRequest))
-#         #     and request.position is not None
-#         # ):
-#         #     raise NotImplementedError(
-#         #         "Position-based fetching is not supported in-memory"
-#         #     )
-#         return fn(self, request)
-
-#     return wrapper
 
 
 @service_as_factory

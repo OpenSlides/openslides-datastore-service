@@ -51,7 +51,7 @@ def test_model_migration(
 
 
 def test_model_migration_with_database_access(
-    migration_handler, write, set_migration_index_to_1, assert_finalized, assert_model
+    migration_handler, write, set_migration_index_to_1, assert_finalized
 ):
     write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
     set_migration_index_to_1()
@@ -68,7 +68,7 @@ def test_model_migration_with_database_access(
 
 
 def test_model_migration_no_events(
-    migration_handler, write, set_migration_index_to_1, assert_finalized, assert_model
+    migration_handler, write, set_migration_index_to_1, assert_finalized
 ):
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()

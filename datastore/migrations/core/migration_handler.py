@@ -449,9 +449,9 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     def set_import_data(
         self, models: Dict[Fqid, Model], start_migration_index: int
     ) -> None:
-        self.models = {
-            fqid: {**model, META_DELETED: False} for fqid, model in models.items()
-        }
+        for model in models.values():
+            model[META_DELETED] = False
+        self.models = models
         self.start_migration_index = start_migration_index
         indices = (self.last_event_migration_target_index, start_migration_index)
         self.event_migrater.start_migration_index = min(indices)

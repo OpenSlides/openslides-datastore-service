@@ -29,7 +29,6 @@ class ModelMigraterImplementationMemory(_ModelMigraterImplementationMemory):
     reader: MigrationReaderImplementationMemory
 
     def migrate(self) -> None:
-        self.check_migration_index()
         self.reader.models = self.models
 
         self.logger.info(

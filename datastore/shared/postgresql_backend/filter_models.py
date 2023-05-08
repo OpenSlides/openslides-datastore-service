@@ -33,7 +33,7 @@ def filter_models(
     # transform query into valid python code
     filter_code = sql_query.lower().replace("null", "None").replace(" = ", " == ")
     # regex for all FilterOperators which were translated by the SqlQueryHelper
-    regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"  # noqa: E501
+    regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not|ilike) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"  # noqa: E501
     matches = re.findall(regex, filter_code)
     # this will hold all items from arguments, but correctly formatted for python and enhanced with validity checks
     formatted_args = []
@@ -49,6 +49,8 @@ def filter_models(
             formatted_args.append(
                 f'iscomparable(model.get("{arguments[i]}"), {val_str})'
             )
+        elif match[0] == "ilike":
+            raise NotImplementedError("Operator %= is not supported")
         else:
             formatted_args.append(f'model.get("{arguments[i]}")')
         i += 1
@@ -84,7 +86,8 @@ def filter_models(
         )
 
     # run eval with the generated code
-    scope = {"collection_from_fqid": collection_from_fqid}
+    scope = locals()
+    scope["collection_from_fqid"] = collection_from_fqid
     results = {
         model["id"]: (
             {field: model[field] for field in mapped_fields if field in model}
@@ -92,6 +95,7 @@ def filter_models(
             else model
         )
         for fqid, model in models.items()
-        if collection_from_fqid(fqid) == collection and eval(filter_code, scope)
+        if collection_from_fqid(fqid) == collection
+        and eval(filter_code, scope, locals())
     }
     return deepcopy(results)
