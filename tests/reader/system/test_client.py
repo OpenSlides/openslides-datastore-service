@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from datastore.reader.flask_frontend.routes import Route
+from datastore.reader.flask_frontend.routes import URL_PREFIX, Route
 from datastore.shared.di import injector
-from datastore.shared.flask_frontend import ERROR_CODES
+from datastore.shared.flask_frontend import ERROR_CODES, get_health_url
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from tests import assert_error_response
@@ -43,6 +43,11 @@ def test_invalid_requests(json_client):
     for request in requests:
         response = json_client.post(Route.GET.URL, request)
         assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
+
+
+def test_health_route(json_client):
+    response = json_client.get(get_health_url(URL_PREFIX))
+    assert response.status_code == 200
 
 
 class TestConcurrentRequests:

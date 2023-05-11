@@ -32,5 +32,7 @@ LABEL org.opencontainers.image.description="Service for OpenSlides which wraps t
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-datastore-service"
 
+HEALTHCHECK CMD python cli/healthcheck.py
+
 ENTRYPOINT ["./entrypoint.sh"]
 CMD exec gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application -t $WORKER_TIMEOUT

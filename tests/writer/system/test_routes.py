@@ -1,8 +1,15 @@
+from datastore.shared.flask_frontend import get_health_url
 from datastore.writer.flask_frontend.routes import (
     RESERVE_IDS_URL,
+    URL_PREFIX,
     WRITE_ACTION_WORKER_URL,
     WRITE_URL,
 )
+
+
+def test_health_route(client):
+    response = client.get(get_health_url(URL_PREFIX))
+    assert response.status_code == 200
 
 
 def test_wrong_method_write(client):

@@ -6,6 +6,7 @@ from datastore.shared.di import injector
 from datastore.shared.flask_frontend import (
     InvalidRequest,
     JsonResponse,
+    add_health_route,
     dev_only_route,
     handle_internal_errors,
 )
@@ -94,3 +95,4 @@ def register_routes(app, url_prefix):
             methods=["POST"],
             strict_slashes=False,
         )
+    add_health_route(app, url_prefix)

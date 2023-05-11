@@ -11,4 +11,4 @@ def test_register_routes():
 
     # `call` objects are tuples in the fashion of (args, kwargs)
     routes = [call[0][1] for call in app.add_url_rule.call_args_list]
-    assert routes == list(Route)
+    assert routes == list(Route) + ["health"]

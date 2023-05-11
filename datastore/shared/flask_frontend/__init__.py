@@ -8,11 +8,9 @@ from .errors import (
     handle_internal_errors,
     register_error_handlers,
 )
+from .health_route import add_health_route, get_health_url, health
 from .json_response import JsonResponse
-
-
-def unify_urls(*parts):
-    return "/" + "/".join(p.strip("/") for p in parts)
+from .urls import build_url_prefix, unify_urls
 
 
 def get_json_from_request():
