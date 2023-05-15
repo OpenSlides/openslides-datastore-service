@@ -14,14 +14,14 @@ from datastore.reader.core.requests import (
     HistoryInformationRequest,
     MinMaxRequest,
 )
-from datastore.shared.flask_frontend import InvalidRequest, unify_urls
+from datastore.shared.flask_frontend import InvalidRequest, build_url_prefix, unify_urls
 from datastore.shared.postgresql_backend.sql_query_helper import (
     VALID_AGGREGATE_CAST_TARGETS,
 )
 from datastore.shared.util import DeletedModelsBehaviour, filter_definitions_schema
 
 
-URL_PREFIX = "/internal/datastore/reader/"
+URL_PREFIX = build_url_prefix("reader")
 
 
 class Route(str, Enum):

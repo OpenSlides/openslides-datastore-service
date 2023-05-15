@@ -1,5 +1,6 @@
 from datastore.shared.flask_frontend import (
     JsonResponse,
+    add_health_route,
     get_json_from_request,
     handle_internal_errors,
     unify_urls,
@@ -41,3 +42,4 @@ def register_routes(app, url_prefix):
             methods=["POST"],
             strict_slashes=False,
         )
+    add_health_route(app, url_prefix)

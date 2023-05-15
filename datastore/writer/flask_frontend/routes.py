@@ -1,7 +1,7 @@
-from datastore.shared.flask_frontend import unify_urls
+from datastore.shared.flask_frontend import build_url_prefix, unify_urls
 
 
-URL_PREFIX = "/internal/datastore/writer/"
+URL_PREFIX = build_url_prefix("writer")
 
 
 WRITE_URL = unify_urls(URL_PREFIX, "/write")
