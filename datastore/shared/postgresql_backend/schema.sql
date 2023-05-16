@@ -71,8 +71,8 @@ CREATE TABLE IF NOT EXISTS events_to_collectionfields (
 CREATE TABLE IF NOT EXISTS models (
     fqid VARCHAR(48) PRIMARY KEY,
     data JSONB NOT NULL,
-    updated TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    deleted BOOLEAN NOT NULL
+    deleted BOOLEAN NOT NULL,
+    updated TIMESTAMP NOT NULL DEFAULT current_timestamp
 );
 
 -- The following field was introduced with an update. To make sure the column exists the table
