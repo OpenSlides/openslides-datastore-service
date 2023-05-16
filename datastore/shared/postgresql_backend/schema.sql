@@ -17,6 +17,12 @@ BEGIN
     END IF;
 END$$;
 
+CREATE OR REPLACE FUNCTION models_updated() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated = current_timestamp;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE TABLE IF NOT EXISTS positions (
     position INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -65,8 +71,20 @@ CREATE TABLE IF NOT EXISTS events_to_collectionfields (
 CREATE TABLE IF NOT EXISTS models (
     fqid VARCHAR(48) PRIMARY KEY,
     data JSONB NOT NULL,
+    updated TIMESTAMP NOT NULL DEFAULT current_timestamp,
     deleted BOOLEAN NOT NULL
 );
+
+-- The following field was introduced with an update. To make sure the column exists the table
+-- is altered and the column added. This could maybe be deleted in the future.
+ALTER TABLE models ADD COLUMN IF NOT EXISTS updated timestamp NOT NULL DEFAULT current_timestamp;
+
+-- Trigger for setting the models updated column
+DROP TRIGGER IF EXISTS models_updated_trigger ON models;
+CREATE TRIGGER models_updated_trigger
+    BEFORE INSERT OR UPDATE ON models
+    FOR EACH ROW EXECUTE FUNCTION models_updated();
+    END;
 
 -- Migrations
 CREATE TABLE IF NOT EXISTS migration_keyframes (
