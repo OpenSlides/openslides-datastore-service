@@ -14,6 +14,16 @@ COMPARISON_VALUE_TEXT_SQL = "%s::text"
 COMPARISON_VALUE_SQL = "%s"
 
 
+def is_comparable(a: Any, b: Any) -> bool:
+    """
+    Check if one of a or b is a subclass of the other and that they have a comparable basic
+    type.
+    """
+    return (isinstance(a, type(b)) or isinstance(b, type(a))) and isinstance(
+        a, (int, float, str)
+    )
+
+
 def filter_models(
     models: Dict[Fqid, Model],
     collection: Collection,
@@ -47,7 +57,7 @@ def filter_models(
                 else repr(arguments[i + 1])
             )
             formatted_args.append(
-                f'iscomparable(model.get("{arguments[i]}"), {val_str})'
+                f'is_comparable(model.get("{arguments[i]}"), {val_str}) and model.get("{arguments[i]}")'
             )
         elif match[0] == "ilike":
             raise NotImplementedError("Operator %= is not supported")
@@ -76,18 +86,11 @@ def filter_models(
     def lower(s: str) -> str:
         return s.lower()
 
-    def iscomparable(a: Any, b: Any) -> bool:
-        """
-        Check if one of a or b is a subclass of the other and that they have a comparable basic
-        type.
-        """
-        return (isinstance(a, type(b)) or isinstance(b, type(a))) and isinstance(
-            a, (int, float, str)
-        )
-
     # run eval with the generated code
     scope = locals()
+    # copy globals we need explicitly to avoid copying all globals
     scope["collection_from_fqid"] = collection_from_fqid
+    scope["is_comparable"] = is_comparable
     results = {
         model["id"]: (
             {field: model[field] for field in mapped_fields if field in model}
