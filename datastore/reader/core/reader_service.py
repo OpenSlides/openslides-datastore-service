@@ -21,9 +21,9 @@ from datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
     MappedFields,
-    collection_and_id_from_fqid,
     get_exception_for_deleted_models_behaviour,
 )
+from datastore.shared.util.key_transforms import collection_and_id_from_fqid
 from datastore.shared.util.otel import make_span
 
 from .requests import (
@@ -104,7 +104,7 @@ class ReaderService:
 
             with make_span("change mapping"):
                 # change mapping fqid->model to collection->id->model
-                final: Dict[str, Dict[int, Model]] = defaultdict(dict)
+                final: Dict[Collection, Dict[Id, Model]] = defaultdict(dict)
                 for fqid, model in result.items():
                     collection, id = collection_and_id_from_fqid(fqid)
                     final[collection][id] = model

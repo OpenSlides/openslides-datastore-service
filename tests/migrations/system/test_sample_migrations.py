@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
@@ -40,7 +40,7 @@ def test_move_id(
     write({"type": "restore", "fqid": "a/1"})
     set_migration_index_to_1()
 
-    class MoveId(BaseMigration):
+    class MoveId(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(
@@ -90,7 +90,7 @@ def test_remove_field(
     write({"type": "update", "fqid": "a/1", "fields": {"f": "Hello"}})
     set_migration_index_to_1()
 
-    class RemoveField(BaseMigration):
+    class RemoveField(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(
@@ -138,7 +138,7 @@ def test_add_required_field_based_on_migrated_data(
         old_field = "f"
         new_field = "f_new"
 
-    class AddField(BaseMigration):
+    class AddField(BaseEventMigration):
         target_migration_index = 3
 
         def migrate_event(
@@ -168,7 +168,7 @@ def test_create_additional_model(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
 
-    class CreateModel(BaseMigration):
+    class CreateModel(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(
@@ -275,7 +275,7 @@ def test_filter_relation(
     )
     set_migration_index_to_1()
 
-    class FilterRelation(BaseMigration):
+    class FilterRelation(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(

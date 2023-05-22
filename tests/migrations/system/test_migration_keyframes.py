@@ -4,7 +4,7 @@ import pytest
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     MigrationKeyframeModelDeleted,
     MigrationKeyframeModelDoesNotExist,
     MigrationKeyframeModelNotDeleted,
@@ -31,7 +31,7 @@ class BaseTest:
     def test_get_model(self, migration_handler, write_data):
         write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -55,7 +55,7 @@ class BaseTest:
     def test_get_model_does_not_exist(self, migration_handler, write_data):
         write_data()
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -78,7 +78,7 @@ class BaseTest:
             {"type": "delete", "fqid": "a/1"},
         )
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -101,7 +101,7 @@ class BaseTest:
             {"type": "delete", "fqid": "a/1"},
         )
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -125,7 +125,7 @@ class BaseTest:
     def test_get_deleted_model_does_not_exists(self, migration_handler, write_data):
         write_data()
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -145,7 +145,7 @@ class BaseTest:
     def test_get_deleted_model_not_deleted(self, migration_handler, write_data):
         write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -168,7 +168,7 @@ class BaseTest:
             {"type": "delete", "fqid": "a/1"},
         )
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -195,7 +195,7 @@ class BaseTest:
     def test_get_model_ignore_deleted_not_deleted(self, migration_handler, write_data):
         write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -224,7 +224,7 @@ class BaseTest:
     ):
         write_data()
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -244,7 +244,7 @@ class BaseTest:
     def test_model_exists(self, migration_handler, write_data):
         write_data({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -262,7 +262,7 @@ class BaseTest:
     def test_model_exists_does_not_exist(self, migration_handler, write_data):
         write_data()
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -286,7 +286,7 @@ class BaseTest:
             {"type": "create", "fqid": "a/128", "fields": {}},
         )
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -306,7 +306,7 @@ class BaseTest:
     def test_get_all_ids_for_collection_single_id(self, migration_handler, write_data):
         write_data({"type": "create", "fqid": "a/1", "fields": {}})
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(
@@ -328,7 +328,7 @@ class BaseTest:
     ):
         write_data()
 
-        class MyMigration(BaseMigration):
+        class MyMigration(BaseEventMigration):
             target_migration_index = 2
 
             def migrate_event(

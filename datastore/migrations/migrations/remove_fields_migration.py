@@ -4,7 +4,7 @@ from datastore.shared.util import collection_from_fqid
 
 from .. import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
@@ -12,7 +12,7 @@ from .. import (
 )
 
 
-class RemoveFieldsMigration(BaseMigration):
+class RemoveFieldsMigration(BaseEventMigration):
     """
     This migration removes a field from all events for one collection.
     """

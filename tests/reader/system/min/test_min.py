@@ -48,6 +48,23 @@ def test_with_type(json_client, db_connection, db_cur):
     }
 
 
+def test_no_results(json_client, db_connection, db_cur):
+    setup_data(db_connection, db_cur, data)
+    response = json_client.post(
+        Route.MIN.URL,
+        {
+            "collection": "a",
+            "filter": {"field": "field_1", "operator": "=", "value": "invalid"},
+            "field": "meta_position",
+        },
+    )
+    assert_success_response(response)
+    assert response.json == {
+        "min": None,
+        "position": 5,
+    }
+
+
 def test_invalid_collection(json_client):
     response = json_client.post(
         Route.MIN.URL,

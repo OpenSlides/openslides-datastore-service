@@ -1,8 +1,9 @@
-from unittest.mock import MagicMock
+from typing import Optional
 
 import pytest
 
 from datastore.migrations import MigrationHandler, setup as migration_setup
+from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.reader.flask_frontend import FlaskFrontend as ReaderFlaskFrontend
 from datastore.reader.flask_frontend.routes import Route
 from datastore.shared.di import injector
@@ -20,17 +21,13 @@ from tests import (  # noqa
     reset_di,
     setup_db_connection,
 )
+from tests.migrations.util import LogMock
 from tests.util import assert_response_code, assert_success_response
 
 
 @pytest.fixture(autouse=True)
 def setup(reset_di):  # noqa
     migration_setup()
-
-
-@pytest.fixture()
-def setup_memory_migration(reset_di):  # noqa
-    migration_setup(memory_only=True)
 
 
 @pytest.fixture()
@@ -41,6 +38,11 @@ def migration_handler():  # noqa
 @pytest.fixture()
 def connection_handler():  # noqa
     yield injector.get(ConnectionHandler)
+
+
+@pytest.fixture()
+def migration_reader():  # noqa
+    yield injector.get(MigrationReader)
 
 
 @pytest.fixture()
@@ -142,8 +144,17 @@ def assert_count(query_single_value):
 
 
 @pytest.fixture()
-def assert_finalized(assert_count):
-    def _assert_finalized():
+def assert_finalized(assert_count, connection_handler):
+    def _assert_finalized(target_migration_index: Optional[int] = None):
+        with connection_handler.get_connection_context():
+            migration_indices = connection_handler.query_list_of_single_values(
+                "select distinct migration_index from positions", []
+            )
+        assert len(migration_indices) == 1
+        if target_migration_index is not None:
+            assert migration_indices[0] == target_migration_index
+        else:
+            assert migration_indices[0] > 0
         assert_count("migration_keyframes", 0)
         assert_count("migration_keyframe_models", 0)
         assert_count("collectionfields", 0)
@@ -158,12 +169,13 @@ def assert_finalized(assert_count):
 def set_migration_index_to_1(migration_handler):
     def _set_migration_index_to_1():
         previous_logger = migration_handler.logger.info
-        migration_handler.logger.info = i = MagicMock()
+        migration_handler.logger.info = i = LogMock()
         migration_handler.migrate()  # set target migration index to 1
         i.assert_called()
-        assert (
-            "The datastore has a migration index of -1. Set the migration index to 1."
-            in i.call_args.args[0]
+        assert i.output == (
+            "Running migrations.",
+            "The datastore has a migration index of -1.",
+            "Set the new migration index to 1...",
         )
         migration_handler.logger.info = previous_logger
 

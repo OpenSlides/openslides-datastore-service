@@ -1,21 +1,22 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import List, Optional, Tuple
 
-from datastore.shared.di import service_as_factory, service_interface
+from datastore.shared.di import service_as_factory
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 from datastore.shared.typing import JSON, Position
 
-from .base_migration import BaseMigration, PositionData
-from .events import BaseEvent, to_event
-from .exceptions import MismatchingMigrationIndicesException
-from .migration_keyframes import (
+from ..base_migrations import PositionData
+from ..events import BaseEvent, to_event
+from ..exceptions import MismatchingMigrationIndicesException
+from ..migration_keyframes import (
     DatabaseMigrationKeyframeModifier,
     InitialMigrationKeyframeModifier,
     MigrationKeyframeModifier,
 )
-from .migration_logger import MigrationLogger
+from ..migration_logger import MigrationLogger
+from .migrater import EventMigrater
 
 
 @dataclass
@@ -35,87 +36,13 @@ class RawPosition:
         )
 
 
-@service_interface
-class Migrater(Protocol):
-    def migrate(
-        self,
-        target_migration_index: int,
-        migrations: Dict[int, BaseMigration],
-    ) -> bool:
-        """
-        Runs the actual migrations of the datastore up to the target migration index.
-        Returns true, if finalizing is needed.
-        """
-
-
 @service_as_factory
-class MigraterImplementation:
+class EventMigraterImplementation(EventMigrater):
     read_database: ReadDatabase
     connection: ConnectionHandler
     logger: MigrationLogger
-    target_migration_index: int
 
-    def migrate(
-        self,
-        target_migration_index: int,
-        migrations: Dict[int, BaseMigration],
-    ) -> bool:
-        self.target_migration_index = target_migration_index
-        self.migrations = migrations
-
-        with self.connection.get_connection_context():
-            # get min migration index
-            min_mi_positions = (
-                self.connection.query_single_value(
-                    "select min(migration_index) from positions", []
-                )
-                or 1
-            )
-            count_positions = (
-                self.connection.query_single_value("select count(*) from positions", [])
-                or 0
-            )
-            min_mi_migration_positions = (
-                self.connection.query_single_value(
-                    "select min(migration_index) from migration_positions", []
-                )
-                or 1
-            )
-            count_migration_positions = (
-                self.connection.query_single_value(
-                    "select count(*) from migration_positions", []
-                )
-                or 0
-            )
-
-        finalizing_needed = False
-        if min_mi_positions == self.target_migration_index:
-            self.logger.info(
-                "No migrations to apply. The productive database is up to date. "
-                + f"Current migration index: {self.target_migration_index}"
-            )
-        elif (
-            min_mi_migration_positions == self.target_migration_index
-            and count_positions == count_migration_positions
-        ):
-            self.logger.info(
-                "No migrations to apply, but finalizing is still needed. "
-                + f"Current migration index: {self.target_migration_index}"
-            )
-            finalizing_needed = True
-        elif min_mi_positions < 1 or min_mi_migration_positions < 1:
-            raise MismatchingMigrationIndicesException(
-                "Datastore has an invalid migration index: MI of positions table="
-                + f"{min_mi_positions}; MI of migrations_position table="
-                + f"{min_mi_migration_positions}"
-            )
-        else:
-            self.run_actual_migrations()
-            finalizing_needed = True
-
-        return finalizing_needed
-
-    def run_actual_migrations(self) -> None:
+    def migrate(self) -> None:
         # TODO: paginate and use "client-side cursor". We cannot use a server-side cursor since
         # currently the implementation of self.connection does nto allow nested transactions (=contexts)
         with self.connection.get_connection_context():
@@ -138,6 +65,19 @@ class MigraterImplementation:
             else:
                 min_position = min_position_1
 
+            min_mi_positions = (
+                self.connection.query_single_value(
+                    "select min(migration_index) from positions", []
+                )
+                or 1
+            )
+            min_mi_migration_positions = (
+                self.connection.query_single_value(
+                    "select min(migration_index) from migration_positions", []
+                )
+                or 1
+            )
+
             positions = self.connection.query(
                 "select * from positions where position >= %s order by position asc",
                 [min_position],
@@ -153,6 +93,13 @@ class MigraterImplementation:
                 None
                 if last_position is None
                 else self.get_migration_index(last_position)
+            )
+
+        if min_mi_positions < 1 or min_mi_migration_positions < 1:
+            raise MismatchingMigrationIndicesException(
+                "Datastore has an invalid migration index: MI of positions table="
+                + f"{min_mi_positions}; MI of migrations_position table="
+                + f"{min_mi_migration_positions}"
             )
 
         for _position in positions:
@@ -186,13 +133,11 @@ class MigraterImplementation:
             f"Position {position.position} from MI {migration_index} to MI {self.target_migration_index} ..."
         )
         events_from_migration_table = migration_index != position.migration_index
-        for source_migration_index in range(
-            migration_index, self.target_migration_index
-        ):
-            target_migration_index = source_migration_index + 1
-            self.logger.debug(
-                f"\tRunning migration with target migration index {target_migration_index}"
-            )
+        for (
+            source_migration_index,
+            target_migration_index,
+            migration,
+        ) in self.get_migrations(migration_index):
             is_last_migration_index = (
                 target_migration_index == self.target_migration_index
             )
@@ -203,8 +148,6 @@ class MigraterImplementation:
                 position.position,
                 is_last_migration_index,
             )
-
-            migration = self.migrations[target_migration_index]
 
             if events_from_migration_table:
                 _old_events = self.connection.query(

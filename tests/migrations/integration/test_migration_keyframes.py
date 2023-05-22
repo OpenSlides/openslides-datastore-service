@@ -2,35 +2,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from datastore.migrations import BaseEvent, MigrationKeyframeAccessor
+from datastore.migrations import BaseEvent
 from datastore.migrations.core.migration_keyframes import (
     DatabaseMigrationKeyframeModifier,
     InitialMigrationKeyframeModifier,
     MigrationKeyframeModifier,
 )
 from datastore.shared.util import BadCodingError
-
-
-def test_not_implemented():
-    accessor = MigrationKeyframeAccessor(
-        MagicMock(), MagicMock(), MagicMock(), MagicMock()
-    )
-    with pytest.raises(NotImplementedError):
-        accessor._fetch_model(MagicMock())
-    with pytest.raises(NotImplementedError):
-        accessor.get_all_ids_for_collection(MagicMock())
-    with pytest.raises(NotImplementedError):
-        accessor.apply_event(MagicMock())
-
-    modifier = MigrationKeyframeModifier(
-        MagicMock(), MagicMock(), MagicMock(), MagicMock()
-    )
-    with pytest.raises(NotImplementedError):
-        modifier._create_model(MagicMock(), MagicMock())
-    with pytest.raises(NotImplementedError):
-        modifier._update_model(MagicMock(), MagicMock())
-    with pytest.raises(NotImplementedError):
-        modifier.move_to_next_position()
 
 
 def test_bad_event():

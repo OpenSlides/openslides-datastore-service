@@ -11,7 +11,7 @@ from datastore.migrations import (
 )
 from datastore.migrations.core.events import to_event
 
-from ..util import get_lambda_migration
+from ..util import get_lambda_event_migration
 
 
 def test_to_event_unknown_event():
@@ -28,7 +28,7 @@ class TestCreateNewEvent:
             set_migration_index_to_1()
 
             migration_handler.register_migrations(
-                get_lambda_migration(lambda _: [event_fn()])
+                get_lambda_event_migration(lambda _: [event_fn()])
             )
             with pytest.raises(BadEventException, match=match):
                 migration_handler.migrate()
@@ -72,7 +72,7 @@ class TestUpdate:
 
         def _execute(event_fn, match):
             migration_handler.register_migrations(
-                get_lambda_migration(
+                get_lambda_event_migration(
                     lambda e: [event_fn()] if e.type == "update" else [e]
                 )
             )
@@ -105,7 +105,7 @@ class TestUpdate:
         write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(lambda _: [UpdateEvent("a/1", {"f": 2})])
+            get_lambda_event_migration(lambda _: [UpdateEvent("a/1", {"f": 2})])
         )
         with pytest.raises(BadEventException, match="Model a/1 does not exist"):
             migration_handler.migrate()
@@ -120,7 +120,7 @@ class TestUpdate:
         )  # this will be overwritten
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [UpdateEvent("a/1", {"f": 2})] if e.fqid == "a/2" else [e]
             )
         )
@@ -139,7 +139,7 @@ class TestDeleteFields:
 
         def _execute(event_fn, match):
             migration_handler.register_migrations(
-                get_lambda_migration(
+                get_lambda_event_migration(
                     lambda e: [event_fn()] if e.type == "deletefields" else [e]
                 )
             )
@@ -169,7 +169,7 @@ class TestDeleteFields:
         write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(lambda _: [DeleteFieldsEvent("a/1", ["f"])])
+            get_lambda_event_migration(lambda _: [DeleteFieldsEvent("a/1", ["f"])])
         )
         with pytest.raises(BadEventException, match="Model a/1 does not exist"):
             migration_handler.migrate()
@@ -184,7 +184,7 @@ class TestDeleteFields:
         )  # this will be overwritten
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [DeleteFieldsEvent("a/1", ["f"])] if e.fqid == "a/2" else [e]
             )
         )
@@ -203,7 +203,7 @@ class TestListUpdate:
 
         def _execute(event_fn, match):
             migration_handler.register_migrations(
-                get_lambda_migration(
+                get_lambda_event_migration(
                     lambda e: [event_fn()] if e.type == "listfields" else [e]
                 )
             )
@@ -239,7 +239,7 @@ class TestListUpdate:
         write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda _: [ListUpdateEvent("a/1", {"add": {"f": [2]}})]
             )
         )
@@ -256,7 +256,7 @@ class TestListUpdate:
         )  # this will be overwritten
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [ListUpdateEvent("a/1", {"add": {"f": [2]}})]
                 if e.fqid == "a/2"
                 else [e]
@@ -277,7 +277,7 @@ class TestListUpdateModify:
 
         def _execute(event_fn, match):
             migration_handler.register_migrations(
-                get_lambda_migration(
+                get_lambda_event_migration(
                     lambda e: [event_fn(e)] if e.type == "listfields" else [e]
                 )
             )
@@ -314,7 +314,7 @@ class TestDelete:
         write({"type": "delete", "fqid": "a/1"})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [DeleteEvent("xyz")] if e.type == "delete" else [e]
             )
         )
@@ -327,7 +327,7 @@ class TestDelete:
         write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(lambda _: [DeleteEvent("a/1")])
+            get_lambda_event_migration(lambda _: [DeleteEvent("a/1")])
         )
         with pytest.raises(BadEventException, match="Model a/1 does not exist"):
             migration_handler.migrate()
@@ -338,7 +338,7 @@ class TestDelete:
         write({"type": "update", "fqid": "a/2", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [DeleteEvent("a/1")] if e.fqid == "a/2" else [e]
             )
         )
@@ -353,7 +353,7 @@ class TestRestore:
         write({"type": "restore", "fqid": "a/1"})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [RestoreEvent("xyz")] if e.type == "restore" else [e]
             )
         )
@@ -366,7 +366,7 @@ class TestRestore:
         write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(lambda _: [RestoreEvent("a/1")])
+            get_lambda_event_migration(lambda _: [RestoreEvent("a/1")])
         )
         with pytest.raises(BadEventException, match="Model a/1 does not exist"):
             migration_handler.migrate()
@@ -378,7 +378,7 @@ class TestRestore:
         write({"type": "create", "fqid": "a/2", "fields": {"f": 1}})
         set_migration_index_to_1()
         migration_handler.register_migrations(
-            get_lambda_migration(
+            get_lambda_event_migration(
                 lambda e: [RestoreEvent("a/1")] if e.fqid == "a/2" else [e]
             )
         )

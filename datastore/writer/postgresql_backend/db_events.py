@@ -5,8 +5,8 @@ from datastore.shared.postgresql_backend import (
     ListUpdatesDict,
     apply_fields,
 )
-from datastore.shared.typing import JSON, Model
-from datastore.shared.util import META_DELETED, InvalidFormat
+from datastore.shared.typing import JSON, Fqid, Model
+from datastore.shared.util import META_DELETED, BadCodingError, InvalidFormat
 
 
 class BaseDbEvent:
@@ -115,3 +115,19 @@ class DbRestoreEvent(BaseDbEventWithoutValues, DeletionStateChangeMixin):
 
     def get_event_data(self) -> Any:
         return None
+
+
+def apply_event_to_models(event: BaseDbEvent, models: Dict[Fqid, Model]) -> None:
+    """Utility function to apply an event to a model dict."""
+    if isinstance(event, DbCreateEvent):
+        models[event.fqid] = {**event.field_data, META_DELETED: False}
+    elif isinstance(event, (DbUpdateEvent, DbListUpdateEvent)):
+        models[event.fqid].update(event.get_modified_fields())
+    elif isinstance(event, DbDeleteFieldsEvent):
+        for field in event.fields:
+            if field in models[event.fqid]:
+                del models[event.fqid][field]
+    elif isinstance(event, (DbDeleteEvent, DbRestoreEvent)):
+        models[event.fqid][META_DELETED] = isinstance(event, DbDeleteEvent)
+    else:
+        raise BadCodingError()

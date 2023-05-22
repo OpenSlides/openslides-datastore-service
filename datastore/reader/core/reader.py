@@ -1,5 +1,6 @@
-from typing import ContextManager, Dict, List, Protocol, TypedDict
+from typing import Any, ContextManager, Dict, List, Protocol, TypedDict
 
+from datastore.shared.di import service_interface
 from datastore.shared.services import HistoryInformation
 from datastore.shared.typing import Collection, Fqid, Id, Model
 
@@ -16,7 +17,7 @@ from .requests import (
 
 
 class FilterResult(TypedDict):
-    data: Dict[int, Model]
+    data: Dict[Id, Model]
     position: int
 
 
@@ -26,20 +27,21 @@ class ExistsResult(TypedDict):
 
 
 class CountResult(TypedDict):
-    count: bool
+    count: int
     position: int
 
 
 class MinResult(TypedDict):
-    min: bool
+    min: Any
     position: int
 
 
 class MaxResult(TypedDict):
-    max: bool
+    max: Any
     position: int
 
 
+@service_interface
 class Reader(Protocol):
     """An abstract class for the reader. For more details, see the specs."""
 
@@ -73,7 +75,7 @@ class Reader(Protocol):
         """Determines whether at least one model satisfies the filter conditions."""
 
     def count(self, request: AggregateRequest) -> CountResult:
-        """Returns the amount of models taht satisfy the filter conditions."""
+        """Returns the amount of models that satisfy the filter conditions."""
 
     def min(self, request: MinMaxRequest) -> MinResult:
         """

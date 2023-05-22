@@ -1,15 +1,24 @@
 from enum import Enum
-from typing import Any, Dict, Protocol, Type
+from textwrap import dedent
+from typing import Any, Dict, Optional, Protocol, Type
 
+from datastore.migrations.core.base_migrations.base_event_migration import (
+    BaseEventMigration,
+)
+from datastore.migrations.core.migraters import (
+    EventMigraterImplementationMemory,
+    ModelMigraterImplementationMemory,
+)
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
+from datastore.shared.typing import Fqid, Model
 from datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
+from datastore.shared.util.key_strings import META_DELETED, strip_reserved_fields
 
-from .base_migration import BaseMigration
+from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
-from .migrater import Migrater
-from .migrater_memory import MigraterImplementationMemory
+from .migraters.migrater import EventMigrater, ModelMigrater
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
@@ -62,15 +71,19 @@ class MigrationHandler(Protocol):
 
 
 @service_as_factory
-class MigrationHandlerImplementation:
+class MigrationHandlerImplementation(MigrationHandler):
     read_database: ReadDatabase
     connection: ConnectionHandler
-    migrater: Migrater
+    event_migrater: EventMigrater
+    model_migrater: ModelMigrater
     logger: MigrationLogger
-    target_migration_index: int = 1  # initial index, no migrations to apply
+    target_migration_index: int
+    last_event_migration_target_index: int
 
     def __init__(self):
         self.migrations_by_target_migration_index = {}
+        self.target_migration_index = 1
+        self.last_event_migration_target_index = 1
 
     def register_migrations(self, *migrations: Type[BaseMigration]) -> None:
         if self.migrations_by_target_migration_index:
@@ -86,22 +99,98 @@ class MigrationHandlerImplementation:
                     + f"target_migration_index {migration.target_migration_index}, "
                     + f"expected migration index {i+2}"
                 )
+            if isinstance(migration, BaseEventMigration):
+                if (
+                    self.last_event_migration_target_index
+                    < migration.target_migration_index - 1
+                ):
+                    raise MigrationSetupException(
+                        f"All migrations with target_migration_index > {self.last_event_migration_target_index} "
+                        + f"must be model migrations. Invalid event migration: {migration.name}."
+                    )
+                self.last_event_migration_target_index = (
+                    migration.target_migration_index
+                )
             self.migrations_by_target_migration_index[
                 migration.target_migration_index
             ] = migration
         self.target_migration_index = len(_migrations) + 1
 
+        self.event_migrater.init(
+            self.last_event_migration_target_index,
+            self.migrations_by_target_migration_index,
+        )
+        self.model_migrater.init(
+            self.target_migration_index,
+            self.migrations_by_target_migration_index,
+        )
+
     def migrate(self) -> None:
         self.logger.info("Running migrations.")
         if self.run_checks():
             return
-        if self.run_migrations():
+        state = self.get_migration_state()
+        if state == MigrationState.MIGRATION_REQUIRED:
+            self.event_migrater.migrate()
+        if state != MigrationState.NO_MIGRATION_REQUIRED:
             self.logger.info("Done. Finalizing is still needed.")
 
-    def run_migrations(self) -> bool:
-        return self.migrater.migrate(
-            self.target_migration_index, self.migrations_by_target_migration_index
+    def get_migration_state(self, verbose: bool = True) -> MigrationState:
+        def log(message: str) -> None:
+            if verbose:
+                self.logger.info(message)
+
+        with self.connection.get_connection_context():
+            current_migration_index = self.read_database.get_current_migration_index()
+            count_positions = (
+                self.connection.query_single_value("select count(*) from positions", [])
+                or 0
+            )
+            min_mi_migration_positions = (
+                self.connection.query_single_value(
+                    "select min(migration_index) from migration_positions", []
+                )
+                or current_migration_index
+            )
+            count_migration_positions = (
+                self.connection.query_single_value(
+                    "select count(*) from migration_positions", []
+                )
+                or 0
+            )
+
+        # Event migration state
+        state = MigrationState.NO_MIGRATION_REQUIRED
+        if current_migration_index >= self.last_event_migration_target_index:
+            log("No event migrations to apply.")
+        elif (
+            min_mi_migration_positions == self.last_event_migration_target_index
+            and count_positions == count_migration_positions
+        ) or current_migration_index == -1:
+            log("No event migrations to apply, but finalizing is still needed.")
+            state = MigrationState.FINALIZATION_REQUIRED
+        else:
+            cnt = self.last_event_migration_target_index - min_mi_migration_positions
+            log(f"{cnt} event migration{'s' if cnt != 1 else ''} to apply.")
+            state = MigrationState.MIGRATION_REQUIRED
+
+        # Model migration state
+        start_model_migration_index = max(
+            current_migration_index, self.last_event_migration_target_index
         )
+        if (
+            current_migration_index > -1
+            and start_model_migration_index < self.target_migration_index
+        ):
+            cnt = self.target_migration_index - start_model_migration_index
+            log(f"{cnt} model migration{'s' if cnt != 1 else ''} to apply.")
+            if state == MigrationState.NO_MIGRATION_REQUIRED:
+                state = MigrationState.FINALIZATION_REQUIRED
+        else:
+            log("No model migrations to apply.")
+
+        log(f"Current migration index: {current_migration_index}")
+        return state
 
     def run_checks(self) -> bool:
         with self.connection.get_connection_context():
@@ -151,14 +240,13 @@ class MigrationHandlerImplementation:
             or 1
         )
         if min_migration_index == -1:
+            self.logger.info("The datastore has a migration index of -1.")
             self._update_migration_index()
             self.connection.execute("delete from migration_events", [])
             self.connection.execute("delete from migration_positions", [])
             self.connection.execute("delete from migration_keyframes", [])
             self.connection.execute("delete from migration_keyframe_models", [])
-            self.logger.info(
-                f"The datastore has a migration index of -1. Set the migration index to {self.target_migration_index}."
-            )
+
             return True
         return False
 
@@ -167,33 +255,43 @@ class MigrationHandlerImplementation:
         if self.run_checks():
             self.delete_collectionfield_aux_tables()
             return
-        if not self.run_migrations():
+        state = self.get_migration_state()
+        if state == MigrationState.NO_MIGRATION_REQUIRED:
             return
+        elif state == MigrationState.MIGRATION_REQUIRED:
+            self.event_migrater.migrate()
 
-        self.delete_collectionfield_aux_tables()
+        current_mi = self.read_database.get_current_migration_index()
+        if current_mi < self.last_event_migration_target_index:
+            self.delete_collectionfield_aux_tables()
 
-        self.logger.info("Calculate helper tables...")
-        with self.connection.get_connection_context():
-            self.fill_models_aux_tables()
-            self.fill_id_sequences_table()
+            self.logger.info("Calculate helper tables...")
+            with self.connection.get_connection_context():
+                self.fill_models_aux_tables()
+                self.fill_id_sequences_table()
 
-        self._delete_migration_keyframes()
+            self._delete_migration_keyframes()
 
-        self.logger.info("Swap events and migration_events tables...")
-        with self.connection.get_connection_context():
-            self.connection.execute("alter table events rename to events_swap", [])
-            self.connection.execute("alter table migration_events rename to events", [])
-            self.connection.execute(
-                "alter table events_swap rename to migration_events", []
-            )
+            self.logger.info("Swap events and migration_events tables...")
+            with self.connection.get_connection_context():
+                self.connection.execute("alter table events rename to events_swap", [])
+                self.connection.execute(
+                    "alter table migration_events rename to events", []
+                )
+                self.connection.execute(
+                    "alter table events_swap rename to migration_events", []
+                )
+            with self.connection.get_connection_context():
+                self._update_migration_index(self.last_event_migration_target_index)
 
-        self.logger.info(
-            f"Set the new migration index to {self.target_migration_index}..."
-        )
-        with self.connection.get_connection_context():
-            self._update_migration_index()
+            self._clean_migration_data()
 
-        self._clean_migration_data()
+        if self.last_event_migration_target_index < self.target_migration_index:
+            self.model_migrater.migrate()
+            self.delete_collectionfield_aux_tables()
+            with self.connection.get_connection_context():
+                self._update_migration_index()
+            self.logger.info("Done.")
 
     def reset(self) -> None:
         self.logger.info("Reset migrations.")
@@ -206,10 +304,15 @@ class MigrationHandlerImplementation:
         self._delete_migration_keyframes()
         self._clean_migration_data()
 
-    def _update_migration_index(self) -> None:
+    def _update_migration_index(
+        self, target_migration_index: Optional[int] = None
+    ) -> None:
+        if target_migration_index is None:
+            target_migration_index = self.target_migration_index
+        self.logger.info(f"Set the new migration index to {target_migration_index}...")
         self.connection.execute(
             "update positions set migration_index=%s",
-            [self.target_migration_index],
+            [target_migration_index],
         )
         # update migration index cache
         self.read_database.reset()
@@ -242,7 +345,7 @@ class MigrationHandlerImplementation:
             "select max(position) from positions", []
         )
         keyframe_id = DatabaseMigrationKeyframeModifier.get_keyframe_id(
-            self.connection, max_position, self.target_migration_index
+            self.connection, max_position, self.last_event_migration_target_index
         )
         self.connection.execute("delete from models", [])
 
@@ -289,25 +392,10 @@ class MigrationHandlerImplementation:
                 count_migration_positions - count_migration_positions_full
             )
 
-            max_mi_migration_positions = self.connection.query_single_value(
-                "select max(migration_index) from migration_positions", []
-            )
-            if (
-                max_mi_migration_positions
-                and current_migration_index != max_mi_migration_positions
-            ) or current_migration_index != self.target_migration_index:
-                if (
-                    count_positions == count_migration_positions
-                    and max_mi_migration_positions == self.target_migration_index
-                ):
-                    status = MigrationState.FINALIZATION_REQUIRED
-                else:
-                    status = MigrationState.MIGRATION_REQUIRED
-            else:
-                status = MigrationState.NO_MIGRATION_REQUIRED
+        state = self.get_migration_state(verbose=False)
 
         return {
-            "status": status,
+            "status": state,
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             "positions": count_positions,
@@ -329,34 +417,60 @@ class MigrationHandlerImplementation:
         elif stats["status"] == MigrationState.FINALIZATION_REQUIRED:
             migration_action = "Finalization needed"
         self.logger.info(
-            f"""\
-- Registered migrations for migration index {self.target_migration_index}
-- Datastore has {stats['positions']} positions with {stats['events']} events
-- The positions have a migration index of {stats['current_migration_index']}
-  -> {action}
-- There are {stats['fully_migrated_positions']} fully migrated positions and
-  {stats['partially_migrated_positions']} partially migrated ones
-  -> {migration_action}
-- {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
-  partially migrated ones)"""
+            dedent(
+                f"""\
+            - Registered migrations for migration index {self.target_migration_index}
+            - Datastore has {stats['positions']} positions with {stats['events']} events
+            - The positions have a migration index of {stats['current_migration_index']}
+            -> {action}
+            - There are {stats['fully_migrated_positions']} fully migrated positions and
+            {stats['partially_migrated_positions']} partially migrated ones
+            -> {migration_action}
+            - {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
+            partially migrated ones)\
+            """
+            )
         )
 
 
 class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     """
-    All Migrations are made in memory only for the import of meetings
+    All migrations are made in-memory only for the import of meetings.
     """
 
-    migrater: MigraterImplementationMemory
+    event_migrater: EventMigraterImplementationMemory
+    model_migrater: ModelMigraterImplementationMemory
+
+    def set_import_data(
+        self, models: Dict[Fqid, Model], start_migration_index: int
+    ) -> None:
+        for model in models.values():
+            model[META_DELETED] = False
+        self.models = models
+        self.start_migration_index = start_migration_index
+        indices = (self.last_event_migration_target_index, start_migration_index)
+        self.event_migrater.start_migration_index = min(indices)
+        self.model_migrater.start_migration_index = max(indices)
 
     def finalize(self) -> None:
+        if (
+            self.start_migration_index < 1
+            or self.start_migration_index > self.target_migration_index
+        ):
+            raise MismatchingMigrationIndicesException(
+                "The migration index of import data is invalid: "
+                + f"Given migration index of import data: {self.start_migration_index}, "
+                + f"current backend migration index: {self.target_migration_index}"
+            )
         self.logger.info("Finalize in memory migrations.")
-        self.run_migrations()
+        for migrater in (self.event_migrater, self.model_migrater):
+            if migrater.start_migration_index < migrater.target_migration_index:
+                migrater.models = self.models
+                migrater.migrate()
+                self.models = migrater.get_migrated_models()
         self.logger.info("Finalize in memory migrations ready.")
 
-    def run_migrations(self) -> bool:
-        self.migrater.migrate(
-            self.target_migration_index,
-            self.migrations_by_target_migration_index,
-        )
-        return False
+    def get_migrated_models(self) -> Dict[Fqid, Model]:
+        for model in self.models.values():
+            strip_reserved_fields(model)
+        return self.models

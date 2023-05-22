@@ -180,15 +180,13 @@ def test_unknown_init_args():
         @service_as_factory
         class SomeService:
             def __init__(self, some_arg):
-                """"""
-                # Hack to get to 100% coverage: with `pass`
-                # or `...` this line will not be covered... *facepalm*
+                ...
 
 
 def test_check_implements_protocol_fail():
     class P(Protocol):
         def function(self) -> None:
-            """"""
+            ...
 
     class C:
         pass

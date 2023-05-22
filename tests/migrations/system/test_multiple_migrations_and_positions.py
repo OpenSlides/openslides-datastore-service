@@ -1,8 +1,8 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 
-from ..util import get_lambda_migration, get_noop_migration
+from ..util import get_lambda_event_migration, get_noop_event_migration
 
 
 def test_multiple_migrations_together(
@@ -30,7 +30,9 @@ def test_multiple_migrations_together(
     previous_model = read_model("a/1")
 
     migration_handler.register_migrations(
-        get_noop_migration(2), get_noop_migration(3), get_noop_migration(4)
+        get_noop_event_migration(2),
+        get_noop_event_migration(3),
+        get_noop_event_migration(4),
     )
     migration_handler.finalize()
 
@@ -50,7 +52,7 @@ def test_second_position_access_old_and_new_data(
     write({"type": "create", "fqid": "trigger/1", "fields": {}})
     set_migration_index_to_1()
 
-    class TestMigration(BaseMigration):
+    class TestMigration(BaseEventMigration):
         target_migration_index = 2
 
         def migrate_event(
@@ -86,7 +88,7 @@ def test_second_migration_gets_events_from_first(
     write({"type": "create", "fqid": "a/1", "fields": {}})
     set_migration_index_to_1()
 
-    first = get_lambda_migration(lambda _: [CreateEvent("a/2", {})])
+    first = get_lambda_event_migration(lambda _: [CreateEvent("a/2", {})])
 
     captured_event = (
         {}
@@ -96,7 +98,7 @@ def test_second_migration_gets_events_from_first(
         captured_event["event"] = event
         return [event]
 
-    second = get_lambda_migration(capture_handler, target_migration_index=3)
+    second = get_lambda_event_migration(capture_handler, target_migration_index=3)
 
     migration_handler.register_migrations(first, second)
     migration_handler.finalize()
@@ -114,7 +116,9 @@ def test_amount_events(
     )
     set_migration_index_to_1()
 
-    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     assert_count("events", 1)
@@ -146,7 +150,9 @@ def test_migrate_finalize(
     previous_model = read_model("a/1")
 
     migration_handler.register_migrations(
-        get_noop_migration(2), get_noop_migration(3), get_noop_migration(4)
+        get_noop_event_migration(2),
+        get_noop_event_migration(3),
+        get_noop_event_migration(4),
     )
     migration_handler.migrate()
     migration_handler.finalize()
@@ -179,7 +185,9 @@ def test_multiple_migrations_following(
     set_migration_index_to_1()
     previous_model = read_model("a/1")
 
-    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     assert_model("a/1", previous_model)
@@ -187,10 +195,10 @@ def test_multiple_migrations_following(
 
     migration_handler.migrations_by_target_migration_index = {}
     migration_handler.register_migrations(
-        get_noop_migration(2),
-        get_noop_migration(3),
-        get_noop_migration(4),
-        get_noop_migration(5),
+        get_noop_event_migration(2),
+        get_noop_event_migration(3),
+        get_noop_event_migration(4),
+        get_noop_event_migration(5),
     )
     migration_handler.finalize()
 
@@ -212,10 +220,12 @@ def test_multiple_migrations_one_finalizing(
     set_migration_index_to_1()
     previous_model = read_model("a/1")
 
-    migration_handler.register_migrations(get_noop_migration(2))
+    migration_handler.register_migrations(get_noop_event_migration(2))
     migration_handler.migrate()
     migration_handler.migrations_by_target_migration_index = {}
-    migration_handler.register_migrations(get_noop_migration(2), get_noop_migration(3))
+    migration_handler.register_migrations(
+        get_noop_event_migration(2), get_noop_event_migration(3)
+    )
     migration_handler.finalize()
 
     assert_model("a/1", previous_model)

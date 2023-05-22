@@ -1,6 +1,6 @@
 import pytest
 
-from ..util import get_noop_migration
+from ..util import get_noop_event_migration
 
 
 class Base:
@@ -23,7 +23,7 @@ class Base:
             set_migration_index_to_1()
             previous_model = read_model("a/1")
 
-            migration_handler.register_migrations(get_noop_migration(2))
+            migration_handler.register_migrations(get_noop_event_migration(2))
             migration_handler.finalize()
 
             assert_model("a/1", previous_model)
@@ -100,7 +100,7 @@ class Base:
     def test_id_sequence(
         self, migration_handler, write, query_single_value, assert_finalized
     ):
-        migration_handler.register_migrations(get_noop_migration(2))
+        migration_handler.register_migrations(get_noop_event_migration(2))
         self.write_data(
             write,
             {"type": "create", "fqid": "a/1", "fields": {"f": 1}},

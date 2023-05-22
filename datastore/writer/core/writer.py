@@ -1,8 +1,11 @@
 from typing import List, Protocol
 
+from datastore.shared.di import service_interface
+
 from .write_request import WriteRequest
 
 
+@service_interface
 class Writer(Protocol):
     """For detailed interface descriptions, see the docs repo."""
 
