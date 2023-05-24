@@ -210,8 +210,7 @@ class MigrationHandlerImplementation(MigrationHandler):
         return False
 
     def assert_valid_migration_index(self) -> None:
-        # assert untouched db and assert consistent migration index
-        self.read_database.reset()
+        # assert consistent migration index
         try:
             max_db_mi = self.read_database.get_current_migration_index()
         except InvalidDatastoreState as e:
@@ -314,8 +313,6 @@ class MigrationHandlerImplementation(MigrationHandler):
             "update positions set migration_index=%s",
             [target_migration_index],
         )
-        # update migration index cache
-        self.read_database.reset()
 
     def _delete_migration_keyframes(self) -> None:
         self.logger.info("Deleting all migration keyframes...")
