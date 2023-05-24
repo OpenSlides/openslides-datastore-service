@@ -260,7 +260,9 @@ class MigrationHandlerImplementation(MigrationHandler):
         elif state == MigrationState.MIGRATION_REQUIRED:
             self.event_migrater.migrate()
 
-        current_mi = self.read_database.get_current_migration_index()
+        with self.connection.get_connection_context():
+            current_mi = self.read_database.get_current_migration_index()
+
         if current_mi < self.last_event_migration_target_index:
             self.delete_collectionfield_aux_tables()
 
