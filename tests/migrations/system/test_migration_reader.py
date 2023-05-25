@@ -28,6 +28,9 @@ def check_migration_reader(migration_reader: MigrationReader):
     assert migration_reader.count("a", FilterOperator("g", "~=", "TEST")) == 1
     assert migration_reader.min("a", FilterOperator("f2", "=", None), "f") == 1
     assert migration_reader.max("a", FilterOperator("g", "=", "other"), "f") is None
+    assert migration_reader.is_alive("a/1") is True
+    assert migration_reader.is_deleted("a/1") is False
+    assert migration_reader.model_exists("a/1") is True
 
 
 def test_migration_reader(write, migration_reader: MigrationReader, connection_handler):
