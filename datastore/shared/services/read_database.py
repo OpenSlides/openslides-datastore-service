@@ -170,6 +170,3 @@ class ReadDatabase(Protocol):
         Returns the maximum migration index from all positions or -1 if there are
         no positions.
         """
-
-    def reset(self) -> None:
-        """Resets the internal state of the database."""
