@@ -354,15 +354,3 @@ def test_json(read_database: ReadDatabase, connection: ConnectionHandler):
 
     assert read_database.json(data) == value
     tj.assert_called_with(data)
-
-
-def test_get_current_migration_index_cached(
-    read_database: ReadDatabase, connection: ConnectionHandler
-):
-    connection.query = query = MagicMock(return_value=[[None, None]])
-    assert read_database.get_current_migration_index() == -1
-    query.assert_called_once()
-
-    # second try; now it should be cached (so still called only once)
-    assert read_database.get_current_migration_index() == -1
-    query.assert_called_once()

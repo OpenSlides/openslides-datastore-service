@@ -30,15 +30,10 @@ from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPE
 
 
-MIGRATION_INDEX_NOT_INITIALIZED = -2
-
-
 @service_as_singleton
 class SqlReadDatabaseBackendService:
     connection: ConnectionHandler
     query_helper: SqlQueryHelper
-
-    current_migration_index: int = MIGRATION_INDEX_NOT_INITIALIZED
 
     def get_context(self) -> ContextManager[None]:
         return self.connection.get_connection_context()
@@ -339,20 +334,15 @@ class SqlReadDatabaseBackendService:
         )
 
     def get_current_migration_index(self) -> int:
-        if self.current_migration_index == MIGRATION_INDEX_NOT_INITIALIZED:
-            [(min_migration_index, max_migration_index)] = self.connection.query(
-                "select min(migration_index), max(migration_index) from positions", []
+        [(min_migration_index, max_migration_index)] = self.connection.query(
+            "select min(migration_index), max(migration_index) from positions", []
+        )
+        if min_migration_index != max_migration_index:
+            raise InvalidDatastoreState(
+                "The datastore has inconsistent migration indices: "
+                + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
             )
-            if min_migration_index != max_migration_index:
-                raise InvalidDatastoreState(
-                    "The datastore has inconsistent migration indices: "
-                    + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
-                )
-            self.current_migration_index = max_migration_index or -1
-        return self.current_migration_index
+        return max_migration_index or -1
 
     def json(self, data):
         return self.connection.to_json(data)
-
-    def reset(self) -> None:
-        self.current_migration_index = MIGRATION_INDEX_NOT_INITIALIZED
