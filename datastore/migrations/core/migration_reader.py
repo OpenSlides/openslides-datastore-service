@@ -13,6 +13,7 @@ from datastore.reader.core import (
 from datastore.reader.core.requests import GetManyRequestPart
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import filter_models
+from datastore.shared.services.read_database import ReadDatabase
 from datastore.shared.typing import Collection, Field, Fqid, Id, Model
 from datastore.shared.util import ModelDoesNotExist, collection_from_fqid
 from datastore.shared.util.filter import Filter
@@ -60,10 +61,20 @@ class MigrationReader(Protocol):
     ) -> Optional[int]:
         ...
 
+    def is_alive(self, fqid: Fqid) -> bool:
+        """Returns true iff the model exists and is not deleted."""
+
+    def is_deleted(self, fqid: Fqid) -> bool:
+        """Returns true iff the model exists and is deleted."""
+
+    def model_exists(self, fqid: Fqid) -> bool:
+        """Returns true iff the model exists, regardless of deletion status."""
+
 
 @service_as_factory
 class MigrationReaderImplementation(MigrationReader):
     reader: Reader
+    read_database: ReadDatabase
 
     def get(self, fqid: Fqid, mapped_fields: List[Field] = []) -> Model:
         return self.reader.get(GetRequest(fqid, mapped_fields))
@@ -103,6 +114,18 @@ class MigrationReaderImplementation(MigrationReader):
     ) -> Optional[int]:
         result = self.reader.max(MinMaxRequest(collection, filter, field))
         return result["max"]
+
+    def is_alive(self, fqid: Fqid) -> bool:
+        status = self.read_database.get_deleted_status([fqid])
+        return status.get(fqid) is False
+
+    def is_deleted(self, fqid: Fqid) -> bool:
+        status = self.read_database.get_deleted_status([fqid])
+        return status.get(fqid) is True
+
+    def model_exists(self, fqid: Fqid) -> bool:
+        status = self.read_database.get_deleted_status([fqid])
+        return fqid in status
 
 
 @service_as_factory
@@ -175,3 +198,14 @@ class MigrationReaderImplementationMemory(MigrationReader):
         if values:
             return func(values)
         return None
+
+    def is_alive(self, fqid: Fqid) -> bool:
+        # the in-memory implementation does not support deletion
+        return self.model_exists(fqid)
+
+    def is_deleted(self, fqid: Fqid) -> bool:
+        # the in-memory implementation does not support deletion
+        return False
+
+    def model_exists(self, fqid: Fqid) -> bool:
+        return fqid in self.models
