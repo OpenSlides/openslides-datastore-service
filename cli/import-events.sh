@@ -14,4 +14,4 @@ SRC=
 # wait for potentially restarted postgres to become ready
 source wait-for-database.sh
 
-cat $SRC | psql -h "$DATASTORE_DATABASE_HOST" -p "$DATASTORE_DATABASE_PORT" -U "$DATASTORE_DATABASE_USER" -d "$DATASTORE_DATABASE_NAME"
+cat $SRC | psql -h "$DATABASE_HOST" -p "$DATABASE_PORT" -U "$DATABASE_USER" -d "$DATABASE_NAME"
