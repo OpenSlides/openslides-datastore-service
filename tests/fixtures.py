@@ -92,6 +92,11 @@ def reset_db_schema(setup_db_connection):
 # Flask
 
 
+@pytest.fixture()
+def client(app):
+    return app.test_client()
+
+
 def make_json_client(client):
     old_post = client.post
 
