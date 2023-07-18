@@ -7,7 +7,7 @@ jobs:
     name: "Test: Productive start"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Build container
       run: make build
@@ -33,7 +33,7 @@ jobs:
     name: "Tests"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Execute tests
       run: make run-ci
 
@@ -41,7 +41,7 @@ jobs:
     name: "Full System Tests"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Start containers
       run: make run-dev-standalone
