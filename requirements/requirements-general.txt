@@ -1,7 +1,6 @@
 # update to newer version as soon as https://github.com/konradhalas/dacite/issues/218 is fixed
 dacite==1.7.0
 fastjsonschema==2.17.1
-# newer versions have problems with the concurrency tests
 Flask==2.3.2
 gunicorn==21.0.1
 psycopg2==2.9.6
