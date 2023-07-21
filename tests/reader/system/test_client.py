@@ -66,7 +66,7 @@ class TestConcurrentRequests:
     patches: List[Any] = []
 
     @pytest.fixture(autouse=True)
-    def setup(self, json_client):  # noqa
+    def setup(self, json_client):
         self.json_client = json_client
         self.database = injector.get(ReadDatabase)
         connection_handler = injector.get(ConnectionHandler)
@@ -102,7 +102,7 @@ class TestConcurrentRequests:
         assert not thread1.is_alive()
         assert not self.indicator_map[Route.GET]
 
-    def test_3_concurrent_requests(self, json_client):
+    def test_3_concurrent_requests(self):
         """
         L_i = lock form lock_map
         I_i = indicator variable from indicator_map
@@ -151,7 +151,7 @@ class TestConcurrentRequests:
         |                   |                       | set I2=False             |                          |
         |                   |                       | connection put back      |                          |
         |                   |                       | ------------------------ |                          |
-        """  # noqa: E501
+        """
 
         thread1 = self.start_locked_thread(Route.GET, {"fqid": "a/1"})
         self.assert_thread_is_locked(thread1, Route.GET)
