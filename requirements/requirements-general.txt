@@ -2,7 +2,7 @@
 dacite==1.7.0
 fastjsonschema==2.17.1
 Flask==2.3.2
-gunicorn==21.0.1
+gunicorn==21.2.0
 psycopg2==2.9.6
 redis==4.6.0
 
