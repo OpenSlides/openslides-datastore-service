@@ -1,5 +1,8 @@
 import atexit
 import os
+import sys
+from functools import partial
+from signal import SIGINT, SIGTERM, signal
 
 from .di import injector
 from .services import ShutdownService
@@ -23,6 +26,9 @@ def create_base_application(flask_frontend):
         shutdown_service.shutdown()
 
     atexit.register(shutdown)
+
+    for sig in (SIGTERM, SIGINT):
+        signal(sig, partial(sys.exit, 0))
 
     application = flask_frontend.create_application()
 
