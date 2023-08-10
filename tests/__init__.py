@@ -1,4 +1,5 @@
 from .fixtures import (
+    client,
     db_connection,
     db_cur,
     get_env,

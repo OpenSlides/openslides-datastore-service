@@ -43,7 +43,13 @@ def filter_models(
     # transform query into valid python code
     filter_code = sql_query.lower().replace("null", "None").replace(" = ", " == ")
     # regex for all FilterOperators which were translated by the SqlQueryHelper
-    regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not|ilike) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"  # noqa: E501
+    regex = (
+        rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|"
+        rf"{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\))"
+        r" (<|<=|>=|>|==|!=|is|is not|ilike) "
+        rf"({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|"
+        rf"{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"
+    )
     matches = re.findall(regex, filter_code)
     # this will hold all items from arguments, but correctly formatted for python and enhanced with validity checks
     formatted_args = []

@@ -278,7 +278,7 @@ class TestAttachModifiedFieldsToEvents:
         event.get_modified_fields = MagicMock(return_value=[field])
         event.fqid = MagicMock()
         with patch(
-            "datastore.writer.postgresql_backend.sql_database_backend_service.collectionfield_from_fqid_and_field"  # noqa
+            "datastore.writer.postgresql_backend.sql_database_backend_service.collectionfield_from_fqid_and_field"
         ) as cffaf:
             result = MagicMock()
             cffaf.side_effect = lambda x, y: result
@@ -381,6 +381,5 @@ def test_truncate_db(sql_backend, connection):
         "DELETE FROM" in call.args[0] for call in ex.call_args_list[: len(ALL_TABLES)]
     )
     assert all(
-        "RESTART" in call.args[0]
-        for call in ex.call_args_list[len(ALL_TABLES) + 1 :]  # noqa: E203
+        "RESTART" in call.args[0] for call in ex.call_args_list[len(ALL_TABLES) + 1 :]
     )
