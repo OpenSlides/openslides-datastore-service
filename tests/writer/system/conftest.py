@@ -15,6 +15,7 @@ from datastore.writer.redis_backend.redis_messaging_backend_service import (
     MODIFIED_FIELDS_TOPIC,
 )
 from tests import (  # noqa
+    client,
     db_connection,
     db_cur,
     get_env,
@@ -73,7 +74,7 @@ def setup_di(reset_di):  # noqa
     writer_setup_di()
 
 
-@pytest.fixture
+@pytest.fixture()
 def app(setup_di):
     application = FlaskFrontend.create_application()
     yield application

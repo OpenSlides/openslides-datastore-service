@@ -36,7 +36,8 @@ def retry_on_db_failure(fn):
                     if tries < MAX_RETRIES:
                         oe = e.base_exception
                         logger.info(
-                            f"Retrying request to database because of the following error ({type(oe).__name__}, code {oe.pgcode}): {oe.pgerror}"  # noqa
+                            "Retrying request to database because of the following error "
+                            f"({type(oe).__name__}, code {oe.pgcode}): {oe.pgerror}"
                         )
                     else:
                         raise
@@ -49,11 +50,11 @@ def retry_on_db_failure(fn):
 
 
 class DATABASE_ENVIRONMENT_VARIABLES:
-    HOST = "DATASTORE_DATABASE_HOST"
-    PORT = "DATASTORE_DATABASE_PORT"
-    NAME = "DATASTORE_DATABASE_NAME"
-    USER = "DATASTORE_DATABASE_USER"
-    PASSWORD_FILE = "DATASTORE_DATABASE_PASSWORD_FILE"
+    HOST = "DATABASE_HOST"
+    PORT = "DATABASE_PORT"
+    NAME = "DATABASE_NAME"
+    USER = "DATABASE_USER"
+    PASSWORD_FILE = "DATABASE_PASSWORD_FILE"
 
 
 EXECUTE_VALUES_PAGE_SIZE = int(1e7)
@@ -304,7 +305,7 @@ class PgConnectionHandlerService:
 
     def raise_error(self, e: psycopg2.Error, log: bool = True, raise_: bool = True):
         if log or raise_:
-            msg = f"Database connection error ({type(e).__name__}, code {e.pgcode}): {e.pgerror}"  # noqa
+            msg = f"Database connection error ({type(e).__name__}, code {e.pgcode}): {e.pgerror}"
             logger.error(msg)
         if raise_:
             raise DatabaseError(msg, e)

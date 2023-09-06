@@ -31,17 +31,17 @@ def setup(reset_di):  # noqa
 
 
 @pytest.fixture()
-def migration_handler():  # noqa
+def migration_handler():
     yield injector.get(MigrationHandler)
 
 
 @pytest.fixture()
-def connection_handler():  # noqa
+def connection_handler():
     yield injector.get(ConnectionHandler)
 
 
 @pytest.fixture()
-def migration_reader():  # noqa
+def migration_reader():
     yield injector.get(MigrationReader)
 
 
