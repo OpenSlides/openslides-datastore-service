@@ -110,7 +110,7 @@ def test_create_action_worker_wrong_collection(json_client, data, db_cur):
     assert_response_code(response, 400)
     assert (
         response.json["error"]["msg"]
-        == "Collection for write_action_worker must be action_worker"
+        == "Collection for write_action_worker must be action_worker or import_preview"
     )
 
 
@@ -127,7 +127,7 @@ def test_delete_action_worker_wrong_collection(json_client, data, db_cur):
     assert_response_code(response, 400)
     assert (
         response.json["error"]["msg"]
-        == "Collection for write_action_worker must be action_worker"
+        == "Collection for write_action_worker must be action_worker or import_preview"
     )
 
 

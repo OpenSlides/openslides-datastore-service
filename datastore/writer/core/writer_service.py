@@ -129,7 +129,7 @@ class WriterService:
         """Writes or updates an action_worker-object
         The action_worker record will be written to
         the models-table only, because there is no history
-        needed and after the acton is finished and notified,
+        needed and after the action is finished and notified,
         isn't needed anymore.
         There is no position available or needed,
         for redis notifying the 0 is used therefore.
