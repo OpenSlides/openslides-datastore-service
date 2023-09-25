@@ -58,7 +58,9 @@ def write_action_worker():
         collection_from_fqid(event["fqid"]) not in ["action_worker", "import_preview"]
         for event in req_json.get("events", ())
     ):
-        raise InvalidRequest("Collection for write_action_worker must be action_worker or import_preview")
+        raise InvalidRequest(
+            "Collection for write_action_worker must be action_worker or import_preview"
+        )
     write_handler = WriteHandler()
     write_handler.write_action_worker(req_json)
     return_code = 200 if req_json.get("events", ())[0]["type"] == "delete" else 201
