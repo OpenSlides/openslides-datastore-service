@@ -16,7 +16,7 @@ from datastore.writer.flask_frontend.routes import (  # noqa
     DELETE_HISTORY_INFORMATION_URL,
     RESERVE_IDS_URL,
     TRUNCATE_DB_URL,
-    WRITE_ACTION_WORKER_URL,
+    WRITE_WITHOUT_EVENTS_URL,
     WRITE_URL,
 )
 
@@ -44,25 +44,25 @@ def reserve_ids():
 
 
 @handle_internal_errors
-def write_action_worker():
+def write_without_events():
     if not request.is_json:
         raise InvalidRequest("Data must be json")
     if type(request.json) != list:
-        raise InvalidRequest("write_action_worker data internally must be a list!")
+        raise InvalidRequest("write_without_events data internally must be a list!")
     req_json = cast(List[Dict[str, Any]], request.json)[0]
     if len(req_json.get("events", ())) != 1 and any(
         event["type"] != "delete" for event in req_json.get("events", ())
     ):
-        raise InvalidRequest("write_action_worker may contain only 1 event!")
+        raise InvalidRequest("write_without_events may contain only 1 event!")
     if any(
         collection_from_fqid(event["fqid"]) not in ["action_worker", "import_preview"]
         for event in req_json.get("events", ())
     ):
         raise InvalidRequest(
-            "Collection for write_action_worker must be action_worker or import_preview"
+            "Collection for write_without_events must be action_worker or import_preview"
         )
     write_handler = WriteHandler()
-    write_handler.write_action_worker(req_json)
+    write_handler.write_without_events(req_json)
     return_code = 200 if req_json.get("events", ())[0]["type"] == "delete" else 201
     return ("", return_code)
 
@@ -88,7 +88,7 @@ def register_routes(app, url_prefix):
         "reserve_ids",
         "delete_history_information",
         "truncate_db",
-        "write_action_worker",
+        "write_without_events",
     ):
         app.add_url_rule(
             globals()[f"{route.upper()}_URL"],
