@@ -89,7 +89,8 @@ def test_create_action_worker_not_single_event(json_client, data, db_cur):
     response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 400)
     assert (
-        response.json["error"]["msg"] == "write_without_events may contain only 1 event!"
+        response.json["error"]["msg"]
+        == "write_without_events may contain only 1 event!"
     )
 
 

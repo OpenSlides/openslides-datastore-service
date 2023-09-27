@@ -16,8 +16,8 @@ from datastore.writer.flask_frontend.routes import (  # noqa
     DELETE_HISTORY_INFORMATION_URL,
     RESERVE_IDS_URL,
     TRUNCATE_DB_URL,
-    WRITE_WITHOUT_EVENTS_URL,
     WRITE_URL,
+    WRITE_WITHOUT_EVENTS_URL,
 )
 
 from .json_handlers import ReserveIdsHandler, WriteHandler

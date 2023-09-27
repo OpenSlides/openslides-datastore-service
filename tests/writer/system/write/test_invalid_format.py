@@ -4,7 +4,7 @@ import pytest
 
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.shared.util import META_FIELD_PREFIX
-from datastore.writer.flask_frontend.routes import WRITE_WITHOUT_EVENTS_URL, WRITE_URL
+from datastore.writer.flask_frontend.routes import WRITE_URL, WRITE_WITHOUT_EVENTS_URL
 from tests.util import assert_error_response
 from tests.writer.system.util import assert_no_db_entry
 

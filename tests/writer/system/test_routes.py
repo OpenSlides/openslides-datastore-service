@@ -2,8 +2,8 @@ from datastore.shared.flask_frontend import get_health_url
 from datastore.writer.flask_frontend.routes import (
     RESERVE_IDS_URL,
     URL_PREFIX,
-    WRITE_WITHOUT_EVENTS_URL,
     WRITE_URL,
+    WRITE_WITHOUT_EVENTS_URL,
 )
 
 
