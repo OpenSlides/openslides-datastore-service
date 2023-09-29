@@ -2,8 +2,8 @@ from datastore.shared.flask_frontend import get_health_url
 from datastore.writer.flask_frontend.routes import (
     RESERVE_IDS_URL,
     URL_PREFIX,
-    WRITE_ACTION_WORKER_URL,
     WRITE_URL,
+    WRITE_WITHOUT_EVENTS_URL,
 )
 
 
@@ -22,8 +22,8 @@ def test_wrong_method_reserve_ids(client):
     assert response.status_code == 405
 
 
-def test_wrong_method_write_action_worker(client):
-    response = client.get(WRITE_ACTION_WORKER_URL)
+def test_wrong_method_write_without_events(client):
+    response = client.get(WRITE_WITHOUT_EVENTS_URL)
     assert response.status_code == 405
 
 

@@ -25,8 +25,8 @@ class Writer(Protocol):
     def truncate_db(self) -> None:
         """Truncate all tables. Dev mode only"""
 
-    def write_action_worker(
+    def write_without_events(
         self,
         write_request: WriteRequest,
     ) -> None:
-        """Writes or updates an action_worker-object"""
+        """Writes or updates an object without events (action_worker or import_preview)"""

@@ -122,14 +122,15 @@ class WriterService:
             logger.info("Database truncated")
 
     @retry_on_db_failure
-    def write_action_worker(
+    def write_without_events(
         self,
         write_request: WriteRequest,
     ) -> None:
-        """Writes or updates an action_worker-object
-        The action_worker record will be written to
+        """Writes or updates an action_worker- or
+        import_preview-object.
+        The record will be written to
         the models-table only, because there is no history
-        needed and after the acton is finished and notified,
+        needed and after the action is finished and notified,
         isn't needed anymore.
         There is no position available or needed,
         for redis notifying the 0 is used therefore.
@@ -143,13 +144,13 @@ class WriterService:
                 for event in write_request.events:
                     fqids_to_delete.append(event.fqid)
                 with self.database.get_context():
-                    self.database.write_model_deletes_action_worker(fqids_to_delete)
+                    self.database.write_model_deletes_without_events(fqids_to_delete)
             else:
                 with self.database.get_context():
                     for event in write_request.events:
                         fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
                         fields_with_delete.update({META_DELETED: False})
-                        self.database.write_model_updates_action_worker(
+                        self.database.write_model_updates_without_events(
                             {event.fqid: fields_with_delete}
                         )
                 self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore

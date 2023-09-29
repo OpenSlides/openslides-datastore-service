@@ -4,7 +4,7 @@ import pytest
 
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.shared.util import META_FIELD_PREFIX
-from datastore.writer.flask_frontend.routes import WRITE_ACTION_WORKER_URL, WRITE_URL
+from datastore.writer.flask_frontend.routes import WRITE_URL, WRITE_WITHOUT_EVENTS_URL
 from tests.util import assert_error_response
 from tests.writer.system.util import assert_no_db_entry
 
@@ -38,8 +38,8 @@ def test_no_json_write(client):
     assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
 
 
-def test_no_json_write_action_worker(client):
-    response = client.post(WRITE_ACTION_WORKER_URL, data={"some": "data"})
+def test_no_json_write_without_events(client):
+    response = client.post(WRITE_WITHOUT_EVENTS_URL, data={"some": "data"})
     assert response.is_json
     assert_error_response(response, ERROR_CODES.INVALID_REQUEST)
 

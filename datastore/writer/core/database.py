@@ -37,8 +37,8 @@ class Database(Protocol):
     def truncate_db(self) -> None:
         """Truncate all tables. Only for dev purposes!"""
 
-    def write_model_updates_action_worker(self, models: Dict[Fqid, Model]) -> None:
-        """For writing directly to models-table used for action_workers"""
+    def write_model_updates_without_events(self, models: Dict[Fqid, Model]) -> None:
+        """For writing directly to models-table used for action_workers and import_previews"""
 
-    def write_model_deletes_action_worker(self, fqids: List[Fqid]) -> None:
-        """For deleting directly to models-table used for action_workers"""
+    def write_model_deletes_without_events(self, fqids: List[Fqid]) -> None:
+        """For deleting directly to models-table used for action_workers and import_previews"""
