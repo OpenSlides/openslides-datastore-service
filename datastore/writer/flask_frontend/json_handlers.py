@@ -127,11 +127,11 @@ class WriteHandler:
         writer = injector.get(Writer)
         writer.write(write_requests)
 
-    def write_action_worker(self, data: JSON) -> None:
+    def write_without_events(self, data: JSON) -> None:
         write_request = self.build_write_request(data)
 
         writer = injector.get(Writer)
-        writer.write_action_worker(write_request)
+        writer.write_without_events(write_request)
 
     def build_write_request(self, data: JSON) -> WriteRequest:
         try:

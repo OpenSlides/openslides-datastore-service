@@ -2,7 +2,7 @@ import copy
 
 import pytest
 
-from datastore.writer.flask_frontend.routes import WRITE_ACTION_WORKER_URL
+from datastore.writer.flask_frontend.routes import WRITE_WITHOUT_EVENTS_URL
 from tests.util import assert_response_code
 
 
@@ -34,7 +34,7 @@ def data():
 
 def test_create_update_action_worker(json_client, data, db_cur):
     # create action_worker
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
 
     db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
@@ -49,7 +49,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
     data_single["events"][0]["fields"] = {
         "timestamp": 1658489444,
     }
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
     db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone()
@@ -62,7 +62,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
         "state": "end",
         "timestamp": 1658489454,
     }
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
     db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone()
@@ -86,31 +86,32 @@ def test_create_action_worker_not_single_event(json_client, data, db_cur):
             },
         }
     )
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 400)
     assert (
-        response.json["error"]["msg"] == "write_action_worker may contain only 1 event!"
+        response.json["error"]["msg"]
+        == "write_without_events may contain only 1 event!"
     )
 
 
 def test_create_action_worker_data_not_in_list_format(json_client, data, db_cur):
     data_single = data[0]
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data_single)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data_single)
     assert_response_code(response, 400)
     assert (
         response.json["error"]["msg"]
-        == "write_action_worker data internally must be a list!"
+        == "write_without_events data internally must be a list!"
     )
 
 
 def test_create_action_worker_wrong_collection(json_client, data, db_cur):
     data_single = data[0]
     data_single["events"][0]["fqid"] = "topic/1"
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 400)
     assert (
         response.json["error"]["msg"]
-        == "Collection for write_action_worker must be action_worker"
+        == "Collection for write_without_events must be action_worker or import_preview"
     )
 
 
@@ -123,11 +124,11 @@ def test_delete_action_worker_wrong_collection(json_client, data, db_cur):
         }
     ]
 
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 400)
     assert (
         response.json["error"]["msg"]
-        == "Collection for write_action_worker must be action_worker"
+        == "Collection for write_without_events must be action_worker or import_preview"
     )
 
 
@@ -156,7 +157,7 @@ def test_delete_action_worker_with_2_events(json_client, data, db_cur):
         }
     ]
 
-    response = json_client.post(WRITE_ACTION_WORKER_URL, data)
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 200)
     db_cur.execute(
         "select fqid from models where fqid in ('action_worker/1', 'action_worker/2')"
