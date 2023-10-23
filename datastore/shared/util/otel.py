@@ -8,7 +8,6 @@ from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import _TRACER_PROVIDER
 
 from datastore.shared.di import injector
 from datastore.shared.services import EnvironmentService
@@ -31,9 +30,8 @@ def init(service_name):
     """
     if not is_otel_enabled():
         return
-    global _TRACER_PROVIDER
 
-    if not _TRACER_PROVIDER:
+    if not trace.get_tracer_provider():
         span_exporter = OTLPSpanExporter(
             endpoint="http://collector:4317",
             insecure=True
@@ -72,10 +70,8 @@ def make_span(name, attributes=None):
         return nullcontext()
 
     print(f"datastore/otel.py make_service span_name:{name}")
-    assert (
-        _TRACER_PROVIDER
-    ), "Opentelemetry span to be set before having set a TRACER_PROVIDER"
-    tracer = trace.get_tracer_provider().get_tracer(__name__)
+    assert (tracer_provider := trace.get_tracer_provider()), "Opentelemetry span to be set before having set a TRACER_PROVIDER"
+    tracer = tracer_provider.get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)
 
     return span
@@ -85,21 +81,7 @@ def inject_otel_data(fields: Dict[str, Any]) -> None:
     if not is_otel_enabled():
         return
 
-    # def cb_set_opentelemetry_field(data: Dict[str, Any], key: str, value: str) -> None:
-    #     if OTEL_DATA_FIELD_KEY not in data:
-    #         data[OTEL_DATA_FIELD_KEY] = {}
-    #     data[OTEL_DATA_FIELD_KEY][key] = value
-
     span_context = trace.get_current_span().get_span_context()
-    # propa = get_global_textmap()
-    # propa.inject(
-    #     carrier=fields,
-    #     setter=FqfieldsSetter
-    # )
-
-    # trace_id_hex = span_context.trace_id.to_bytes(((span_context.trace_id.bit_length() + 7) // 8), "big").hex()
-    # span_id_hex = span_context.span_id.to_bytes(((span_context.span_id.bit_length() + 7) // 8), "big").hex()
-    # span_data = f"{trace_id_hex}:{span_id_hex}:{span_context.trace_flags}"
     trace_id = span_context.trace_id
     span_id = span_context.span_id
     span_data = f"{trace_id}:{span_id}:{span_context.trace_flags}"
