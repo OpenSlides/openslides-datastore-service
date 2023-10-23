@@ -1,4 +1,3 @@
-from abc import ABC
 from contextlib import nullcontext
 from typing import Any, Dict
 
@@ -14,6 +13,7 @@ from datastore.shared.services import EnvironmentService
 
 
 OTEL_DATA_FIELD_KEY = "__otel_data"
+otel_initialized = False
 
 
 def is_otel_enabled():
@@ -30,21 +30,21 @@ def init(service_name):
     """
     if not is_otel_enabled():
         return
-
-    if not trace.get_tracer_provider():
-        span_exporter = OTLPSpanExporter(
-            endpoint="http://collector:4317",
-            insecure=True
-            # optional
-            # credentials=ChannelCredentials(credentials),
-            # headers=(("metadata", "metadata")),
-        )
-        tracer_provider = TracerProvider(
-            resource=Resource.create({SERVICE_NAME: service_name})
-        )
-        trace.set_tracer_provider(tracer_provider)
-        span_processor = BatchSpanProcessor(span_exporter)
-        tracer_provider.add_span_processor(span_processor)
+    span_exporter = OTLPSpanExporter(
+        endpoint="http://collector:4317",
+        insecure=True
+        # optional
+        # credentials=ChannelCredentials(credentials),
+        # headers=(("metadata", "metadata")),
+    )
+    tracer_provider = TracerProvider(
+        resource=Resource.create({SERVICE_NAME: service_name})
+    )
+    trace.set_tracer_provider(tracer_provider)
+    span_processor = BatchSpanProcessor(span_exporter)
+    tracer_provider.add_span_processor(span_processor)
+    global otel_initialized
+    otel_initialized = True
 
 
 def instrument_flask(app):
@@ -69,9 +69,12 @@ def make_span(name, attributes=None):
     if not is_otel_enabled():
         return nullcontext()
 
-    print(f"datastore/otel.py make_service span_name:{name}")
-    assert (tracer_provider := trace.get_tracer_provider()), "Opentelemetry span to be set before having set a TRACER_PROVIDER"
-    tracer = tracer_provider.get_tracer(__name__)
+    global otel_initialized
+    assert (
+        otel_initialized
+    ), "datastore:Opentelemetry span to be set before having set a TRACER_PROVIDER"
+
+    tracer = trace.get_tracer_provider().get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)
 
     return span
