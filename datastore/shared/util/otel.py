@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+from typing import Any, Dict
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -12,6 +13,7 @@ from datastore.shared.services import EnvironmentService
 
 
 OTEL_DATA_FIELD_KEY = "__otel_data"
+otel_initialized = False
 
 
 def is_otel_enabled():
@@ -28,7 +30,6 @@ def init(service_name):
     """
     if not is_otel_enabled():
         return
-
     span_exporter = OTLPSpanExporter(
         endpoint="http://collector:4317",
         insecure=True
@@ -42,6 +43,8 @@ def init(service_name):
     trace.set_tracer_provider(tracer_provider)
     span_processor = BatchSpanProcessor(span_exporter)
     tracer_provider.add_span_processor(span_processor)
+    global otel_initialized
+    otel_initialized = True
 
 
 def instrument_flask(app):
@@ -66,7 +69,23 @@ def make_span(name, attributes=None):
     if not is_otel_enabled():
         return nullcontext()
 
+    global otel_initialized
+    assert (
+        otel_initialized
+    ), "datastore:Opentelemetry span to be set before having set a TRACER_PROVIDER"
+
     tracer = trace.get_tracer_provider().get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)
 
     return span
+
+
+def inject_otel_data(fields: Dict[str, Any]) -> None:
+    if not is_otel_enabled():
+        return
+
+    span_context = trace.get_current_span().get_span_context()
+    trace_id = span_context.trace_id
+    span_id = span_context.span_id
+    span_data = f"{trace_id}:{span_id}:{span_context.trace_flags}"
+    fields[OTEL_DATA_FIELD_KEY] = span_data
