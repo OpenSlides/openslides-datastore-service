@@ -12,6 +12,7 @@ from datastore.shared.util import (
     fqfield_from_fqid_and_field,
     logger,
 )
+from datastore.shared.util.otel import inject_otel_data
 from datastore.writer.core import Messaging
 
 from .connection_handler import ConnectionHandler
@@ -30,6 +31,7 @@ class RedisMessagingBackendService(Messaging):
         log_all_modified_fields: bool = True,
     ) -> None:
         modified_fqfields = self.get_modified_fqfields(events_per_position)
+        inject_otel_data(modified_fqfields)
         if log_all_modified_fields:
             logger.debug(
                 f"written fqfields into {MODIFIED_FIELDS_TOPIC}: "
