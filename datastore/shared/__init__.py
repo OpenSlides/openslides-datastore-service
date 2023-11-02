@@ -1,7 +1,6 @@
 import atexit
 import os
 import sys
-from functools import partial
 from signal import SIGINT, SIGTERM, signal
 
 from .di import injector
