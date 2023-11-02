@@ -28,7 +28,7 @@ def create_base_application(flask_frontend):
     atexit.register(shutdown)
 
     for sig in (SIGTERM, SIGINT):
-        signal(sig, partial(sys.exit, 0))
+        signal(sig, lambda *_: sys.exit(0))
 
     application = flask_frontend.create_application()
 
