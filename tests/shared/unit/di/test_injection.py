@@ -72,8 +72,8 @@ class TestWithProtocols:
 
             cs = injector.get(ClientService)
 
-            assert type(cs) == client_service
-            assert type(cs.master_service) == master_service
+            assert type(cs) is client_service
+            assert type(cs.master_service) is master_service
             assert cs.value == "default"
             assert cs.another_value == "default2"
             assert cs.init_master_service == cs.master_service
