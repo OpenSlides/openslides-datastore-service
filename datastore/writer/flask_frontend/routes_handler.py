@@ -47,7 +47,7 @@ def reserve_ids():
 def write_without_events():
     if not request.is_json:
         raise InvalidRequest("Data must be json")
-    if type(request.json) != list:
+    if not isinstance(request.json, list):
         raise InvalidRequest("write_without_events data internally must be a list!")
     req_json = cast(List[Dict[str, Any]], request.json)[0]
     if len(req_json.get("events", ())) != 1 and any(
