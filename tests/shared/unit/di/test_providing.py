@@ -39,7 +39,7 @@ class ServiceFactory:
 
 
 def test_default_injector():
-    assert type(default_injector) == DependencyProvider
+    assert type(default_injector) is DependencyProvider
 
 
 class TestRegistrationAsSingleton:
