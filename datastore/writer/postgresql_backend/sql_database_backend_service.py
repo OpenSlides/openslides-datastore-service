@@ -296,3 +296,10 @@ class SqlDatabaseBackendService:
         # restart sequences manually to provide a clean db
         for seq in ("positions_position", "events_id", "collectionfields_id"):
             self.connection.execute(f"ALTER SEQUENCE {seq}_seq RESTART WITH 1;", [])
+
+    def write_message_bus(self, message: str) -> None:
+        statement = "insert into message_bus (message) values (%s);"
+        arguments = [message]
+        self.connection.execute(statement, arguments)
+        # TODO: Use an automatic trigger instead
+        self.connection.execute("SELECT pg_notify('message_bus','')", [])

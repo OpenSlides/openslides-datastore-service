@@ -42,3 +42,6 @@ class Database(Protocol):
 
     def write_model_deletes_without_events(self, fqids: List[Fqid]) -> None:
         """For deleting directly to models-table used for action_workers and import_previews"""
+
+    def write_message_bus(self, message: str) -> None:
+        """Write message to bus"""
