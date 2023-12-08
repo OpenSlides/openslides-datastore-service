@@ -13,3 +13,4 @@ application = create_application()
 
 otel.init("datastore-writer")
 otel.instrument_flask(application)
+otel.instrument_redis()

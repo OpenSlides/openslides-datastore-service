@@ -78,11 +78,14 @@ def assert_modified_fields(
             modified_fields.add(fqfield_from_fqid_and_field(fqid, META_DELETED))
         modified_fields.add(fqfield_from_fqid_and_field(fqid, META_POSITION))
 
+    assert modified_fields == get_redis_modified_fields(redis_connection)
+
+
+def get_redis_modified_fields(redis_connection):
     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 1
     response = redis_connection.xread({MODIFIED_FIELDS_TOPIC: 0}, count=1)
     data = response[0][1][0][1]  # wtf?
-    redis_modified_fields = set(fqfield.decode("utf-8") for fqfield in data[::2])
-    assert modified_fields == redis_modified_fields
+    return set(fqfield.decode("utf-8") for fqfield in data[::2])
 
 
 def assert_no_modified_fields(redis_connection):

@@ -4,15 +4,17 @@ from typing import Any, Dict
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from datastore.shared.di import injector
 from datastore.shared.services import EnvironmentService
 
 
-OTEL_DATA_FIELD_KEY = "__otel_data"
+OTEL_DATA_FIELD_KEY = TraceContextTextMapPropagator._TRACEPARENT_HEADER_NAME
 otel_initialized = False
 
 
@@ -51,6 +53,10 @@ def instrument_flask(app):
     FlaskInstrumentor().instrument_app(app)
 
 
+def instrument_redis():
+    RedisInstrumentor().instrument()
+
+
 def make_span(name, attributes=None):
     """
     Returns a new child span to the currently active span.
@@ -81,11 +87,5 @@ def make_span(name, attributes=None):
 
 
 def inject_otel_data(fields: Dict[str, Any]) -> None:
-    if not is_otel_enabled():
-        return
-
-    span_context = trace.get_current_span().get_span_context()
-    trace_id = span_context.trace_id
-    span_id = span_context.span_id
-    span_data = f"{trace_id}:{span_id}:{span_context.trace_flags}"
-    fields[OTEL_DATA_FIELD_KEY] = span_data
+    if is_otel_enabled():
+        TraceContextTextMapPropagator().inject(fields)
