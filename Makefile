@@ -36,10 +36,6 @@ setup-docker-compose: | build-tests
 	docker-compose -f dc.test.yml up -d
 	docker-compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
-setup-docker-compose-otel: | build-tests
-	docker-compose -f dc.test.yml -f dc.otel.test.yml up -d
-	docker-compose -f dc.test.yml -f dc.otel.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
-
 run-tests-no-down: | setup-docker-compose
 	docker-compose -f dc.test.yml exec datastore ./entrypoint.sh pytest
 
@@ -50,9 +46,6 @@ run-tests: | run-tests-no-down
 
 run-dev run-bash: | setup-docker-compose
 	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
-
-run-dev-otel: | setup-docker-compose-otel
-	docker-compose -f dc.test.yml -f dc.otel.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
 
 run-coverage: | setup-docker-compose
 	docker-compose -f dc.test.yml exec datastore ./entrypoint.sh pytest --cov --cov-report html
@@ -118,6 +111,3 @@ stop:
 
 stop-dev:
 	docker-compose -f dc.dev.yml down --remove-orphans
-
-stop-dev-otel:
-	docker-compose -f dc.test.yml -f dc.otel.test.yml down --remove-orphans

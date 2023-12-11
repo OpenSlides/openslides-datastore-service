@@ -26,24 +26,21 @@ def is_otel_enabled():
     return env_service.is_otel_enabled()
 
 
+def get_span_exporter():
+    return OTLPSpanExporter(endpoint="http://collector:4317", insecure=True)
+
+
 def init(service_name):
     """
     Initializes the opentelemetry components and connection to the otel collector.
     """
     if not is_otel_enabled():
         return
-    span_exporter = OTLPSpanExporter(
-        endpoint="http://collector:4317",
-        insecure=True
-        # optional
-        # credentials=ChannelCredentials(credentials),
-        # headers=(("metadata", "metadata")),
-    )
     tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: service_name})
     )
     trace.set_tracer_provider(tracer_provider)
-    span_processor = BatchSpanProcessor(span_exporter)
+    span_processor = BatchSpanProcessor(get_span_exporter())
     tracer_provider.add_span_processor(span_processor)
     global otel_initialized
     otel_initialized = True

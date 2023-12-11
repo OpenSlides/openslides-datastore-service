@@ -1,11 +1,19 @@
+import os
 from typing import Dict, List, Set
+from unittest.mock import patch
 
 import pytest
+from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 
+import datastore.shared.util.otel as otel
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ALL_TABLES, ConnectionHandler
 from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPE
 from datastore.shared.services import ReadDatabase
+from datastore.shared.services.environment_service import (
+    OTEL_ENABLED_ENVIRONMENT_VAR,
+    EnvironmentService,
+)
 from datastore.shared.typing import Field, Fqid
 from datastore.shared.util import (
     META_DELETED,
@@ -90,3 +98,13 @@ def get_redis_modified_fields(redis_connection):
 
 def assert_no_modified_fields(redis_connection):
     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 0
+
+
+def setup_otel():
+    env = injector.get(EnvironmentService)
+    env.cache[OTEL_ENABLED_ENVIRONMENT_VAR] = "1"
+    with patch(
+        "datastore.shared.util.otel.get_span_exporter",
+        return_value=ConsoleSpanExporter(out=open(os.devnull, "w")),
+    ):
+        otel.init("datastore-writer-tests")
