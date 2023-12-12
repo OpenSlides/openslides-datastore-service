@@ -39,7 +39,7 @@ services:
             - postgres
             - redis
     postgres:
-        image: postgres:13
+        image: postgres:15
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides
