@@ -1,4 +1,4 @@
-FROM python:3.10.12-slim-bookworm
+FROM python:3.10.13-slim-bookworm
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it vim gcc libpq-dev libc-dev postgresql-client redis-tools curl
