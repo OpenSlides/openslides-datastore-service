@@ -4,6 +4,7 @@ from unittest.mock import patch
 import psycopg2
 import pytest
 
+import datastore.shared.util.otel as otel
 from datastore.shared.di import injector
 from datastore.shared.flask_frontend import ERROR_CODES
 from datastore.shared.postgresql_backend import ConnectionHandler
@@ -14,6 +15,8 @@ from tests.writer.system.util import (
     assert_model,
     assert_modified_fields,
     assert_no_modified_fields,
+    get_redis_modified_fields,
+    setup_otel,
 )
 
 
@@ -81,3 +84,10 @@ def test_two_write_requests_with_locked_fields(
     assert_model("a/1", {"f": 1}, 1)
     assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
     assert_no_modified_fields(redis_connection)
+
+
+def test_otel(json_client, data, redis_connection):
+    setup_otel()
+    response = json_client.post(WRITE_URL, data)
+    assert_response_code(response, 201)
+    assert otel.OTEL_DATA_FIELD_KEY in get_redis_modified_fields(redis_connection)

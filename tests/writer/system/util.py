@@ -1,11 +1,19 @@
+import os
 from typing import Dict, List, Set
+from unittest.mock import patch
 
 import pytest
+from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 
+import datastore.shared.util.otel as otel
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ALL_TABLES, ConnectionHandler
 from datastore.shared.postgresql_backend.sql_event_types import EVENT_TYPE
 from datastore.shared.services import ReadDatabase
+from datastore.shared.services.environment_service import (
+    OTEL_ENABLED_ENVIRONMENT_VAR,
+    EnvironmentService,
+)
 from datastore.shared.typing import Field, Fqid
 from datastore.shared.util import (
     META_DELETED,
@@ -78,12 +86,25 @@ def assert_modified_fields(
             modified_fields.add(fqfield_from_fqid_and_field(fqid, META_DELETED))
         modified_fields.add(fqfield_from_fqid_and_field(fqid, META_POSITION))
 
+    assert modified_fields == get_redis_modified_fields(redis_connection)
+
+
+def get_redis_modified_fields(redis_connection):
     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 1
     response = redis_connection.xread({MODIFIED_FIELDS_TOPIC: 0}, count=1)
     data = response[0][1][0][1]  # wtf?
-    redis_modified_fields = set(fqfield.decode("utf-8") for fqfield in data[::2])
-    assert modified_fields == redis_modified_fields
+    return set(fqfield.decode("utf-8") for fqfield in data[::2])
 
 
 def assert_no_modified_fields(redis_connection):
     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 0
+
+
+def setup_otel():
+    env = injector.get(EnvironmentService)
+    env.cache[OTEL_ENABLED_ENVIRONMENT_VAR] = "1"
+    with patch(
+        "datastore.shared.util.otel.get_span_exporter",
+        return_value=ConsoleSpanExporter(out=open(os.devnull, "w")),
+    ):
+        otel.init("datastore-writer-tests")
