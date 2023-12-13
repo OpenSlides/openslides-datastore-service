@@ -22,7 +22,7 @@ services:
         ports:
             - "5679:5678"
     postgres:
-        image: postgres:13
+        image: postgres:15
         env_file: database.env
         networks:
             - postgres
