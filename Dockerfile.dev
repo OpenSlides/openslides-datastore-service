@@ -16,7 +16,7 @@ COPY $MODULE/entrypoint.sh ./
 ENV PYTHONPATH /app/
 
 ENV FLASK_APP=datastore.$MODULE.app
-ENV FLASK_ENV=development
+ENV FLASK_DEBUG=1
 
 ARG PORT
 RUN test -n "$PORT" || (echo "PORT not set" && false)

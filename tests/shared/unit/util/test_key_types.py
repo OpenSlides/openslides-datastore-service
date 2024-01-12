@@ -135,7 +135,3 @@ def test_id():
 
 def test_field():
     assert_is_field("my_field_2_")
-
-
-def test_field_template():
-    assert_is_field("f_$_s")

@@ -134,8 +134,12 @@ class SqlOccLockerBackendService:
                     )
                     filter_part = "(e.position>%s and cf.collectionfield=%s"
                     if lock.filter:
-                        filter_part += " and " + self.query_helper.build_filter_str(
-                            lock.filter, query_arguments, "m"
+                        filter_part += (
+                            " and ("
+                            + self.query_helper.build_filter_str(
+                                lock.filter, query_arguments, "m"
+                            )
+                            + ")"
                         )
                     filter_part += ")"
                     filter_parts.append(filter_part)

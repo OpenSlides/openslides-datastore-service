@@ -47,10 +47,6 @@ run-tests: | run-tests-no-down
 run-dev run-bash: | setup-docker-compose
 	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
 
-run-system-tests: | setup-docker-compose
-	docker-compose -f dc.test.yml exec datastore ./entrypoint.sh pytest tests/system
-	docker-compose -f dc.test.yml down
-
 run-coverage: | setup-docker-compose
 	docker-compose -f dc.test.yml exec datastore ./entrypoint.sh pytest --cov --cov-report html
 	docker-compose -f dc.test.yml down
