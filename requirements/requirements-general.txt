@@ -1,7 +1,7 @@
 # update to newer version as soon as https://github.com/konradhalas/dacite/issues/218 is fixed
 dacite==1.7.0
 fastjsonschema==2.19.1
-Flask==3.0.0
+Flask==3.0.1
 gunicorn==21.2.0
 psycopg2==2.9.9
 redis==5.0.1
