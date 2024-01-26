@@ -22,9 +22,11 @@ def test_create_base_application():
 
     shutdown_service = MagicMock()
     get = MagicMock(return_value=shutdown_service)
-    with patch("atexit.register") as register, patch(
-        "datastore.shared.init_logging"
-    ) as init_logging, patch.object(injector, "get", new=get) as iget:
+    with (
+        patch("atexit.register") as register,
+        patch("datastore.shared.init_logging") as init_logging,
+        patch.object(injector, "get", new=get) as iget,
+    ):
         assert create_base_application(flask_frontend) == app
 
         print("", end="")  # simulate that the flushprint is tested
@@ -42,9 +44,10 @@ def test_create_base_application():
 def test_create_base_application_gunicorn(env_service):
     os.environ["SERVER_SOFTWARE"] = "gunicorn"
     env_service.cache = {}
-    with patch("atexit.register"), patch(
-        "datastore.shared.init_logging"
-    ) as init_logging:
+    with (
+        patch("atexit.register"),
+        patch("datastore.shared.init_logging") as init_logging,
+    ):
         create_base_application(MagicMock())
         init_logging.assert_called()
         assert init_logging.call_args[0][0] == "gunicorn.error"

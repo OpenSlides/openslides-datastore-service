@@ -27,17 +27,23 @@ def test_simple():
     position = MagicMock(name="position")
     position.__le__.return_value = False
 
-    with patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_collection"
-    ) as assert_is_collection, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
-    ) as assert_is_fqid, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
-    ) as assert_is_fqfield, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_field"
-    ) as assert_is_field, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_id"
-    ) as assert_is_id:
+    with (
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_collection"
+        ) as assert_is_collection,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
+        ) as assert_is_fqid,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
+        ) as assert_is_fqfield,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_field"
+        ) as assert_is_field,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_id"
+        ) as assert_is_id,
+    ):
         A(fqid, collection, field, fqfield, id, position)
 
         assert_is_collection.assert_called_with(collection)
@@ -126,11 +132,14 @@ class D(SelfValidatingDataclass):
 def test_union_of_lists_with_fqid_and_fqfield_success_1():
     fqid = MagicMock()
 
-    with patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
-    ) as assert_is_fqid, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
-    ) as assert_is_fqfield:
+    with (
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
+        ) as assert_is_fqid,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
+        ) as assert_is_fqfield,
+    ):
         D([fqid])
         assert_is_fqid.assert_called_with(fqid)
         assert_is_fqfield.assert_not_called()
@@ -139,11 +148,14 @@ def test_union_of_lists_with_fqid_and_fqfield_success_1():
 def test_union_of_lists_with_fqid_and_fqfield_success_2():
     fqfield = MagicMock()
 
-    with patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
-    ) as assert_is_fqid, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
-    ) as assert_is_fqfield:
+    with (
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
+        ) as assert_is_fqid,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
+        ) as assert_is_fqfield,
+    ):
         assert_is_fqid.side_effect = InvalidFormat("msg")
         D([fqfield])
 
@@ -154,11 +166,14 @@ def test_union_of_lists_with_fqid_and_fqfield_success_2():
 def test_union_of_lists_with_fqid_and_fqfield_fail():
     data = MagicMock()
 
-    with patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
-    ) as assert_is_fqid, patch(
-        "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
-    ) as assert_is_fqfield:
+    with (
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqid"
+        ) as assert_is_fqid,
+        patch(
+            "datastore.shared.util.self_validating_dataclass.assert_is_fqfield"
+        ) as assert_is_fqfield,
+    ):
         assert_is_fqid.side_effect = InvalidFormat("msg")
         assert_is_fqfield.side_effect = InvalidFormat("msg")
 
