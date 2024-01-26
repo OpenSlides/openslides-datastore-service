@@ -18,9 +18,10 @@ def env_service(reset_di):  # noqa
 def test_init_logging(env_service):
     reference_logger_name = MagicMock()
     flask_logger = MagicMock()
-    with patch("datastore.shared.util.logging.logger") as logger, patch(
-        "datastore.shared.util.logging.logging"
-    ) as logging:
+    with (
+        patch("datastore.shared.util.logging.logger") as logger,
+        patch("datastore.shared.util.logging.logging") as logging,
+    ):
         logger.handlers = None
         reference_logger = MagicMock()
         logging.getLogger = MagicMock(return_value=reference_logger)
