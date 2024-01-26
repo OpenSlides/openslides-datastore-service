@@ -179,14 +179,12 @@ def test_unknown_init_args():
 
         @service_as_factory
         class SomeService:
-            def __init__(self, some_arg):
-                ...
+            def __init__(self, some_arg): ...
 
 
 def test_check_implements_protocol_fail():
     class P(Protocol):
-        def function(self) -> None:
-            ...
+        def function(self) -> None: ...
 
     class C:
         pass

@@ -190,10 +190,10 @@ def main():
                     id = int(matchobj.group("id"))
                     return f"[motion:{id}]"
 
-                new_model[
-                    "recommendation_extension"
-                ] = recommendation_reference_motion_ids_regex.sub(
-                    replace_fn, new_model["recommendation_extension"]
+                new_model["recommendation_extension"] = (
+                    recommendation_reference_motion_ids_regex.sub(
+                        replace_fn, new_model["recommendation_extension"]
+                    )
                 )
             motions.append(new_model)
         elif collection == "motion_category":
