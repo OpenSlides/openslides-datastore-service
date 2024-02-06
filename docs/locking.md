@@ -21,7 +21,7 @@ datastore. This table is automatically updated on every event execution accordin
 the event.
 
 The size of this table is neglectable since we have at most one row per field in the models
-definition (see https://github.com/OpenSlides/OpenSlides/blob/openslides4-dev/docs/models.yml),
+definition (see https://github.com/OpenSlides/openslides-meta/models.yml),
 which is currently a little over 2000 lines long. Since most field definitions are multiline, this
 is a very high upper limit for the number of fields, but even 2000 entries in the table is nothing
 in comparison to the `events` table.
