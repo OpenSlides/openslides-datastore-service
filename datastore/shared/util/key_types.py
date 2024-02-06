@@ -17,7 +17,7 @@ class KEY_TYPE:
 
 _collection_regex = r"[a-z](?:[a-z_]+[a-z]+)?"
 _id_regex = r"[1-9][0-9]*"
-_field_regex = r"[a-z][a-z0-9_]*\$?[a-z0-9_]*"
+_field_regex = r"[a-z][a-z0-9_]*"
 
 fqid_regex = re.compile(f"^({_collection_regex}){KEYSEPARATOR}({_id_regex})$")
 fqfield_regex = re.compile(
