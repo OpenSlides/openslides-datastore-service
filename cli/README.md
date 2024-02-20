@@ -10,4 +10,5 @@ current module.
 
 The script `trim_collectionfields.py` can be used to remove outdated entries from the two
 collectionfield helper tables to improve performance. This is best used in regular intervals, e.g.,
-via a cronjob. It can be safely executed during production without shutting down any services.
+via a cronjob. It can be safely executed during production without shutting down any services as
+long as the time span is long enough (longer than any running backend process, e.g., import may take).
