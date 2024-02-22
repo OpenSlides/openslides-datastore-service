@@ -2,12 +2,12 @@ import copy
 from threading import Thread
 
 import pytest
-from datastore.writer.core.writer_service import WriterService
 
-from datastore.writer.flask_frontend.routes import WRITE_URL, WRITE_WITHOUT_EVENTS_URL
-from tests.util import assert_response_code
 from datastore.shared.di import injector
 from datastore.writer.core import Writer
+from datastore.writer.core.writer_service import WriterService
+from datastore.writer.flask_frontend.routes import WRITE_URL, WRITE_WITHOUT_EVENTS_URL
+from tests.util import assert_response_code
 
 
 @pytest.fixture()
@@ -173,29 +173,32 @@ def test_delete_action_worker_with_2_events(json_client, data, db_cur):
 def test_write_action_worker_during_request(json_client, data, db_cur):
     response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
-    
+
     writer: WriterService = injector.get(Writer)
     writer._lock.acquire()
 
-    thread = start_thread(json_client, [
-        {
-            "events": [
-                {
-                    "type": "create",
-                    "fqid": "model/1",
-                    "fields": {
-                        "id": 1,
-                    },
-                }
-            ],
-            "information": {},
-            "user_id": 1,
-            "locked_fields": {},
-        }
-    ])
+    thread = start_thread(
+        json_client,
+        [
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqid": "model/1",
+                        "fields": {
+                            "id": 1,
+                        },
+                    }
+                ],
+                "information": {},
+                "user_id": 1,
+                "locked_fields": {},
+            }
+        ],
+    )
     thread.join(0.1)
     assert thread.is_alive()
-    
+
     data[0]["events"][0]["type"] = "update"
     data[0]["events"][0]["fields"] = {"timestamp": 1658489444}
     response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
@@ -205,7 +208,9 @@ def test_write_action_worker_during_request(json_client, data, db_cur):
     result = db_cur.fetchall()
     assert len(result) == 0
 
-    db_cur.execute("select data->>'timestamp' from models where fqid = 'action_worker/1'")
+    db_cur.execute(
+        "select data->>'timestamp' from models where fqid = 'action_worker/1'"
+    )
     assert db_cur.fetchone() == ("1658489444",)
 
     writer._lock.release()
@@ -215,6 +220,7 @@ def test_write_action_worker_during_request(json_client, data, db_cur):
     db_cur.execute("select data from models where fqid = 'model/1'")
     result = db_cur.fetchall()
     assert len(result) == 1
+
 
 def start_thread(json_client, payload):
     thread = Thread(
