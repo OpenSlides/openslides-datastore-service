@@ -1,9 +1,13 @@
 import copy
+from threading import Thread
 
 import pytest
+from datastore.writer.core.writer_service import WriterService
 
-from datastore.writer.flask_frontend.routes import WRITE_WITHOUT_EVENTS_URL
+from datastore.writer.flask_frontend.routes import WRITE_URL, WRITE_WITHOUT_EVENTS_URL
 from tests.util import assert_response_code
+from datastore.shared.di import injector
+from datastore.writer.core import Writer
 
 
 @pytest.fixture()
@@ -24,7 +28,7 @@ def data():
                         },
                     }
                 ],
-                "information": {"action_worker/1": ["create action_worker"]},
+                "information": {},
                 "user_id": 1,
                 "locked_fields": {},
             }
@@ -152,7 +156,7 @@ def test_delete_action_worker_with_2_events(json_client, data, db_cur):
                 {"type": "delete", "fqid": "action_worker/2"},
             ],
             "user_id": 1,
-            "information": "delete action_workers",
+            "information": {},
             "locked_fields": {},
         }
     ]
@@ -164,3 +168,58 @@ def test_delete_action_worker_with_2_events(json_client, data, db_cur):
     )
     result = db_cur.fetchall()
     assert len(result) == 0, "There must be 0 records found"
+
+
+def test_write_action_worker_during_request(json_client, data, db_cur):
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
+    assert_response_code(response, 201)
+    
+    writer: WriterService = injector.get(Writer)
+    writer._lock.acquire()
+
+    thread = start_thread(json_client, [
+        {
+            "events": [
+                {
+                    "type": "create",
+                    "fqid": "model/1",
+                    "fields": {
+                        "id": 1,
+                    },
+                }
+            ],
+            "information": {},
+            "user_id": 1,
+            "locked_fields": {},
+        }
+    ])
+    thread.join(0.1)
+    assert thread.is_alive()
+    
+    data[0]["events"][0]["type"] = "update"
+    data[0]["events"][0]["fields"] = {"timestamp": 1658489444}
+    response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
+    assert_response_code(response, 201)
+
+    db_cur.execute("select data from models where fqid = 'model/1'")
+    result = db_cur.fetchall()
+    assert len(result) == 0
+
+    db_cur.execute("select data->>'timestamp' from models where fqid = 'action_worker/1'")
+    assert db_cur.fetchone() == ("1658489444",)
+
+    writer._lock.release()
+    thread.join(0.1)
+    assert not thread.is_alive()
+
+    db_cur.execute("select data from models where fqid = 'model/1'")
+    result = db_cur.fetchall()
+    assert len(result) == 1
+
+def start_thread(json_client, payload):
+    thread = Thread(
+        target=json_client.post,
+        args=[WRITE_URL, payload],
+    )
+    thread.start()
+    return thread

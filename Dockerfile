@@ -25,6 +25,7 @@ ENV MODULE=$MODULE
 COPY $MODULE/entrypoint.sh scripts/system/* ./
 
 ENV NUM_WORKERS=1
+ENV NUM_THREADS=5
 ENV WORKER_TIMEOUT=30
 
 LABEL org.opencontainers.image.title="OpenSlides Datastore Service"
@@ -35,4 +36,4 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 HEALTHCHECK CMD python cli/healthcheck.py
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD exec gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application -t $WORKER_TIMEOUT
+CMD exec gunicorn -w $NUM_WORKERS -k gthread --threads $NUM_THREADS -b 0.0.0.0:$PORT datastore.$MODULE.app:application -t $WORKER_TIMEOUT

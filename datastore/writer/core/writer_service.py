@@ -1,6 +1,7 @@
 import copy
 import threading
 from collections import defaultdict
+from time import sleep
 from typing import Dict, List, Set, Tuple
 
 from datastore.shared.di import service_as_factory
@@ -35,6 +36,8 @@ class WriterService:
             self.write_requests = write_requests
 
             with self._lock:
+                if write_requests[0].information == "sleep":
+                    sleep(100)
                 self.position_to_modified_models = {}
                 with self.database.get_context():
                     for write_request in self.write_requests:

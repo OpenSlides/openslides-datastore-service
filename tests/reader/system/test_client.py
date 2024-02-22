@@ -104,7 +104,7 @@ class TestConcurrentRequests:
 
     def test_3_concurrent_requests(self):
         """
-        L_i = lock form lock_map
+        L_i = lock from lock_map
         I_i = indicator variable from indicator_map
         T_x = thread_x
 

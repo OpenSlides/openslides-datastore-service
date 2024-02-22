@@ -91,7 +91,7 @@ build build-dev:
 	@$(MAKE) -C reader $@
 	@$(MAKE) -C writer $@
 
-run:
+run: | build
 	docker-compose up -d
 
 run-verbose:
