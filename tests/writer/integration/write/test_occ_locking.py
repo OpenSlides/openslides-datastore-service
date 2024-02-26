@@ -7,6 +7,7 @@ import pytest
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler, SqlQueryHelper
 from datastore.shared.services import EnvironmentService, ReadDatabase
+from datastore.shared.services.shutdown_service import ShutdownService
 from datastore.shared.util import FilterOperator, ModelLocked
 from datastore.writer.core import (
     Database,
@@ -21,7 +22,9 @@ from tests import reset_di  # noqa
 
 class FakeConnectionHandler:
     def query_list_of_single_values(self, query, arguments):
-        if query.startswith("with all_together as"):
+        if query.startswith(
+            "select e.fqid || %s || split_part(cf.collectionfield, %s, 2)"
+        ):
             return [self.fqfield()]
         elif query.startswith("select fqid from events"):
             return [self.fqid()]
@@ -47,6 +50,7 @@ def setup_di(reset_di):  # noqa
     injector.register_as_singleton(ReadDatabase, MagicMock)
     injector.register_as_singleton(Messaging, MagicMock)
     injector.register(EnvironmentService, EnvironmentService)
+    injector.register(ShutdownService, ShutdownService)
     core_setup_di()
 
 
