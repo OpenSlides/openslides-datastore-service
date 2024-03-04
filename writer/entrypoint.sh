@@ -15,4 +15,8 @@ if [ -n "$COMMAND" ]; then
     fi
 fi
 
+if [ "$OPENSLIDES_ENVIRONMENT" = "prod" ]; then
+    cron
+fi
+
 exec "$@"
