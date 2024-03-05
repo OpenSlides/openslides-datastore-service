@@ -16,6 +16,7 @@ if [ -n "$COMMAND" ]; then
 fi
 
 if [ "$OPENSLIDES_ENVIRONMENT" = "prod" ]; then
+    printenv > /app/environment
     cron
 fi
 

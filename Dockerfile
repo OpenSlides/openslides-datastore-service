@@ -27,7 +27,7 @@ COPY $MODULE/entrypoint.sh scripts/system/* ./
 ENV NUM_WORKERS=1
 ENV WORKER_TIMEOUT=30
 
-RUN echo "0 4 * * * root /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/trim-collectionfield-tables
+RUN echo "20 4 * * * root /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/trim-collectionfield-tables
 
 LABEL org.opencontainers.image.title="OpenSlides Datastore Service"
 LABEL org.opencontainers.image.description="Service for OpenSlides which wraps the database, which includes reader and writer functionality."
