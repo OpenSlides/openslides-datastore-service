@@ -17,6 +17,7 @@ fi
 
 if [ "$OPENSLIDES_ENVIRONMENT" = "prod" ]; then
     printenv > /app/environment
+    echo "Starting cron..."
     cron
 fi
 
