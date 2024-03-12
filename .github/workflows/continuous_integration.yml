@@ -1,7 +1,10 @@
 name: Continuous Integration
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feature/**'
+      - 'staging/4*'
 
 jobs:
   test-prod:
