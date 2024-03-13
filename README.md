@@ -44,6 +44,8 @@ The datastore can be configured with the following environment variables:
 - `DATASTORE_MAX_RETRIES`: The amount of times a request to the database is retried before giving up. Minimum: 1, Default: 5
 - `DATASTORE_RETRY_TIMEOUT`: How long to wait before retrying a request to the database, in sec as float. Set 0 to disable waiting
   between requests. Default: 0.4
+- `DATASTORE_TRIM_COLLECTIONFIELD_TABLES`: Whether or not to enable the automatic collectionfield
+  table trimming via cronjob to improve performance. Default: 0
 - `OPENSLIDES_DEVELOPMENT`: If set to a truthy value, the datastore runs in development mode (see [development docs](docs/development.md)
   for the implications).
 - `DATASTORE_LOG_LEVEL`: Set the log level for the datastore. If not provided, it defaults to `DEBUG` in development
