@@ -6,7 +6,7 @@ pytest-cov==4.1.0
 
 # linting & formatting
 black==24.2.0
-autoflake==2.3.0
+autoflake==2.3.1
 isort==5.13.2
 flake8==7.0.0
 mypy==1.9.0
