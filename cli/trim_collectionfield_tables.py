@@ -41,6 +41,7 @@ def main(args: list[str] = []):
             ),
             [threshold],
         )
+    print("Trimmed collectionfield tables.")
 
 
 if __name__ == "__main__":
