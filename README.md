@@ -18,10 +18,6 @@ You can run the datastore (with or without logs) and stop it:
 
 If you want to include the Datastore in other projects (e.g. as a dependency for testing), refer to the [development documentation](docs/development.md).
 
-## Initial data
-
-To create initial data, see [development documentation](docs/development.md#Commands).
-
 ### Curl example
 
 After you started the productive environment, you can issue requests e.g. via curl. First, create a model:
