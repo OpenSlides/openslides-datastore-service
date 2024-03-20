@@ -15,4 +15,10 @@ if [ -n "$COMMAND" ]; then
     fi
 fi
 
+if [ "$OPENSLIDES_ENVIRONMENT" = "prod" ] && [ -n "$DATASTORE_TRIM_COLLECTIONFIELD_TABLES" ]; then
+    printenv > /app/environment
+    echo "Starting cron..."
+    cron
+fi
+
 exec "$@"

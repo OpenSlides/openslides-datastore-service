@@ -1,15 +1,15 @@
 -r requirements-general.txt
 
 # testing
-pytest==8.0.1
+pytest==8.1.1
 pytest-cov==4.1.0
 
 # linting & formatting
 black==24.2.0
-autoflake==2.3.0
+autoflake==2.3.1
 isort==5.13.2
 flake8==7.0.0
-mypy==1.8.0
+mypy==1.9.0
 
 # other dev stuff
 debugpy==1.8.1
