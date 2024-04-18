@@ -14,10 +14,10 @@ build-dev:
 	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
 
 run-dev-standalone: | build-dev
-	docker-compose -f dc.dev.yml up -d $(MODULE)
+	docker compose -f dc.dev.yml up -d $(MODULE)
 
 run-dev-verbose: | build-dev
-	docker-compose -f dc.dev.yml up $(MODULE)
+	docker compose -f dc.dev.yml up $(MODULE)
 
 endif
 
@@ -33,40 +33,40 @@ rebuild-tests:
 	docker build -t openslides-datastore-test -f Dockerfile.test . --no-cache
 
 setup-docker-compose: | build-tests
-	docker-compose -f dc.test.yml up -d
-	docker-compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
+	docker compose -f dc.test.yml up -d
+	docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
 run-tests-no-down: | setup-docker-compose
-	docker-compose -f dc.test.yml exec datastore ./entrypoint.sh pytest
+	docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest
 
 run-tests: | run-tests-no-down
-	docker-compose -f dc.test.yml down
+	docker compose -f dc.test.yml down
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
 
 run-dev run-bash: | setup-docker-compose
-	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
+	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
 
 run-coverage: | setup-docker-compose
-	docker-compose -f dc.test.yml exec datastore ./entrypoint.sh pytest --cov --cov-report html
-	docker-compose -f dc.test.yml down
+	docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest --cov --cov-report html
+	docker compose -f dc.test.yml down
 
 run-ci-no-down: | setup-docker-compose
-	docker-compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
+	docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
 
 run-ci: | run-ci-no-down
-	docker-compose -f dc.test.yml down
+	docker compose -f dc.test.yml down
 
 run-cleanup: | setup-docker-compose
-	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
-	docker-compose -f dc.test.yml down
+	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
+	docker compose -f dc.test.yml down
 
 run-cleanup-with-update: | setup-docker-compose
-	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore pip install -U -r requirements-testing.txt
-	docker-compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
+	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore pip install -U -r requirements-testing.txt
+	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
 
 stop-tests:
-	docker-compose -f dc.test.yml down
+	docker compose -f dc.test.yml down
 
 fst_args=-v `pwd`/system_tests/system_tests:/app/system_tests --network="host" --env-file=.env  -u $$(id -u $${USER}):$$(id -g $${USER}) openslides-datastore-full-system-tests
 
@@ -92,22 +92,22 @@ build build-dev:
 	@$(MAKE) -C writer $@
 
 run:
-	docker-compose up -d
+	docker compose up -d
 
 run-verbose:
-	docker-compose up
+	docker compose up
 
 run-dev-standalone: | build-dev
-	docker-compose -f dc.dev.yml up -d
+	docker compose -f dc.dev.yml up -d
 
 run-dev-verbose: | build-dev
-	docker-compose -f dc.dev.yml up
+	docker compose -f dc.dev.yml up
 
 endif
 
 # stopping is the same everywhere
 stop:
-	docker-compose down --remove-orphans
+	docker compose down --remove-orphans
 
 stop-dev:
-	docker-compose -f dc.dev.yml down --remove-orphans
+	docker compose -f dc.dev.yml down --remove-orphans

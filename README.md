@@ -3,7 +3,7 @@
 Service for OpenSlides which wraps the database, which includes reader and writer functionality. For an overview of the core concepts and available methods see [the wiki](https://github.com/OpenSlides/OpenSlides/wiki/Datastore-Service). As a starting point for developing begin with the [basic repository layout](docs/layout.md).
 
 ## Usage
-A Makefile is used to encapsulate all docker related commands. It is recommended to use the docker setup to run the datastore, so you need `make`, `docker` and `docker-compose` installed on your system as the only requirements.
+A Makefile is used to encapsulate all docker related commands. It is recommended to use the docker setup to run the datastore, so you need `make`, `docker` and `docker compose` installed on your system as the only requirements.
 
 For the productive mode two images `openslides-datastore-reader` and `openslides-datastore-writer` must be build via Make:
 
