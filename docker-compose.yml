@@ -19,6 +19,7 @@ services:
             - "${OPENSLIDES_DATASTORE_WRITER_PORT}:${OPENSLIDES_DATASTORE_WRITER_PORT}"
         environment:
             - PORT=${OPENSLIDES_DATASTORE_WRITER_PORT}
+            - DATASTORE_TRIM_COLLECTIONFIELD_TABLES=1
         depends_on:
             - postgres
             - redis
@@ -28,7 +29,7 @@ services:
         secrets:
             - postgres_password
     postgres:
-        image: postgres:13
+        image: postgres:15
         env_file: database.env
         networks:
             - postgres

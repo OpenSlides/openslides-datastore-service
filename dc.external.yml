@@ -29,8 +29,6 @@ services:
             - "9011:9011"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - COMMAND=create_initial_data
-            - DATASTORE_INITIAL_DATA_FILE=https://raw.githubusercontent.com/OpenSlides/openslides-backend/main/global/data/example-data.json
         depends_on:
             - postgres
             - redis
@@ -39,7 +37,7 @@ services:
             - postgres
             - redis
     postgres:
-        image: postgres:13
+        image: postgres:15
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides

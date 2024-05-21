@@ -8,6 +8,7 @@ from datastore.shared.postgresql_backend.sql_read_database_backend_service impor
     SqlReadDatabaseBackendService,
 )
 from datastore.shared.services import ReadDatabase
+from datastore.shared.services.shutdown_service import ShutdownService
 from datastore.shared.util import KEYSEPARATOR, ModelLocked
 from datastore.writer.core import OccLocker
 from datastore.writer.postgresql_backend import SqlOccLockerBackendService
@@ -20,6 +21,7 @@ def provide_di(reset_di):  # noqa
     injector.register(SqlQueryHelper, SqlQueryHelper)
     injector.register(ReadDatabase, SqlReadDatabaseBackendService)
     injector.register(OccLocker, SqlOccLockerBackendService)
+    injector.register(ShutdownService, ShutdownService)
     yield
 
 
@@ -95,7 +97,9 @@ def test_raise_model_locked_multiple_reduced_to_one(
 def test_raise_model_locked_multiple_different(
     occ_locker, connection, mock_write_request
 ):
-    connection.query_list_of_single_values = lambda query, args: [args[0]]
+    connection.query_list_of_single_values = lambda query, args: [
+        args[2] if len(args) > 2 else args[0]
+    ]
     mock_write_request.locked_fqids = {"a/1": 2}
     mock_write_request.locked_fqfields = {"a/1/f": 2}
     mock_write_request.locked_collectionfields = {"a/f": 2}
@@ -129,12 +133,12 @@ def test_query_arguments_fqfield(occ_locker, connection):
     assert (
         args
         == [
+            KEYSEPARATOR,
+            KEYSEPARATOR,
             "a/1",
             2,
             "b/3",
             42,
-            KEYSEPARATOR,
-            KEYSEPARATOR,
             "a/1",
             ["a/f"],
             "b/3",
@@ -143,12 +147,12 @@ def test_query_arguments_fqfield(occ_locker, connection):
     ) or (
         args
         == [
+            KEYSEPARATOR,
+            KEYSEPARATOR,
             "b/3",
             42,
             "a/1",
             2,
-            KEYSEPARATOR,
-            KEYSEPARATOR,
             "b/3",
             ["b/e"],
             "a/1",

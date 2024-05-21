@@ -3,7 +3,7 @@
 Service for OpenSlides which wraps the database, which includes reader and writer functionality. For an overview of the core concepts and available methods see [the wiki](https://github.com/OpenSlides/OpenSlides/wiki/Datastore-Service). As a starting point for developing begin with the [basic repository layout](docs/layout.md).
 
 ## Usage
-A Makefile is used to encapsulate all docker related commands. It is recommended to use the docker setup to run the datastore, so you need `make`, `docker` and `docker-compose` installed on your system as the only requirements.
+A Makefile is used to encapsulate all docker related commands. It is recommended to use the docker setup to run the datastore, so you need `make`, `docker` and `docker compose` installed on your system as the only requirements.
 
 For the productive mode two images `openslides-datastore-reader` and `openslides-datastore-writer` must be build via Make:
 
@@ -17,10 +17,6 @@ You can run the datastore (with or without logs) and stop it:
     make run-verbose  # Ctrl+C to quit
 
 If you want to include the Datastore in other projects (e.g. as a dependency for testing), refer to the [development documentation](docs/development.md).
-
-## Initial data
-
-To create initial data, see [development documentation](docs/development.md#Commands).
 
 ### Curl example
 
@@ -48,6 +44,8 @@ The datastore can be configured with the following environment variables:
 - `DATASTORE_MAX_RETRIES`: The amount of times a request to the database is retried before giving up. Minimum: 1, Default: 5
 - `DATASTORE_RETRY_TIMEOUT`: How long to wait before retrying a request to the database, in sec as float. Set 0 to disable waiting
   between requests. Default: 0.4
+- `DATASTORE_TRIM_COLLECTIONFIELD_TABLES`: Whether or not to enable the automatic collectionfield
+  table trimming via cronjob to improve performance. Default: 0
 - `OPENSLIDES_DEVELOPMENT`: If set to a truthy value, the datastore runs in development mode (see [development docs](docs/development.md)
   for the implications).
 - `DATASTORE_LOG_LEVEL`: Set the log level for the datastore. If not provided, it defaults to `DEBUG` in development

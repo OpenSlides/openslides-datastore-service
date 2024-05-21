@@ -137,9 +137,9 @@ def test_less_events(
     migration_handler.register_migrations(
         get_noop_event_migration(2),
         get_lambda_event_migration(
-            lambda e: [e]
-            if isinstance(e, CreateEvent) or isinstance(e, UpdateEvent)
-            else [],
+            lambda e: (
+                [e] if isinstance(e, CreateEvent) or isinstance(e, UpdateEvent) else []
+            ),
             target_migration_index=3,
         ),
     )

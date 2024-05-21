@@ -3,7 +3,7 @@
 -- * fqids can be max 48 chars long. The longest collection is currently `motion_change_recommendation` with 28 chars. The
 --   maximum is 32 chars. So 15 chars are left for ids, which means there can be (10^16)-1 ids. That are about 4.5x10^6 more ids
 --   in 15 characters in comparison to (2^31)-1 for the sql INTEGER type. This should be enough.
--- * In contrast, collectionfields cna be very long in fact of structured keys. I choose 255 to be save. Maybe this can be
+-- * In contrast, collectionfields can be very long in fact of structured keys. I choose 255 to be save. Maybe this can be
 --   reduced in the future to save space...
 
 
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS event_position_idx ON events (position);
 CREATE INDEX IF NOT EXISTS event_fqid_idx ON events (fqid);
--- TODO: create index for data->>meeting_id for collectionfieldlocks
+CREATE INDEX IF NOT EXISTS event_data_meeting_id_idx ON events ((data->>'meeting_id')) WHERE data->>'meeting_id' IS NOT NULL;
 
 -- For the `reserve_ids` feature
 CREATE TABLE IF NOT EXISTS id_sequences (

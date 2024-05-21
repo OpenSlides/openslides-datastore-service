@@ -92,17 +92,14 @@ class SqlOccLockerBackendService:
         ]
         query = dedent(
             f"""\
-            with all_together as (
-                select e.fqid, cf.collectionfield from events e
-                    inner join events_to_collectionfields ecf on e.id=ecf.event_id
-                    inner join collectionfields cf on ecf.collectionfield_id=cf.id
-                where {event_filter})
-            select fqid || %s || split_part(collectionfield, %s, 2) from all_together where {collectionfield_filter}"""
+            select e.fqid || %s || split_part(cf.collectionfield, %s, 2) from events e
+                inner join events_to_collectionfields ecf on e.id=ecf.event_id
+                inner join collectionfields cf on ecf.collectionfield_id=cf.id
+            where ({event_filter}) and ({collectionfield_filter})"""
         )
         query_arguments = (
-            event_query_arguments + [KEYSEPARATOR] * 2 + collectionfield_query_arguments
+            [KEYSEPARATOR] * 2 + event_query_arguments + collectionfield_query_arguments
         )
-
         return self.connection.query_list_of_single_values(query, query_arguments)
 
     def get_locked_collectionfields(
@@ -134,8 +131,12 @@ class SqlOccLockerBackendService:
                     )
                     filter_part = "(e.position>%s and cf.collectionfield=%s"
                     if lock.filter:
-                        filter_part += " and " + self.query_helper.build_filter_str(
-                            lock.filter, query_arguments, "m"
+                        filter_part += (
+                            " and ("
+                            + self.query_helper.build_filter_str(
+                                lock.filter, query_arguments, "m"
+                            )
+                            + ")"
                         )
                     filter_part += ")"
                     filter_parts.append(filter_part)

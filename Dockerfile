@@ -1,7 +1,7 @@
-FROM python:3.10.12-slim-buster
+FROM python:3.10.14-slim-bookworm
 
 RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y wait-for-it gcc libpq-dev libc-dev postgresql-client redis-tools
+    apt-get install --no-install-recommends -y wait-for-it gcc libpq-dev libc-dev postgresql-client redis-tools cron
 
 WORKDIR /app
 ENV PYTHONPATH /app/
@@ -26,6 +26,8 @@ COPY $MODULE/entrypoint.sh scripts/system/* ./
 
 ENV NUM_WORKERS=1
 ENV WORKER_TIMEOUT=30
+
+RUN echo "20 4 * * * root /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/trim-collectionfield-tables
 
 LABEL org.opencontainers.image.title="OpenSlides Datastore Service"
 LABEL org.opencontainers.image.description="Service for OpenSlides which wraps the database, which includes reader and writer functionality."

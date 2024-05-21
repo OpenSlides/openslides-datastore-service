@@ -257,9 +257,11 @@ class TestListUpdate:
         set_migration_index_to_1()
         migration_handler.register_migrations(
             get_lambda_event_migration(
-                lambda e: [ListUpdateEvent("a/1", {"add": {"f": [2]}})]
-                if e.fqid == "a/2"
-                else [e]
+                lambda e: (
+                    [ListUpdateEvent("a/1", {"add": {"f": [2]}})]
+                    if e.fqid == "a/2"
+                    else [e]
+                )
             )
         )
         with pytest.raises(BadEventException, match="Model a/1 is deleted"):

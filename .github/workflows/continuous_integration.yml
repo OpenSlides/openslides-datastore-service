@@ -1,7 +1,10 @@
 name: Continuous Integration
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feature/**'
+      - 'staging/4*'
 
 jobs:
   test-prod:
@@ -19,10 +22,10 @@ jobs:
     - name: Start container
       run: |
           source .env
-          docker-compose up -d
+          docker compose up -d
     
     - name: wait for container to be available
-      run: docker-compose exec -T reader wait-for-it -t 0 "localhost:9010"
+      run: docker compose exec -T reader wait-for-it -t 0 "localhost:9010"
     
     - name: Test that reader is up and running
       run: curl -I http://localhost:9010/
