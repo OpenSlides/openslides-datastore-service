@@ -4,11 +4,11 @@ fastjsonschema==2.19.1
 Flask==3.0.3
 gunicorn==22.0.0
 psycopg2==2.9.9
-redis==5.0.4
+redis==5.0.5
 
 # opentelemetry
-opentelemetry-api==1.24.0
-opentelemetry-sdk==1.24.0
-opentelemetry-exporter-otlp==1.24.0
-opentelemetry-instrumentation-flask==0.45b0
-opentelemetry-instrumentation-redis==0.45b0
+opentelemetry-api==1.25.0
+opentelemetry-sdk==1.25.0
+opentelemetry-exporter-otlp==1.25.0
+opentelemetry-instrumentation-flask==0.46b0
+opentelemetry-instrumentation-redis==0.46b0
