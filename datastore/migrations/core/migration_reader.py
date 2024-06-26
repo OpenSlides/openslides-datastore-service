@@ -67,6 +67,7 @@ class MigrationReader(Protocol):
 class MigrationReaderImplementation(MigrationReader):
     reader: Reader
     read_database: ReadDatabase
+    is_in_memory_migration: bool = False
 
     def get(self, fqid: Fqid, mapped_fields: List[Field] = []) -> Model:
         return self.reader.get(GetRequest(fqid, mapped_fields))
@@ -128,6 +129,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
     """
 
     models: Dict[Fqid, Model]
+    is_in_memory_migration: bool = True
 
     def get(self, fqid: Fqid, mapped_fields: List[Field] = []) -> Model:
         if fqid not in self.models:
