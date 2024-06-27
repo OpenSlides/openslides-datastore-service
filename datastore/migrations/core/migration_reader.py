@@ -1,15 +1,9 @@
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Protocol
 
-from datastore.reader.core import (
-    AggregateRequest,
-    FilterRequest,
-    GetAllRequest,
-    GetManyRequest,
-    GetRequest,
-    MinMaxRequest,
-    Reader,
-)
+from datastore.reader.core import (AggregateRequest, FilterRequest,
+                                   GetAllRequest, GetManyRequest, GetRequest,
+                                   MinMaxRequest, Reader)
 from datastore.reader.core.requests import GetManyRequestPart
 from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import filter_models
@@ -26,6 +20,7 @@ class MigrationReader(Protocol):
     Adaption of the Reader protocol for ease of use in migrations. Provides access to all current
     models which are not deleted.
     """
+    is_in_memory_migration: bool = False
 
     def get(self, fqid: Fqid, mapped_fields: List[Field] = []) -> Model: ...
 
@@ -67,7 +62,6 @@ class MigrationReader(Protocol):
 class MigrationReaderImplementation(MigrationReader):
     reader: Reader
     read_database: ReadDatabase
-    is_in_memory_migration: bool = False
 
     def get(self, fqid: Fqid, mapped_fields: List[Field] = []) -> Model:
         return self.reader.get(GetRequest(fqid, mapped_fields))
