@@ -5,8 +5,8 @@ from datastore.shared.di import injector
 
 
 def test_trim_collectionfield_tables(db_cur):
-    in_time = datetime.now() - timedelta(hours=12)
-    out_time = datetime.now() - timedelta(hours=36)
+    in_time = datetime.now() - timedelta(hours=36)
+    out_time = datetime.now() - timedelta(hours=60)
     db_cur.execute(
         "INSERT INTO positions (timestamp, user_id, migration_index) VALUES (%s, -1, -1), (%s, -1, -1)",
         [out_time, in_time],
