@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source export-database-variables.sh
 source wait-for-message-bus.sh
 source wait-for-database.sh
 
