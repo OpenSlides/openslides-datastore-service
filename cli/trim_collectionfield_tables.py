@@ -16,10 +16,10 @@ def main(args: list[str] = []):
     register_services()
     connection: ConnectionHandler = injector.get(ConnectionHandler)
 
-    delta = float(args[1]) if len(args) > 1 else 1
+    delta = float(args[1]) if len(args) > 1 else 2
     threshold = datetime.now() - timedelta(days=delta)
     with connection.get_connection_context():
-        # delete collectionsfields which haven't been updated in the last 24 hours
+        # delete collectionsfields which haven't been updated in the last <delta> days
         connection.execute(
             dedent(
                 """\
@@ -30,7 +30,7 @@ def main(args: list[str] = []):
             ),
             [threshold],
         )
-        # delete events_to_collectionfields from events older than 24 hours
+        # delete events_to_collectionfields from events older than <delta> days
         connection.execute(
             dedent(
                 """\
