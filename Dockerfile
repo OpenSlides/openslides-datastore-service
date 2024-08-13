@@ -1,7 +1,7 @@
 FROM python:3.10.14-slim-bookworm
 
 RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y wait-for-it gcc libpq-dev libc-dev postgresql-client redis-tools cron
+    apt-get install --no-install-recommends -y netcat-openbsd gcc libpq-dev libc-dev postgresql-client redis-tools cron
 
 WORKDIR /app
 ENV PYTHONPATH /app/
