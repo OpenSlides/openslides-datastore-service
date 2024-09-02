@@ -13,4 +13,4 @@ mypy==1.11.2
 
 # other dev stuff
 debugpy==1.8.5
-pip-check==2.8.1
+pip-check==2.9
