@@ -13,6 +13,12 @@ services:
             - postgres
         secrets:
             - postgres_password
+        healthcheck:
+            test: ["CMD", "nc", "-z", "localhost", "${OPENSLIDES_DATASTORE_READER_PORT}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
     writer:
         image: openslides-datastore-writer
         ports:
@@ -28,6 +34,11 @@ services:
             - redis
         secrets:
             - postgres_password
+        healthcheck:
+            test: ["CMD", "nc", "-z", "localhost", "${OPENSLIDES_DATASTORE_WRITER_PORT}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
     postgres:
         image: postgres:15
         env_file: database.env
