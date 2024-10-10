@@ -24,7 +24,7 @@ updates:
     schedule:
       interval: "daily"
     assignees:
-      - "r-peschke"
+      - "rrenkert"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-minor"]
