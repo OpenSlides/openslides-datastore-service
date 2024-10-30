@@ -219,7 +219,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
         """
         new_model = dict()
         for key, value in model.items():
-            if key in mapped_fields:
+            if not mapped_fields or key in mapped_fields:
                 if isinstance(value, dict):
                     new_model[key] = self._deep_copy_dict(model[key])
                 elif isinstance(value, list):
