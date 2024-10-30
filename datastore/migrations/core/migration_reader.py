@@ -143,7 +143,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
             for id in request.ids:
                 fqid = fqid_from_collection_and_id(request.collection, id)
                 if fqid in self.models:
-                    result[request.collection][id] = self._deep_copy_dict(self.models[fqid], mapped_fields)
+                    result[request.collection][id] = self._deep_copy_dict(self.models[fqid], request.mapped_fields)
         return result
 
     def get_all(
@@ -158,7 +158,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
     def filter(
         self, collection: Collection, filter: Filter, mapped_fields: List[Field] = []
     ) -> Dict[Id, Model]:
-        return filter_models(self._deep_copy_dict(self.models, mapped_fields), collection, filter)
+        return filter_models(self.models, collection, filter, mapped_fields)
 
     def exists(self, collection: Collection, filter: Filter) -> bool:
         return self.count(collection, filter) > 0
@@ -217,7 +217,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
         Creates a deep copy of given dict recursively. Assumes no circular references between dict and subdicts.
         Also filters all non mapped fields out.
         """
-        new_model = dict()
+        new_model: dict[str, Any] = dict()
         for key, value in model.items():
             if not mapped_fields or key in mapped_fields:
                 if isinstance(value, dict):
