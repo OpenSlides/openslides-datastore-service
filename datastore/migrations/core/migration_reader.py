@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Callable, Dict, Iterable, List, Optional, Protocol, Any
+from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol
 
 from datastore.reader.core import (
     AggregateRequest,
