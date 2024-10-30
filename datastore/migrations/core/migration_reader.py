@@ -217,12 +217,13 @@ class MigrationReaderImplementationMemory(MigrationReader):
         Creates a deep copy of given dict recursively. Assumes no circular references between dict and subdicts.
         Also filters all non mapped fields out.
         """
+        new_model = dict()
         for key, value in model.items():
             if key in mapped_fields:
                 if isinstance(value, dict):
-                    model[key] = self._deep_copy_dict(model[key])
+                    new_model[key] = self._deep_copy_dict(model[key])
                 elif isinstance(value, list):
-                    model[key] = value.copy()
+                    new_model[key] = value.copy()
                 else:
-                    model[key] = value
-        return model
+                    new_model[key] = value
+        return new_model
