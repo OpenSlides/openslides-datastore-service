@@ -9,7 +9,7 @@ from datastore.shared.util.exceptions import ModelDoesNotExist
 from datastore.shared.util.filter import FilterOperator
 
 
-model = {"id": 1, "f": 1, "g": "test"}
+model = {"id": 1, "f": 1, "g": "test", "sub_dict": {"sub_list": []}}
 
 
 def check_migration_reader(migration_reader: MigrationReader):
