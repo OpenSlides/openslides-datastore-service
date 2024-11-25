@@ -7,8 +7,8 @@ psycopg2==2.9.10
 redis==5.2.0
 
 # opentelemetry
-opentelemetry-api==1.28.1
-opentelemetry-sdk==1.28.1
-opentelemetry-exporter-otlp==1.28.1
-opentelemetry-instrumentation-flask==0.49b1
-opentelemetry-instrumentation-redis==0.49b1
+opentelemetry-api==1.28.2
+opentelemetry-sdk==1.28.2
+opentelemetry-exporter-otlp==1.28.2
+opentelemetry-instrumentation-flask==0.49b2
+opentelemetry-instrumentation-redis==0.49b2
