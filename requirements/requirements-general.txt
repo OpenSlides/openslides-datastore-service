@@ -1,14 +1,14 @@
 # update to newer version as soon as https://github.com/konradhalas/dacite/issues/218 is fixed
 dacite==1.7.0
 fastjsonschema==2.20.0
-Flask==3.0.3
+Flask==3.1.0
 gunicorn==23.0.0
 psycopg2==2.9.10
 redis==5.2.0
 
 # opentelemetry
-opentelemetry-api==1.27.0
-opentelemetry-sdk==1.27.0
-opentelemetry-exporter-otlp==1.27.0
-opentelemetry-instrumentation-flask==0.48b0
-opentelemetry-instrumentation-redis==0.48b0
+opentelemetry-api==1.28.1
+opentelemetry-sdk==1.28.1
+opentelemetry-exporter-otlp==1.28.1
+opentelemetry-instrumentation-flask==0.49b1
+opentelemetry-instrumentation-redis==0.49b1
