@@ -9,7 +9,7 @@ black==24.10.0
 autoflake==2.3.1
 isort==5.13.2
 flake8==7.1.1
-mypy==1.13.0
+mypy==1.14.1
 
 # other dev stuff
 debugpy==1.8.9
