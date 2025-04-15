@@ -72,7 +72,6 @@ def make_span(name, attributes=None):
     if not is_otel_enabled():
         return nullcontext()
 
-    global otel_initialized
     assert (
         otel_initialized
     ), "datastore:Opentelemetry span to be set before having set a TRACER_PROVIDER"
