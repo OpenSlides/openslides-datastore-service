@@ -50,7 +50,6 @@ def setup_redis_connection():
 
 @pytest.fixture()
 def redis_connection():
-    global _redis_connection
     yield _redis_connection
 
 

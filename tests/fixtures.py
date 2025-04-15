@@ -54,7 +54,6 @@ def setup_db_connection():
 
 @pytest.fixture()
 def db_connection():
-    global _db_connection
     yield _db_connection
 
 
