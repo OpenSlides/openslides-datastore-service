@@ -12,5 +12,5 @@ flake8==7.2.0
 mypy==1.15.0
 
 # other dev stuff
-debugpy==1.8.13
+debugpy==1.8.14
 pip-check==2.9
