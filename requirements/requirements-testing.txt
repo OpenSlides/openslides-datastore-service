@@ -2,15 +2,15 @@
 
 # testing
 pytest==8.3.5
-pytest-cov==6.0.0
+pytest-cov==6.1.1
 
 # linting & formatting
 black==25.1.0
 autoflake==2.3.1
 isort==6.0.1
-flake8==7.1.2
+flake8==7.2.0
 mypy==1.15.0
 
 # other dev stuff
-debugpy==1.8.13
-pip-check==2.9
+debugpy==1.8.14
+pip-check==3.0
