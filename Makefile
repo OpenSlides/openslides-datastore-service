@@ -10,8 +10,8 @@ build:
 	docker build -t openslides-datastore-$(MODULE) $(build_args) .
 
 # DEV
-build-dev:
-	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
+#build-dev:
+#	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
 
 run-dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d $(MODULE)
@@ -87,10 +87,10 @@ run-full-system-tests-check: | build-full-system-tests
 
 
 # shared has no dev or prod image
-build build-dev:
-	@$(MAKE) -C reader $@
-	@$(MAKE) -C writer $@
-
+# This runs the target 'build' or 'build-dev' on the Makefile in the reader and writer subdirectory
+#build build-dev:
+#	@$(MAKE) -C reader $@
+#	@$(MAKE) -C writer $@
 run:
 	docker compose up -d
 
@@ -104,6 +104,29 @@ run-dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
 endif
+
+build-aio:
+	@if [ -z "${submodule}" ] ; then \
+		echo "!!! Please provide the name of the submodule service to build (submodule=<submodule service name>) !!!"; \
+		exit 1; \
+	fi
+
+	@if [ "${context}" != "prod" -a "${context}" != "dev" -a "${context}" != "tests" ] ; then \
+		echo "!!! Please provide a context for this build (context=<desired_context> , possible options: prod, dev, tests) !!!"; \
+		exit 1; \
+	fi
+
+	@echo "Building submodule '${submodule}-$(MODULE)' for ${context} context"
+	
+	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-$(MODULE)-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
+		--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT) --build-arg CONTEXT=${context}
+
+build-dev:
+	make build-aio context=dev submodule=datastore MODULE=reader PORT=9010
+	make build-aio context=dev submodule=datastore MODULE=writer PORT=9011
+
+test-command:
+	@echo $(param)
 
 # stopping is the same everywhere
 stop:
