@@ -27,7 +27,8 @@ ifndef MODULE
 ## TESTS
 
 build-tests:
-	docker build -t openslides-datastore-test -f Dockerfile.test .
+	make build-aio context=tests submodule=datastore
+# docker build -t openslides-datastore-test -f Dockerfile.test .
 
 rebuild-tests:
 	docker build -t openslides-datastore-test -f Dockerfile.test . --no-cache
@@ -115,15 +116,19 @@ build-aio:
 		echo "!!! Please provide a context for this build (context=<desired_context> , possible options: prod, dev, tests) !!!"; \
 		exit 1; \
 	fi
-
-	@echo "Building submodule '${submodule}-$(MODULE)' for ${context} context"
 	
-	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-$(MODULE)-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
-		--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT) --build-arg CONTEXT=${context}
+	@echo "Building submodule '${submodule}-reader' for ${context} context"
+	
+	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-reader-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
+		--build-arg MODULE=reader --build-arg PORT=9010 --build-arg CONTEXT=${context}
+
+	@echo "Building submodule '${submodule}-writer' for ${context} context"
+
+	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-writer-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
+		--build-arg MODULE=writer --build-arg PORT=9011 --build-arg CONTEXT=${context}
 
 build-dev:
-	make build-aio context=dev submodule=datastore MODULE=reader PORT=9010
-	make build-aio context=dev submodule=datastore MODULE=writer PORT=9011
+	make build-aio context=dev submodule=datastore
 
 test-command:
 	@echo $(param)
