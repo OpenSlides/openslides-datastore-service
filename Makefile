@@ -28,22 +28,27 @@ ifndef MODULE
 
 build-tests:
 	make build-aio context=tests submodule=datastore
-# docker build -t openslides-datastore-test -f Dockerfile.test .
+
+build-tests-old:
+	docker build -t openslides-datastore-test -f Dockerfile.test .
 
 rebuild-tests:
 	docker build -t openslides-datastore-test -f Dockerfile.test . --no-cache
 
-setup-docker-compose: | build-tests
+setup-docker-compose: | build-tests-old
 	docker compose -f dc.test.yml up -d
 	docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
 run-tests-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest
 
-run-tests: | run-tests-no-down
+run-test:| run-tests-no-down
 	docker compose -f dc.test.yml down
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
+
+run-tests: 
+	bash dev/run-tests.sh $$(id -u ${USER}):$$(id -g ${USER})
 
 run-dev run-bash: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
@@ -120,12 +125,12 @@ build-aio:
 	@echo "Building submodule '${submodule}-reader' for ${context} context"
 	
 	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-reader-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
-		--build-arg MODULE=reader --build-arg PORT=9010 --build-arg CONTEXT=${context}
+		--build-arg MODULE=reader --build-arg PORT=9010 
 
 	@echo "Building submodule '${submodule}-writer' for ${context} context"
 
 	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-writer-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
-		--build-arg MODULE=writer --build-arg PORT=9011 --build-arg CONTEXT=${context}
+		--build-arg MODULE=writer --build-arg PORT=9011 
 
 build-dev:
 	make build-aio context=dev submodule=datastore
