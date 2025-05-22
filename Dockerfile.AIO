@@ -33,7 +33,7 @@ LABEL org.opencontainers.image.description="Service for OpenSlides which wraps t
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-datastore-service"
 
-
+HEALTHCHECK CMD python cli/healthcheck.py
 
 
 # Testing Image
@@ -79,8 +79,6 @@ ENV FLASK_DEBUG=1
 ENTRYPOINT ["./entrypoint.sh"]
 CMD exec python -m flask run -h 0.0.0.0 -p $PORT
 
-HEALTHCHECK CMD python cli/healthcheck.py
-
 
 # Debug Image
 
@@ -108,8 +106,6 @@ ENV NUM_WORKERS=1
 ENV WORKER_TIMEOUT=30
 
 RUN echo "20 4 * * * root /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/trim-collectionfield-tables
-
-HEALTHCHECK CMD python cli/healthcheck.py
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD exec gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application -t $WORKER_TIMEOUT

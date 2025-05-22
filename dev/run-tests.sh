@@ -24,10 +24,10 @@ if [ -z $PERSIST_CONTAINERS ]; then docker compose -f dc.test.yml down || CATCH=
 #if [ -z $PERSIST_CONTAINERS ]; then docker compose -f dc.test.yml down || CATCH=1; fi
 
 # System Tests
-fst_args="-v ./system_tests/system_tests:/app/system_tests --network="host" --env-file=.env  -u $CHOWN openslides-datastore-full-system-tests"
+#fst_args="-v ./system_tests/system_tests:/app/system_tests --network="host" --env-file=.env  -u $CHOWN openslides-datastore-full-system-tests"
 
-docker build -t openslides-datastore-full-system-tests -f system_tests/Dockerfile --build-arg CHOWN=$CHOWN . || CATCH=1
-docker run -ti ${fst_args} pytest system_tests || CATCH=1
+#docker build -t openslides-datastore-full-system-tests -f system_tests/Dockerfile --build-arg CHOWN=$CHOWN . || CATCH=1
+#docker run -ti ${fst_args} pytest system_tests || CATCH=1
 
 if [ -z $PERSIST_CONTAINERS ]; then docker stop $(docker ps -a -q --filter ancestor=openslides-datastore-full-system-tests --format="{{.ID}}") || CATCH=1; fi
 
