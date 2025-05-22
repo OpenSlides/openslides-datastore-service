@@ -97,6 +97,10 @@ CMD exec python -m debugpy --listen 0.0.0.0:5678 -m flask run -h 0.0.0.0 -p $POR
 
 FROM moduled as prod
 
+# Add appuser
+RUN adduser --system --no-create-home appuser
+RUN chown appuser /app/
+
 COPY cli cli
 COPY datastore datastore
 
@@ -106,6 +110,8 @@ ENV NUM_WORKERS=1
 ENV WORKER_TIMEOUT=30
 
 RUN echo "20 4 * * * root /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/trim-collectionfield-tables
+
+USER appuser
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD exec gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application -t $WORKER_TIMEOUT

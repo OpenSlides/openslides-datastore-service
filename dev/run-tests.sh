@@ -29,6 +29,6 @@ if [ -z $PERSIST_CONTAINERS ]; then docker compose -f dc.test.yml down || CATCH=
 #docker build -t openslides-datastore-full-system-tests -f system_tests/Dockerfile --build-arg CHOWN=$CHOWN . || CATCH=1
 #docker run -ti ${fst_args} pytest system_tests || CATCH=1
 
-if [ -z $PERSIST_CONTAINERS ]; then docker stop $(docker ps -a -q --filter ancestor=openslides-datastore-full-system-tests --format="{{.ID}}") || CATCH=1; fi
+#if [ -z $PERSIST_CONTAINERS ]; then docker stop $(docker ps -a -q --filter ancestor=openslides-datastore-full-system-tests --format="{{.ID}}") || CATCH=1; fi
 
 exit $CATCH
