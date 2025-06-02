@@ -10,7 +10,7 @@ CATCH=0
 PERSIST_CONTAINERS=$2
 CHOWN=$1
 # Run Tests
-docker build -f ./Dockerfile.AIO ./ --tag openslides-datastore-test --target tests --build-arg CONTEXT=tests || CATCH=1
+make build-test || CATCH=1
 docker compose -f dc.test.yml up -d || CATCH=1
 docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $CHOWN /app" || CATCH=1
 docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest || CATCH=1

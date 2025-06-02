@@ -1,3 +1,18 @@
+SERVICE=datastore
+
+# Build images for different contexts
+
+build-dev:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev reader 9010
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev writer 9011
+
+build-prod:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod reader 9010
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod writer 9011
+
+build-test:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
+
 # TESTS
 
 ifdef MODULE
@@ -110,30 +125,6 @@ run-dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
 endif
-
-build-aio:
-	@if [ -z "${submodule}" ] ; then \
-		echo "!!! Please provide the name of the submodule service to build (submodule=<submodule service name>) !!!"; \
-		exit 1; \
-	fi
-
-	@if [ "${context}" != "prod" -a "${context}" != "dev" -a "${context}" != "tests" ] ; then \
-		echo "!!! Please provide a context for this build (context=<desired_context> , possible options: prod, dev, tests) !!!"; \
-		exit 1; \
-	fi
-	
-	@echo "Building submodule '${submodule}-reader' for ${context} context"
-	
-	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-reader-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
-		--build-arg MODULE=reader --build-arg PORT=9010 
-
-	@echo "Building submodule '${submodule}-writer' for ${context} context"
-
-	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-writer-${context} --target ${context} --build-arg CONTEXT=${context} ${args} \
-		--build-arg MODULE=writer --build-arg PORT=9011 
-
-build-dev:
-	make build-aio context=dev submodule=datastore
 
 test-command:
 	@echo $(param)
