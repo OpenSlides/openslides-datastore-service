@@ -3,10 +3,11 @@ ARG PYTHON_IMAGE_VERSION=3.10.15
 
 FROM python:${PYTHON_IMAGE_VERSION}-slim-bookworm as base
 
+## Setup
 ARG CONTEXT
 ARG PYTHON_IMAGE_VERSION
-
 WORKDIR /app
+ENV ${CONTEXT}=1
 
 ## Context-based setup
 ### Add context value as a helper env variable
@@ -18,35 +19,46 @@ ENV REQUIREMENTS_FILE=${tests:+"testing"}${prod:+"general"}${dev:+"testing"}${de
 
 ## Install
 
-RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y ncat gcc libpq-dev libc-dev postgresql-client redis-tools ${CONTEXT_INSTALLS}
+RUN apt-get -y update && apt-get -y upgrade && apt-get install --no-install-recommends -y \
+    gcc \
+    libc-dev \
+    libpq-dev \
+    ncat \
+    postgresql-client \
+    redis-tools \
+    ${CONTEXT_INSTALLS} && \
+    rm -rf /var/lib/apt/lists/*
 
 ## Requirements
 COPY requirements/* scripts/system/* scripts/* ./
 
-RUN pip install -U -r requirements-${REQUIREMENTS_FILE}.txt
+RUN pip install --no-cache-dir -U -r requirements-${REQUIREMENTS_FILE}.txt
 
 ENV PYTHONPATH /app/
 
+## External Information
 LABEL org.opencontainers.image.title="OpenSlides Datastore Service"
 LABEL org.opencontainers.image.description="Service for OpenSlides which wraps the database, which includes reader and writer functionality."
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-datastore-service"
 
+## Command
+COPY ./dev/command.sh ./
+RUN chmod +x command.sh
+CMD ["./command.sh"]
 HEALTHCHECK CMD python cli/healthcheck.py
+ENTRYPOINT ["./entrypoint.sh"]
+
 
 
 # Testing Image
 
 FROM base as tests
 
-
 COPY scripts/* scripts/system/* tests/entrypoint.sh ./
 COPY scripts/ci/* ./ci/
 
 STOPSIGNAL SIGKILL
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["sleep", "inf"]
 
 
 
@@ -66,6 +78,8 @@ EXPOSE $PORT
 
 COPY $MODULE/entrypoint.sh ./
 
+
+
 # Development Image
 
 FROM moduled as dev
@@ -76,20 +90,14 @@ COPY scripts/system/* scripts/* ./
 ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_DEBUG=1
 
-ENTRYPOINT ["./entrypoint.sh"]
-CMD exec python -m flask run -h 0.0.0.0 -p $PORT
 
 
 # Debug Image
 
 FROM moduled as debug
 
-
 ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_DEBUG=1
-
-ENTRYPOINT ["./entrypoint.sh"]
-CMD exec python -m debugpy --listen 0.0.0.0:5678 -m flask run -h 0.0.0.0 -p $PORT --no-reload
 
 
 
@@ -98,8 +106,8 @@ CMD exec python -m debugpy --listen 0.0.0.0:5678 -m flask run -h 0.0.0.0 -p $POR
 FROM moduled as prod
 
 # Add appuser
-RUN adduser --system --no-create-home appuser
-RUN chown appuser /app/
+RUN adduser --system --no-create-home appuser && \
+    chown appuser /app/
 
 COPY cli cli
 COPY datastore datastore
@@ -112,6 +120,3 @@ ENV WORKER_TIMEOUT=30
 RUN echo "20 4 * * * root /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/trim-collectionfield-tables
 
 USER appuser
-
-ENTRYPOINT ["./entrypoint.sh"]
-CMD exec gunicorn -w $NUM_WORKERS -b 0.0.0.0:$PORT datastore.$MODULE.app:application -t $WORKER_TIMEOUT
