@@ -12,3 +12,4 @@ opentelemetry-sdk==1.33.1
 opentelemetry-exporter-otlp==1.33.1
 opentelemetry-instrumentation-flask==0.54b0
 opentelemetry-instrumentation-redis==0.54b0
+opentelemetry-semantic-conventions==0.54b0
