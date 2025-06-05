@@ -1,11 +1,9 @@
 ARG CONTEXT=prod
-ARG PYTHON_IMAGE_VERSION=3.10.15
 
-FROM python:${PYTHON_IMAGE_VERSION}-slim-bookworm as base
+FROM python:3.10.15-slim-bookworm as base
 
 ## Setup
 ARG CONTEXT
-ARG PYTHON_IMAGE_VERSION
 WORKDIR /app
 ENV ${CONTEXT}=1
 
