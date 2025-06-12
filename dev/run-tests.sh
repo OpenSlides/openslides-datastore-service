@@ -9,7 +9,7 @@ echo "########################################################################"
 IMAGE_TAG=openslides-datastore-tests
 CATCH=0
 PERSIST_CONTAINERS=$2
-CHOWN="$$(id -u ${USER}):$$(id -g ${USER})"
+CHOWN="$(id -u ${USER}):$(id -g ${USER})"
 
 # Run Tests
 if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test || CATCH=1; fi
