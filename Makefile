@@ -124,6 +124,11 @@ run-dev-standalone: | build-dev
 run-dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
+ci-run-system-tests:
+	docker compose -f dc.dev.yml up
+	make run-full-system-tests-check
+	make stop-dev
+
 endif
 
 test-command:
