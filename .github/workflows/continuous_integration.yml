@@ -13,8 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build container
-      run: make build
+    - name: Build Prod
+      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
+      with:
+        service: auth
+        context: prod
     
     - name: Create secret
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -35,6 +38,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
+    - name: Build Tests
+      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
+      with:
+        service: datastore
+        context: tests
+
     - name: Execute tests
       run: make run-ci
 
@@ -44,6 +54,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Build Tests
+      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
+      with:
+        service: datastore
+        context: dev
+    
     - name: Start containers
       run: make run-dev-standalone
     

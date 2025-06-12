@@ -75,8 +75,8 @@ run-coverage: | setup-docker-compose
 run-ci-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
 
-run-ci: | run-ci-no-down
-	docker compose -f dc.test.yml down
+run-ci: 
+	bash dev/run-ci.sh $$(id -u ${USER}):$$(id -g ${USER})
 
 run-cleanup: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
