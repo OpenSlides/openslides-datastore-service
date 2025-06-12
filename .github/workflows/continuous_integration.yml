@@ -18,6 +18,16 @@ jobs:
       with:
         service: auth
         context: prod
+        module: reader
+        port: 9010
+    
+    - name: Build Prod
+      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
+      with:
+        service: auth
+        context: prod
+        module: writer
+        port: 9011
     
     - name: Create secret
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -54,11 +64,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build Tests
+    - name: Build Dev
       uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
       with:
         service: datastore
         context: dev
+        module: reader
+        port: 9010
+
+    - name: Build Dev
+      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
+      with:
+        service: datastore
+        context: dev
+        module: writer
+        port: 9011
     
     - name: Start containers
       run: make run-dev-standalone

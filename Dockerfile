@@ -55,6 +55,7 @@ FROM base as tests
 
 COPY scripts/* scripts/system/* tests/entrypoint.sh ./
 COPY scripts/ci/* ./ci/
+COPY dev ./dev/
 
 STOPSIGNAL SIGKILL
 
