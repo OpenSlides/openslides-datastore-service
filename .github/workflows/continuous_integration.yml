@@ -59,10 +59,13 @@ jobs:
       run: make run-ci
   
   run-tests:
-    - name: "Run Test"
-      uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
-      with:
-        service: datastore
+    name: "Run Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Build and Run Tests"
+        uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
+        with:
+          service: datastore
 
   test-full-system:
     name: "Full System Tests"
