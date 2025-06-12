@@ -6,13 +6,13 @@ echo "########################################################################"
 echo "###################### Run Tests and Linters ###########################"
 echo "########################################################################"
 
+IMAGE_TAG=openslides-datastore-tests
 CATCH=0
 PERSIST_CONTAINERS=$2
 CHOWN=$1
 
 # Run Tests
-make build-test || CATCH=1
-
+if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test || CATCH=1; fi
 docker compose -f dc.test.yml up -d || CATCH=1
 docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $CHOWN /app" || CATCH=1
 docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh || CATCH=1
