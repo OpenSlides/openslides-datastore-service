@@ -57,17 +57,6 @@ jobs:
 
     - name: Execute tests
       run: make run-ci
-  
-  run-tests:
-    name: "Run Tests"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: "Build and Run Tests"
-        uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
-        with:
-          service: datastore
 
   test-full-system:
     name: "Full System Tests"

@@ -63,7 +63,7 @@ run-test:| run-tests-no-down
 	@$(MAKE) run-full-system-tests
 
 run-tests: 
-	bash dev/run-tests.sh $$(id -u ${USER}):$$(id -g ${USER})
+	bash dev/run-tests.sh
 
 run-dev run-bash: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
@@ -76,7 +76,7 @@ run-ci-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
 
 run-ci: 
-	bash dev/run-ci.sh $$(id -u ${USER}):$$(id -g ${USER})
+	bash dev/run-ci.sh
 
 run-cleanup: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
@@ -125,7 +125,7 @@ run-dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
 ci-run-system-tests:
-	docker compose -f dc.dev.yml up
+	docker compose -f dc.dev.yml up -d
 	make run-full-system-tests-check
 	make stop-dev
 
