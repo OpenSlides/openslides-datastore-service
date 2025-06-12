@@ -1,3 +1,18 @@
+SERVICE=datastore
+
+# Build images for different contexts
+
+build-dev:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev reader 9010
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev writer 9011
+
+build-prod:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod reader 9010
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod writer 9011
+
+build-test:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
+
 # TESTS
 
 ifdef MODULE
@@ -10,8 +25,8 @@ build:
 	docker build -t openslides-datastore-$(MODULE) $(build_args) .
 
 # DEV
-build-dev:
-	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
+#build-dev:
+#	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
 
 run-dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d $(MODULE)
@@ -27,22 +42,28 @@ ifndef MODULE
 ## TESTS
 
 build-tests:
+	make build-aio context=tests submodule=datastore
+
+build-tests-old:
 	docker build -t openslides-datastore-test -f Dockerfile.test .
 
 rebuild-tests:
 	docker build -t openslides-datastore-test -f Dockerfile.test . --no-cache
 
-setup-docker-compose: | build-tests
+setup-docker-compose: | build-tests-old
 	docker compose -f dc.test.yml up -d
 	docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
 run-tests-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest
 
-run-tests: | run-tests-no-down
+run-test:| run-tests-no-down
 	docker compose -f dc.test.yml down
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
+
+run-tests: 
+	bash dev/run-tests.sh "$$(id -u ${USER}):$$(id -g ${USER})"
 
 run-dev run-bash: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
@@ -54,8 +75,8 @@ run-coverage: | setup-docker-compose
 run-ci-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
 
-run-ci: | run-ci-no-down
-	docker compose -f dc.test.yml down
+run-ci: 
+	bash dev/run-ci.sh 
 
 run-cleanup: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
@@ -87,10 +108,10 @@ run-full-system-tests-check: | build-full-system-tests
 
 
 # shared has no dev or prod image
-build build-dev:
-	@$(MAKE) -C reader $@
-	@$(MAKE) -C writer $@
-
+# This runs the target 'build' or 'build-dev' on the Makefile in the reader and writer subdirectory
+#build build-dev:
+#	@$(MAKE) -C reader $@
+#	@$(MAKE) -C writer $@
 run:
 	docker compose up -d
 
@@ -103,7 +124,15 @@ run-dev-standalone: | build-dev
 run-dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
+ci-run-system-tests:
+	docker compose -f dc.dev.yml up -d
+	make run-full-system-tests-check
+	make stop-dev
+
 endif
+
+test-command:
+	@echo $(param)
 
 # stopping is the same everywhere
 stop:
