@@ -24,10 +24,6 @@ build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)
 build:
 	docker build -t openslides-datastore-$(MODULE) $(build_args) .
 
-# DEV
-#build-dev:
-#	docker build -t openslides-datastore-$(MODULE)-dev -f Dockerfile.dev $(build_args) .
-
 run-dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d $(MODULE)
 
@@ -42,13 +38,13 @@ ifndef MODULE
 ## TESTS
 
 build-tests:
-	make build-aio context=tests submodule=datastore
+	make build-test
 
 build-tests-old:
-	docker build -t openslides-datastore-test -f Dockerfile.test .
+	make build-test
 
 rebuild-tests:
-	docker build -t openslides-datastore-test -f Dockerfile.test . --no-cache
+	docker build . --tag=openslides-datastore-tests --no-cache --build-arg CONTEXT=tests
 
 setup-docker-compose: | build-tests-old
 	docker compose -f dc.test.yml up -d
