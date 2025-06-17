@@ -1,17 +1,20 @@
 #!/bin/bash
 
-# Executes all tests. Should errors occur, CATCH will be set to 1, causing an erronous exit code.
+# Executes all tests. Should errors occur, CATCH will be set to 1, causing an erroneous exit code.
 
 echo "########################################################################"
 echo "###################### Run Tests and Linters ###########################"
 echo "########################################################################"
 
+# Parameters
+PERSIST_CONTAINERS=$1
+
+# Setup
 IMAGE_TAG=openslides-datastore-tests
 CATCH=0
-PERSIST_CONTAINERS=$2
 CHOWN="$(id -u ${USER}):$(id -g ${USER})"
 
-# Run Tests
+# Execution
 if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test || CATCH=1; fi
 docker compose -f dc.test.yml up -d || CATCH=1
 docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $CHOWN /app" || CATCH=1
