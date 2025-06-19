@@ -2,4 +2,4 @@
 
 set -e
 
-mypy $(ls -d */ | grep -v "ci/")
+mypy $(ls -d */ | grep -v "ci/" | grep -v "dev/")

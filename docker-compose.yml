@@ -1,6 +1,10 @@
 version: "3.4"
 services:
     reader:
+        build:
+            target: "prod"
+            args:
+                CONTEXT: "prod"
         image: openslides-datastore-reader
         ports:
             - "${OPENSLIDES_DATASTORE_READER_PORT}:${OPENSLIDES_DATASTORE_READER_PORT}"
