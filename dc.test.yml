@@ -1,6 +1,10 @@
 version: "3"
 services:
     datastore:
+        build:
+            target: "tests"
+            args:
+                CONTEXT: "tests"
         image: openslides-datastore-tests
         command:
             [
