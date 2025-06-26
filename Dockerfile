@@ -5,11 +5,9 @@ FROM python:3.10.17-slim-bookworm as base
 ## Setup
 ARG CONTEXT
 WORKDIR /app
-ENV ${CONTEXT}=1
-
-## Context-based setup
-### Add context value as a helper env variable
-ENV ${CONTEXT}=1
+# Used for easy target differentiation
+ARG ${CONTEXT}=1 
+ENV APP_CONTEXT=${CONTEXT}
 
 ### Query based on context value
 ENV CONTEXT_INSTALLS=${tests:+"curl"}${prod:+"cron"}${dev:+""}
