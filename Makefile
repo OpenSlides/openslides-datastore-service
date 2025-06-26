@@ -40,9 +40,6 @@ ifndef MODULE
 build-tests:
 	make build-test
 
-build-tests-old:
-	make build-test
-
 rebuild-tests:
 	docker build . --tag=openslides-datastore-tests --no-cache --build-arg CONTEXT=tests
 
