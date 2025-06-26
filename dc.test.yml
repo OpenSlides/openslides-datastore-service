@@ -1,7 +1,11 @@
 version: "3"
 services:
     datastore:
-        image: openslides-datastore-test
+        build:
+            target: "tests"
+            args:
+                CONTEXT: "tests"
+        image: openslides-datastore-tests
         command:
             [
                 "sleep",
