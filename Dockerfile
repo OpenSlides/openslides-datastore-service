@@ -5,17 +5,14 @@ FROM python:3.10.17-slim-bookworm as base
 ## Setup
 ARG CONTEXT
 WORKDIR /app
-# Used for easy target differentiation
-ARG ${CONTEXT}=1 
 ENV APP_CONTEXT=${CONTEXT}
 
-### Query based on context value
-ENV CONTEXT_INSTALLS=${tests:+"curl"}${prod:+"cron"}${dev:+""}
-ENV REQUIREMENTS_FILE=${tests:+"testing"}${prod:+"general"}${dev:+"testing"}${debug:+"testing"}
-
 ## Install
-
-RUN apt-get -y update && apt-get -y upgrade && apt-get install --no-install-recommends -y \
+RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
+    tests)  echo "curl";; \
+    dev)    echo "";; \
+    *)      echo "cron" ;; esac) && \
+    apt-get -y update && apt-get -y upgrade && apt-get install --no-install-recommends -y \
     gcc \
     libc-dev \
     libpq-dev \
@@ -27,8 +24,12 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get install --no-install-reco
 
 ## Requirements
 COPY requirements/* scripts/system/* scripts/* ./
-
-RUN pip install --no-cache-dir -U -r requirements-${REQUIREMENTS_FILE}.txt
+RUN  REQUIREMENTS_FILE=$(case "$APP_CONTEXT" in \
+    tests) echo "testing";; \
+    dev)   echo "testing";; \
+    debug) echo "testing";; \
+    *)     echo "general" ;; esac) && \
+    pip install --no-cache-dir -U -r requirements-${REQUIREMENTS_FILE}.txt
 
 ENV PYTHONPATH /app/
 
@@ -45,8 +46,6 @@ CMD ["./command.sh"]
 HEALTHCHECK CMD python cli/healthcheck.py
 ENTRYPOINT ["./entrypoint.sh"]
 
-
-
 # Testing Image
 
 FROM base as tests
@@ -56,8 +55,6 @@ COPY scripts/ci/* ./ci/
 COPY dev ./dev/
 
 STOPSIGNAL SIGKILL
-
-
 
 # Intermediate Image
 
@@ -75,19 +72,14 @@ EXPOSE $PORT
 
 COPY $MODULE/entrypoint.sh ./
 
-
-
 # Development Image
 
 FROM moduled as dev
 
 COPY scripts/system/* scripts/* ./
 
-
 ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_DEBUG=1
-
-
 
 # Debug Image
 
@@ -95,8 +87,6 @@ FROM moduled as debug
 
 ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_DEBUG=1
-
-
 
 # Production Image
 
