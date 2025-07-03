@@ -1,6 +1,12 @@
 version: "3"
 services:
     reader:
+        build:
+            target: "dev"
+            args:
+                CONTEXT: "dev"
+                MODULE: "reader"
+                PORT: "9010"
         image: openslides-datastore-reader-dev
         volumes:
             - ./datastore:/app/datastore
@@ -16,6 +22,12 @@ services:
         stdin_open: true
         tty: true
     writer:
+        build:
+            target: "dev"
+            args:
+                CONTEXT: "dev"
+                MODULE: "writer"
+                PORT: "9011"
         image: openslides-datastore-writer-dev
         volumes:
             - ./datastore:/app/datastore
