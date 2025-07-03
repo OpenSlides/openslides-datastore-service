@@ -11,6 +11,7 @@ PERSIST_CONTAINERS=$1
 
 # Setup
 IMAGE_TAG=openslides-datastore-tests
+LOCAL_PWD=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CATCH=0
 CHOWN="$(id -u "${USER}"):$(id -g "${USER}")"
 
@@ -19,6 +20,9 @@ if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test || CATCH=1; f
 docker compose -f dc.test.yml up -d || CATCH=1
 docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $CHOWN /app" || CATCH=1
 docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest || CATCH=1
+
+# Linters
+bash "$LOCAL_PWD"/run-lint.sh || CATCH=1
 
 if [ -z "$PERSIST_CONTAINERS" ]; then docker compose -f dc.test.yml down || CATCH=1; fi
 
