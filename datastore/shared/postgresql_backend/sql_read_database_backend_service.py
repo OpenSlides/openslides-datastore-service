@@ -322,6 +322,40 @@ class SqlReadDatabaseBackendService:
                 )
             )
         return history_information
+    
+    def get_history_positions(self, from_position: int = 0, to_position: int | None = None) -> tuple[List[HistoryInformation], dict[int,list[str]]]:
+        reqstr_parts = []
+        attr = []
+        if from_position:
+            reqstr_parts.append("position >= %s")
+            attr.append(from_position)
+        if to_position:
+            reqstr_parts.append("position < %s")
+            attr.append(to_position)
+        reqstr_parts.append("information::text<>%s::text")
+        reqstr = "where " + " and ".join(reqstr_parts)
+        positions = self.connection.query(
+            f"""select fqid, position, timestamp, user_id, information from positions
+            {reqstr} order by position asc""",
+            [*attr, self.json(None)],
+        )
+        history_information = [
+            HistoryInformation(
+                position=position["position"],
+                timestamp=position["timestamp"].timestamp(),
+                user_id=position["user_id"],
+                information=position["information"],
+            ) for position in positions
+        ]
+        fqids = self.connection.query(
+            f"""select fqid, position from positions natural join events
+            {reqstr} order by position asc""",
+            [*attr, self.json(None)],
+        )
+        position_to_fqids: dict[int, list[str]] = defaultdict(list)
+        for date in fqids:
+            position_to_fqids[date["position"]] = date["fqid"]
+        return history_information, position_to_fqids
 
     def is_empty(self) -> bool:
         return not self.connection.query_single_value(
