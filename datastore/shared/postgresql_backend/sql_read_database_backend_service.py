@@ -335,7 +335,7 @@ class SqlReadDatabaseBackendService:
         reqstr_parts.append("information::text<>%s::text")
         reqstr = "where " + " and ".join(reqstr_parts)
         positions = self.connection.query(
-            f"""select fqid, position, timestamp, user_id, information from positions
+            f"""select position, timestamp, user_id, information from positions
             {reqstr} order by position asc""",
             [*attr, self.json(None)],
         )
@@ -354,7 +354,7 @@ class SqlReadDatabaseBackendService:
         )
         position_to_fqids: dict[int, list[str]] = defaultdict(list)
         for date in fqids:
-            position_to_fqids[date["position"]] = date["fqid"]
+            position_to_fqids[date["position"]].append(date["fqid"])
         return history_information, position_to_fqids
 
     def is_empty(self) -> bool:
