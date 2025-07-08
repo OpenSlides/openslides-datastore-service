@@ -3,12 +3,12 @@ SERVICE=datastore
 # Build images for different contexts
 
 build-prod:
-	docker build ./ --tag "openslides-$(SERVICE)" --build-arg CONTEXT="prod" --build-arg MODULE=reader --build-arg PORT=9010 --target "prod"
-	docker build ./ --tag "openslides-$(SERVICE)" --build-arg CONTEXT="prod" --build-arg MODULE=writer --build-arg PORT=9011 --target "prod"
+	docker build ./ --tag "openslides-$(SERVICE)-reader" --build-arg CONTEXT="prod" --build-arg MODULE=reader --build-arg PORT=9010 --target "prod"
+	docker build ./ --tag "openslides-$(SERVICE)-writer" --build-arg CONTEXT="prod" --build-arg MODULE=writer --build-arg PORT=9011 --target "prod"
 
 build-dev:
-	docker build ./ --tag "openslides-$(SERVICE)-dev" --build-arg CONTEXT="dev" --build-arg MODULE=reader --build-arg PORT=9010 --target "dev"
-	docker build ./ --tag "openslides-$(SERVICE)-dev" --build-arg CONTEXT="dev" --build-arg MODULE=writer --build-arg PORT=9011 --target "dev"
+	docker build ./ --tag "openslides-$(SERVICE)-reader-dev" --build-arg CONTEXT="dev" --build-arg MODULE=reader --build-arg PORT=9010 --target "dev"
+	docker build ./ --tag "openslides-$(SERVICE)-writer-dev" --build-arg CONTEXT="dev" --build-arg MODULE=writer --build-arg PORT=9011 --target "dev"
 
 build-test:
 	docker build ./ --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
