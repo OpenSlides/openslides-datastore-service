@@ -15,7 +15,7 @@ CHOWN="$(id -u "${USER}"):$(id -g "${USER}")"
 trap 'docker compose -f dc.test.yml down' EXIT
 
 # Execution
-if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test || CATCH=1; fi
+make build-test
 docker compose -f dc.test.yml up -d || CATCH=1
 docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $CHOWN /app" || CATCH=1
 docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest || CATCH=1

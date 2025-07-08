@@ -15,20 +15,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Prod
-      uses: OpenSlides/OpenSlides/dev/actions/build-service@main
-      with:
-        service: datastore
-        context: prod
-        module: reader
-        port: 9010
-
-    - name: Build Prod
-      uses: OpenSlides/OpenSlides/dev/actions/build-service@main
-      with:
-        service: datastore
-        context: prod
-        module: writer
-        port: 9011
+      run: make build-prod
 
     - name: Create secret
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -51,10 +38,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Tests
-      uses: OpenSlides/OpenSlides/dev/actions/build-service@main
-      with:
-        service: datastore
-        context: tests
+      run: make build-test
 
     - name: Execute tests
       run: make run-ci
@@ -66,20 +50,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Dev
-      uses: OpenSlides/OpenSlides/dev/actions/build-service@main
-      with:
-        service: datastore
-        context: dev
-        module: reader
-        port: 9010
-
-    - name: Build Dev
-      uses: OpenSlides/OpenSlides/dev/actions/build-service@main
-      with:
-        service: datastore
-        context: dev
-        module: writer
-        port: 9011
+      run: make build-dev
 
     - name: Run System Tests
       run: make ci-run-system-tests

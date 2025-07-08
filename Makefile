@@ -2,16 +2,16 @@ SERVICE=datastore
 
 # Build images for different contexts
 
-build-dev:
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev reader 9010
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev writer 9011
-
 build-prod:
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod reader 9010
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod writer 9011
+	docker build ./ --tag "openslides-$(SERVICE)" --build-arg CONTEXT="prod" --build-arg MODULE=reader --build-arg PORT=9010 --target "prod"
+	docker build ./ --tag "openslides-$(SERVICE)" --build-arg CONTEXT="prod" --build-arg MODULE=writer --build-arg PORT=9011 --target "prod"
+
+build-dev:
+	docker build ./ --tag "openslides-$(SERVICE)-dev" --build-arg CONTEXT="dev" --build-arg MODULE=reader --build-arg PORT=9010 --target "dev"
+	docker build ./ --tag "openslides-$(SERVICE)-dev" --build-arg CONTEXT="dev" --build-arg MODULE=writer --build-arg PORT=9011 --target "dev"
 
 build-test:
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
+	docker build ./ --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
 
 # TESTS
 
@@ -55,7 +55,7 @@ run-test:| run-tests-no-down
 	@$(MAKE) run-dev
 	@$(MAKE) run-full-system-tests
 
-run-tests: 
+run-tests:
 	bash dev/run-tests.sh
 
 run-dev run-bash: | setup-docker-compose
@@ -68,8 +68,8 @@ run-coverage: | setup-docker-compose
 run-ci-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
 
-run-ci: 
-	bash dev/run-ci.sh 
+run-ci:
+	bash dev/run-ci.sh
 
 run-cleanup: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./cleanup.sh
