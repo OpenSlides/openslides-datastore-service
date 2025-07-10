@@ -157,6 +157,14 @@ class ReadDatabase(Protocol):
         Returns a list of position data for all fqids.
         """
 
+    def get_history_positions(
+        self, from_position: int = 0, to_position: int | None = None
+    ) -> tuple[List[HistoryInformation], dict[int, list[str]]]:
+        """
+        Returns all positions with history informations, beginning with from_position
+        until (but not including) to_position
+        """
+
     def is_empty(self) -> bool:
         """
         Returns true, if there are no positions in the database
