@@ -49,20 +49,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build Dev
-      run: make build-dev
+    - name: Start containers
+      run: make run-dev-standalone
 
-    - name: Run System Tests
-      run: make ci-run-system-tests
+    - name: Execute tests
+      run: make run-full-system-tests-check
 
-  # This setups and runs the dev/run-tests.sh script
-  run-test-script:
-    name: Run-tests.sh Script
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Test
-        uses: OpenSlides/OpenSlides/dev/actions/build-and-test-service@main
-        with:
-          service: datastore
+    - name: Stop tests
+      run: make stop-dev
