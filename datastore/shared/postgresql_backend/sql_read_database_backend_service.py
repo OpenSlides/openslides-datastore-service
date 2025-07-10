@@ -322,8 +322,10 @@ class SqlReadDatabaseBackendService:
                 )
             )
         return history_information
-    
-    def get_history_positions(self, from_position: int = 0, to_position: int | None = None) -> tuple[List[HistoryInformation], dict[int,list[str]]]:
+
+    def get_history_positions(
+        self, from_position: int = 0, to_position: int | None = None
+    ) -> tuple[List[HistoryInformation], dict[int, list[str]]]:
         reqstr_parts = []
         attr = []
         if from_position:
@@ -345,7 +347,8 @@ class SqlReadDatabaseBackendService:
                 timestamp=position["timestamp"].timestamp(),
                 user_id=position["user_id"],
                 information=position["information"],
-            ) for position in positions
+            )
+            for position in positions
         ]
         fqids = self.connection.query(
             f"""select fqid, position from positions natural join events

@@ -15,7 +15,7 @@ from datastore.shared.di import service_as_factory, service_interface
 from datastore.shared.postgresql_backend import filter_models
 from datastore.shared.services.read_database import HistoryInformation, ReadDatabase
 from datastore.shared.typing import Collection, Field, Fqid, Id, Model, Position
-from datastore.shared.util import DeletedModelsBehaviour, ModelDoesNotExist, collection_from_fqid
+from datastore.shared.util import ModelDoesNotExist, collection_from_fqid
 from datastore.shared.util.filter import Filter
 from datastore.shared.util.key_transforms import fqid_from_collection_and_id
 
@@ -63,10 +63,12 @@ class MigrationReader(Protocol):
 
     def model_exists(self, fqid: Fqid) -> bool:
         """Returns true iff the model exists, regardless of deletion status."""
-    
+
     def get_max_position(self) -> Position: ...
 
-    def get_history_positions(self, from_position: int = 0, to_position: int | None = None) -> tuple[List[HistoryInformation], dict[int,list[str]]]: ...
+    def get_history_positions(
+        self, from_position: int = 0, to_position: int | None = None
+    ) -> tuple[List[HistoryInformation], dict[int, list[str]]]: ...
 
 
 @service_as_factory
@@ -124,12 +126,15 @@ class MigrationReaderImplementation(MigrationReader):
     def model_exists(self, fqid: Fqid) -> bool:
         status = self.read_database.get_deleted_status([fqid])
         return fqid in status
-    
+
     def get_max_position(self) -> Position:
         return self.read_database.get_max_position()
 
-    def get_history_positions(self, from_position: int = 0, to_position: int | None = None) -> tuple[List[HistoryInformation], dict[int,list[str]]]:
+    def get_history_positions(
+        self, from_position: int = 0, to_position: int | None = None
+    ) -> tuple[List[HistoryInformation], dict[int, list[str]]]:
         return self.read_database.get_history_positions(from_position, to_position)
+
 
 @service_as_factory
 class MigrationReaderImplementationMemory(MigrationReader):
@@ -242,10 +247,11 @@ class MigrationReaderImplementationMemory(MigrationReader):
                 else:
                     new_model[key] = value
         return new_model
-    
 
     def get_max_position(self) -> Position:
         return -1
 
-    def get_history_positions(self, from_position: int = 0, to_position: int | None = None) -> tuple[List[HistoryInformation], dict[int,list[str]]]:
+    def get_history_positions(
+        self, from_position: int = 0, to_position: int | None = None
+    ) -> tuple[List[HistoryInformation], dict[int, list[str]]]:
         return [], {}

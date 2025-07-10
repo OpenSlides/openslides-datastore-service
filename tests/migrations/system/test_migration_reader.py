@@ -12,7 +12,7 @@ from datastore.shared.util.filter import FilterOperator
 model = {"id": 1, "f": 1, "g": "test", "sub_dict": {"sub_list": []}}
 
 
-def check_migration_reader(migration_reader: MigrationReader):
+def check_migration_reader(migration_reader: MigrationReader, max_position=-1):
     mapped_fields = list(model.keys())
     assert migration_reader.get("a/1", mapped_fields) == model
     with pytest.raises(ModelDoesNotExist):
@@ -31,13 +31,15 @@ def check_migration_reader(migration_reader: MigrationReader):
     assert migration_reader.is_alive("a/1") is True
     assert migration_reader.is_deleted("a/1") is False
     assert migration_reader.model_exists("a/1") is True
+    assert migration_reader.get_max_position() == max_position
+    assert migration_reader.get_history_positions() == ([], {})
 
 
 def test_migration_reader(write, migration_reader: MigrationReader, connection_handler):
     write({"type": "create", "fqid": "a/1", "fields": model})
 
     with connection_handler.get_connection_context():
-        check_migration_reader(migration_reader)
+        check_migration_reader(migration_reader, max_position=1)
 
 
 def test_migration_reader_memory():
