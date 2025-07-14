@@ -28,11 +28,11 @@ Utility:
 
 Development environment:
 - `make build-dev`: builds all development images
-- `make run-dev-standalone`: runs the development environment
-- `make run-dev-verbose`: same as `make run-dev-standalone`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C.
+- `make dev-standalone`: runs the development environment
+- `make dev-verbose`: same as `make dev-standalone`, but doesn't detach the containers so the output is directly visible and the process can be stopped with CTRL+C.
 - `make stop-dev`: stops all dev containers
 
 All these commands are also available inside the modules and only affect the current module there. Additional commands available inside the modules (primarily for testing purposes):
 
-- `make run-bash`, `make run-dev`: opens a bash console in the container, so tests/cleanup can be run interactively
+- `make run-bash`, `make dev`: opens a bash console in the container, so tests/cleanup can be run interactively
 - `make run-coverage`: creates a coverage report for all tests. The needed coverage to pass is defined in `scripts/setup.cfg`.

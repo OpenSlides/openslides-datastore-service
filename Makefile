@@ -24,10 +24,10 @@ build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)
 build:
 	docker build -t openslides-datastore-$(MODULE) $(build_args) .
 
-run-dev-standalone: | build-dev
+dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d $(MODULE)
 
-run-dev-verbose: | build-dev
+dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up $(MODULE)
 
 endif
@@ -52,14 +52,14 @@ run-tests-no-down: | setup-docker-compose
 
 run-test:| run-tests-no-down
 	docker compose -f dc.test.yml down
-	@$(MAKE) run-dev
+	@$(MAKE) dev
 	@$(MAKE) run-full-system-tests
 
 run-tests:
 run-tests:
 	bash dev/run-tests.sh
 
-run-dev run-bash: | setup-docker-compose
+dev run-bash: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
 
 run-coverage: | setup-docker-compose
@@ -112,10 +112,10 @@ run:
 run-verbose:
 	docker compose up
 
-run-dev-standalone: | build-dev
+dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d
 
-run-dev-verbose: | build-dev
+dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
 ci-run-system-tests:
