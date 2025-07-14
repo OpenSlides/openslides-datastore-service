@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Executes all tests. Should errors occur, CATCH will be set to 1, causing an erroneous exit code.
 
 echo "########################################################################"

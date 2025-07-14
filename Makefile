@@ -10,7 +10,7 @@ build-dev:
 	docker build ./ --tag "openslides-$(SERVICE)-reader-dev" --build-arg CONTEXT="dev" --build-arg MODULE=reader --build-arg PORT=9010 --target "dev"
 	docker build ./ --tag "openslides-$(SERVICE)-writer-dev" --build-arg CONTEXT="dev" --build-arg MODULE=writer --build-arg PORT=9011 --target "dev"
 
-build-test:
+build-tests:
 	docker build ./ --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
 
 # TESTS
