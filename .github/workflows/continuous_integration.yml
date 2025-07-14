@@ -15,21 +15,8 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Prod
-      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
-      with:
-        service: datastore
-        context: prod
-        module: reader
-        port: 9010
-    
-    - name: Build Prod
-      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
-      with:
-        service: datastore
-        context: prod
-        module: writer
-        port: 9011
-    
+      run: make build-prod
+
     - name: Create secret
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
@@ -37,10 +24,10 @@ jobs:
       run: |
           source .env
           docker compose up -d --wait
-    
+
     - name: Test that reader is up and running
       run: curl -I http://localhost:9010/
-    
+
     - name: Test that writer is up and running
       run: curl -I http://localhost:9011/
 
@@ -51,10 +38,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Tests
-      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
-      with:
-        service: datastore
-        context: tests
+      run: make build-test
 
     - name: Execute tests
       run: make run-ci
@@ -65,33 +49,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build Dev
-      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
-      with:
-        service: datastore
-        context: dev
-        module: reader
-        port: 9010
+    - name: Start containers
+      run: make run-dev-standalone
 
-    - name: Build Dev
-      uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
-      with:
-        service: datastore
-        context: dev
-        module: writer
-        port: 9011
-    
-    - name: Run System Tests
-      run: make ci-run-system-tests
+    - name: Execute tests
+      run: make run-full-system-tests-check
 
-  # This setups and runs the dev/run-tests.sh script
-  run-test-script:
-    name: Run-tests.sh Script
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Test
-        uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
-        with:
-          service: datastore
+    - name: Stop tests
+      run: make stop-dev

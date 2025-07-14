@@ -1,3 +1,5 @@
+import datetime
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -339,6 +341,147 @@ def test_get_position(read_database: ReadDatabase, connection: ConnectionHandler
     connection.query_single_value = q = MagicMock(return_value=42)
     assert read_database.get_max_position() == 42
     q.assert_called_with("select max(position) from positions", [])
+
+
+def test_get_history_positions(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
+    connection.query = q = MagicMock()
+    fake_history = [
+        {
+            "position": 1,
+            "timestamp": datetime.datetime.fromtimestamp(123456789),
+            "user_id": 1,
+            "information": ["User created", "User updated"],
+        },
+        {
+            "position": 2,
+            "timestamp": datetime.datetime.fromtimestamp(123456790),
+            "user_id": 2,
+            "information": {
+                "user/1": ["User updated"],
+                "user/2": ["User added to meeting 1"],
+                "user/3": ["User created", "User added to meeting 1"],
+            },
+        },
+        {
+            "position": 3,
+            "timestamp": datetime.datetime.fromtimestamp(123456791),
+            "user_id": 1,
+            "information": {"user/3": ["User deleted"]},
+        },
+    ]
+    all_queries: list[list[Any]] = []
+
+    def fake_query_function(query, arguments):
+        all_queries.append([query, arguments])
+        assert isinstance(query, str)
+        if query.startswith(
+            "select position, timestamp, user_id, information from positions"
+        ):
+            return fake_history
+        elif query.startswith(
+            "select fqid, position from positions natural join events"
+        ):
+            return [
+                {"position": 1, "fqid": "user/2"},
+                {"position": 1, "fqid": "user/3"},
+                {"position": 1, "fqid": "topic/1"},
+                {"position": 2, "fqid": "user/1"},
+                {"position": 2, "fqid": "user/2"},
+                {"position": 2, "fqid": "user/3"},
+                {"position": 2, "fqid": "meeting/1"},
+                {"position": 3, "fqid": "user/3"},
+            ]
+        raise Exception("Test is not up to date for function definition")
+
+    q.side_effect = fake_query_function
+    hist_info, positions = read_database.get_history_positions()
+    assert len(fake_history) == len(hist_info)
+    for i in range(len(hist_info)):
+        expected = fake_history[i]
+        info = hist_info[i]
+        for key, val in expected.items():
+            if key != "timestamp":
+                assert info[key] == val
+            else:
+                assert isinstance(val, datetime.datetime)
+                assert info[key] == val.timestamp()
+    assert positions == {
+        1: ["user/2", "user/3", "topic/1"],
+        2: ["user/1", "user/2", "user/3", "meeting/1"],
+        3: ["user/3"],
+    }
+    assert all_queries[0] == [
+        """select position, timestamp, user_id, information from positions
+            where information::text<>%s::text order by position asc""",
+        [connection.to_json(None)],
+    ]
+    assert all_queries[1] == [
+        """select fqid, position from positions natural join events
+            where information::text<>%s::text order by position asc""",
+        [connection.to_json(None)],
+    ]
+
+
+def test_get_history_positions_limited(
+    read_database: ReadDatabase, connection: ConnectionHandler
+):
+    connection.query = q = MagicMock()
+    fake_history = [
+        {
+            "position": 1,
+            "timestamp": datetime.datetime.fromtimestamp(123456789),
+            "user_id": 1,
+            "information": ["User created", "User updated"],
+        },
+    ]
+    all_queries: list[list[Any]] = []
+
+    def fake_query_function(query, arguments):
+        all_queries.append([query, arguments])
+        assert isinstance(query, str)
+        if query.startswith(
+            "select position, timestamp, user_id, information from positions"
+        ):
+            return fake_history
+        elif query.startswith(
+            "select fqid, position from positions natural join events"
+        ):
+            return [
+                {"position": 1, "fqid": "user/2"},
+                {"position": 1, "fqid": "user/3"},
+                {"position": 1, "fqid": "topic/1"},
+            ]
+        raise Exception("Test is not up to date for function definition")
+
+    q.side_effect = fake_query_function
+    hist_info, positions = read_database.get_history_positions(
+        from_position=3, to_position=7
+    )
+    assert len(fake_history) == len(hist_info)
+    for i in range(len(hist_info)):
+        expected = fake_history[i]
+        info = hist_info[i]
+        for key, val in expected.items():
+            if key != "timestamp":
+                assert info[key] == val
+            else:
+                assert isinstance(val, datetime.datetime)
+                assert info[key] == val.timestamp()
+    assert positions == {
+        1: ["user/2", "user/3", "topic/1"],
+    }
+    assert all_queries[0] == [
+        """select position, timestamp, user_id, information from positions
+            where position >= %s and position < %s and information::text<>%s::text order by position asc""",
+        [3, 7, connection.to_json(None)],
+    ]
+    assert all_queries[1] == [
+        """select fqid, position from positions natural join events
+            where position >= %s and position < %s and information::text<>%s::text order by position asc""",
+        [3, 7, connection.to_json(None)],
+    ]
 
 
 def test_is_empty(read_database: ReadDatabase, connection: ConnectionHandler):

@@ -56,6 +56,7 @@ run-test:| run-tests-no-down
 	@$(MAKE) run-full-system-tests
 
 run-tests:
+run-tests:
 	bash dev/run-tests.sh
 
 run-dev run-bash: | setup-docker-compose
@@ -68,10 +69,6 @@ run-coverage: | setup-docker-compose
 run-ci-no-down: | setup-docker-compose
 	docker compose -f dc.test.yml exec -T datastore ./entrypoint.sh ./execute-ci.sh
 
-# Build images for different contexts
-
-build build-prod build-dev build-tests:
-	bash $(MAKEFILE_PATH)/make-build-service.sh $@ $(SERVICE)
 run-ci:
 	bash dev/run-ci.sh
 
