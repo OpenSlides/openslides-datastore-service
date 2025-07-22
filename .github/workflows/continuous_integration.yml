@@ -32,7 +32,7 @@ jobs:
       run: curl -I http://localhost:9011/
 
   ci-tests:
-    name: "CI Tests"
+    name: "Tests"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
