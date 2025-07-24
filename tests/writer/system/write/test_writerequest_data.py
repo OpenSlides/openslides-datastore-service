@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from datastore.writer.flask_frontend.routes import WRITE_URL
 from tests.util import assert_response_code
@@ -43,6 +44,7 @@ def test_timestamp(json_client, db_cur):
 
 
 def test_empty_information(json_client, db_cur):
+    value: Any
     for i, value in enumerate(
         (
             0,
