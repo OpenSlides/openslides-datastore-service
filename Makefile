@@ -56,7 +56,6 @@ run-test:| run-tests-no-down
 	@$(MAKE) run-full-system-tests
 
 run-tests:
-run-tests:
 	bash dev/run-tests.sh
 
 dev run-bash: | setup-docker-compose
