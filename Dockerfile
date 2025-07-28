@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM python:3.10.17-slim-bookworm as base
+FROM python:3.10.17-slim-bookworm AS base
 
 ## Setup
 ARG CONTEXT
@@ -31,7 +31,7 @@ RUN  REQUIREMENTS_FILE=$(case "$APP_CONTEXT" in \
     *)     echo "general" ;; esac) && \
     pip install --no-cache-dir -U -r requirements-${REQUIREMENTS_FILE}.txt
 
-ENV PYTHONPATH /app/
+ENV PYTHONPATH=/app/
 
 ## External Information
 LABEL org.opencontainers.image.title="OpenSlides Datastore Service"
@@ -48,7 +48,7 @@ ENTRYPOINT ["./entrypoint.sh"]
 
 # Testing Image
 
-FROM base as tests
+FROM base AS tests
 
 COPY scripts/* scripts/system/* tests/entrypoint.sh ./
 COPY scripts/ci/* ./ci/
@@ -58,7 +58,7 @@ STOPSIGNAL SIGKILL
 
 # Intermediate Image
 
-FROM base as moduled
+FROM base AS moduled
 
 ARG MODULE
 RUN test -n "$MODULE" || (echo "MODULE not set" && false)
@@ -74,7 +74,7 @@ COPY $MODULE/entrypoint.sh ./
 
 # Development Image
 
-FROM moduled as dev
+FROM moduled AS dev
 
 COPY scripts/system/* scripts/* ./
 
@@ -83,14 +83,14 @@ ENV FLASK_DEBUG=1
 
 # Debug Image
 
-FROM moduled as debug
+FROM moduled AS debug
 
 ENV FLASK_APP=datastore.$MODULE.app
 ENV FLASK_DEBUG=1
 
 # Production Image
 
-FROM moduled as prod
+FROM moduled AS prod
 
 # Add appuser
 RUN adduser --system --no-create-home appuser && \
