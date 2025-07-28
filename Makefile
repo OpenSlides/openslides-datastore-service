@@ -116,6 +116,8 @@ dev-standalone: | build-dev
 dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
 
+run-dev-standalone: | dev-standalone
+
 ci-run-system-tests:
 	docker compose -f dc.dev.yml up -d
 	make run-full-system-tests-check
