@@ -39,13 +39,10 @@ endif
 ifndef MODULE
 ## TESTS
 
-build-tests:
-	make build-test
-
 rebuild-tests:
 	docker build . --tag=openslides-datastore-tests --no-cache --build-arg CONTEXT=tests
 
-setup-docker-compose: | build-tests-old
+setup-docker-compose: | build-tests
 	docker compose -f dc.test.yml up -d
 	docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
