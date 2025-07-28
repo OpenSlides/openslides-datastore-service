@@ -38,7 +38,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Tests
-      run: make build-test
+      run: make build-tests
 
     - name: Execute tests
       run: make run-ci
