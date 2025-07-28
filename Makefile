@@ -30,6 +30,8 @@ dev-standalone: | build-dev
 dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up $(MODULE)
 
+run-dev-standalone: | dev-standalone
+
 endif
 
 
