@@ -25,7 +25,7 @@ CHOWN="$(id -u "${USER}"):$(id -g "${USER}")"
 trap 'docker compose -f dc.test.yml down' EXIT
 
 # Execution
-if [ -z "$SKIP_BUILD" ]; then make build-test; fi
+if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
 docker compose -f dc.test.yml up -d
 docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $CHOWN /app"
 docker compose -f dc.test.yml exec datastore ./entrypoint.sh pytest
