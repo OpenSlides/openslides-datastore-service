@@ -18,7 +18,7 @@ done
 
 # Setup
 IMAGE_TAG=openslides-datastore-tests
-LOCAL_PWD=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+LOCAL_PWD=$(dirname "$0")
 CHOWN="$(id -u "${USER}"):$(id -g "${USER}")"
 
 # Safe Exit
