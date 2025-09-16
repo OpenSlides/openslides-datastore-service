@@ -2,7 +2,7 @@ version: "3"
 services:
     reader:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             dockerfile: Dockerfile
             target: "dev"
             args:
@@ -21,7 +21,7 @@ services:
             - postgres
     writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             dockerfile: Dockerfile
             target: "dev"
             args:
