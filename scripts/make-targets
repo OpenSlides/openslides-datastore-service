@@ -1,2 +1,2 @@
-MAKE_TARGETS_MODULES=build build-dev run-dev run-dev-verbose stop stop-dev
+MAKE_TARGETS_MODULES=build build-dev dev dev-verbose stop stop-dev
 export
