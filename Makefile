@@ -10,7 +10,7 @@ build-dev:
 	docker build ./ --tag "openslides-$(SERVICE)-reader-dev" --build-arg CONTEXT="dev" --build-arg MODULE=reader --build-arg PORT=9010 --target "dev"
 	docker build ./ --tag "openslides-$(SERVICE)-writer-dev" --build-arg CONTEXT="dev" --build-arg MODULE=writer --build-arg PORT=9011 --target "dev"
 
-build-test:
+build-tests:
 	docker build ./ --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
 
 # TESTS
@@ -24,11 +24,13 @@ build_args=--build-arg MODULE=$(MODULE) --build-arg PORT=$(PORT)
 build:
 	docker build -t openslides-datastore-$(MODULE) $(build_args) .
 
-run-dev-standalone: | build-dev
+dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d $(MODULE)
 
-run-dev-verbose: | build-dev
+dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up $(MODULE)
+
+run-dev-standalone: | dev-standalone
 
 endif
 
@@ -37,13 +39,10 @@ endif
 ifndef MODULE
 ## TESTS
 
-build-tests:
-	make build-test
-
 rebuild-tests:
 	docker build . --tag=openslides-datastore-tests --no-cache --build-arg CONTEXT=tests
 
-setup-docker-compose: | build-tests-old
+setup-docker-compose: | build-tests
 	docker compose -f dc.test.yml up -d
 	docker compose -f dc.test.yml exec -T datastore bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app"
 
@@ -52,13 +51,13 @@ run-tests-no-down: | setup-docker-compose
 
 run-test:| run-tests-no-down
 	docker compose -f dc.test.yml down
-	@$(MAKE) run-dev
+	@$(MAKE) dev
 	@$(MAKE) run-full-system-tests
 
 run-tests:
 	bash dev/run-tests.sh
 
-run-dev run-bash: | setup-docker-compose
+dev run-bash: | setup-docker-compose
 	docker compose -f dc.test.yml exec -u $$(id -u $${USER}):$$(id -g $${USER}) datastore ./entrypoint.sh bash
 
 run-coverage: | setup-docker-compose
@@ -111,11 +110,13 @@ run:
 run-verbose:
 	docker compose up
 
-run-dev-standalone: | build-dev
+dev-standalone: | build-dev
 	docker compose -f dc.dev.yml up -d
 
-run-dev-verbose: | build-dev
+dev-verbose: | build-dev
 	docker compose -f dc.dev.yml up
+
+run-dev-standalone: | dev-standalone
 
 ci-run-system-tests:
 	docker compose -f dc.dev.yml up -d
