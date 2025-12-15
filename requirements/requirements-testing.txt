@@ -1,7 +1,7 @@
 -r requirements-general.txt
 
 # testing
-pytest==9.0.1
+pytest==9.0.2
 pytest-cov==7.0.0
 
 # linting & formatting
