@@ -7,9 +7,9 @@ psycopg2==2.9.11
 redis==7.1.0
 
 # opentelemetry
-opentelemetry-api==1.39.0
-opentelemetry-sdk==1.39.0
-opentelemetry-exporter-otlp==1.39.0
-opentelemetry-instrumentation-flask==0.60b0
-opentelemetry-instrumentation-redis==0.60b0
-opentelemetry-semantic-conventions==0.60b0
+opentelemetry-api==1.39.1
+opentelemetry-sdk==1.39.1
+opentelemetry-exporter-otlp==1.39.1
+opentelemetry-instrumentation-flask==0.60b1
+opentelemetry-instrumentation-redis==0.60b1
+opentelemetry-semantic-conventions==0.60b1
