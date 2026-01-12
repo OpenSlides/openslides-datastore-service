@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - 'feature/**'
-      - 'staging/4*'
+      - 'staging**'
 
 jobs:
   test-prod:
