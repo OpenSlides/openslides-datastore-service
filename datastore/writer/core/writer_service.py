@@ -43,6 +43,9 @@ class WriterService:
                         )
                         self.position_to_modified_models[position] = modified_models
 
+                    # Write event to postgres message bus inside the transaction
+                    self.propagete_updates_to_postgres_message_bus()
+
                 # Only propagate updates to redis after the transaction has finished
                 self.propagate_updates_to_redis(log_all_modified_fields)
 
@@ -153,6 +156,8 @@ class WriterService:
                         self.database.write_model_updates_without_events(
                             {event.fqid: fields_with_delete}
                         )
+                    # TODO: Add the postgres message bus here??? What about self.position_to_modified_models[0] ???
+
                 self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
                 self.propagate_updates_to_redis(False)
 
@@ -165,3 +170,37 @@ class WriterService:
                 self.position_to_modified_models,
                 log_all_modified_fields=log_all_modified_fields,
             )
+
+
+    def propagete_updates_to_postgres_message_bus(self) -> None:
+        modified_fqfields = get_modified_fqfields(self.position_to_modified_models)
+        message = json.dumps(modified_fqfields)
+        self.database.write_message_bus(message)
+
+
+import json
+from datastore.shared.typing import Fqfield
+from datastore.shared.util import (
+    JSON,
+    META_POSITION,
+    Field,
+    Fqid,
+    Position,
+    fqfield_from_fqid_and_field,
+    logger,
+)   
+
+
+# Copied from ../redis_backend_redis_messaging_backend_service.py
+def get_modified_fqfields(
+    events_per_position: Dict[Position, Dict[Fqid, Dict[Field, JSON]]]
+) -> Dict[Fqfield, str]:
+    modified_fqfields = {}
+    for position, models in events_per_position.items():
+        for fqid, fields in models.items():
+            for field, value in fields.items():
+                fqfield = fqfield_from_fqid_and_field(fqid, field)
+                modified_fqfields[fqfield] = json.dumps(value)
+            meta_position_fqfield = fqfield_from_fqid_and_field(fqid, META_POSITION)
+            modified_fqfields[meta_position_fqfield] = str(position)
+    return modified_fqfields

@@ -111,3 +111,12 @@ CREATE TABLE IF NOT EXISTS migration_positions (
     position INTEGER PRIMARY KEY,
     migration_index INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS message_bus (
+    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    -- timestamp is currently not used, but may be useful to delete old messages.
+    timestamp TIMESTAMP NOT NULL DEFAULT current_timestamp,
+    message TEXT
+);
+
+-- TODO: Add a trigger that sends a notify when there is a insert on message_bus
