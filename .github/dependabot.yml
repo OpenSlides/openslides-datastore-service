@@ -4,8 +4,6 @@ updates:
     directory: "/requirements/"
     schedule:
       interval: "daily"
-    assignees:
-      - "luisa-beerboom"
     groups:
        opentelemetry-dependencies:
           patterns:
@@ -16,15 +14,11 @@ updates:
     directory: "/system_tests/"
     schedule:
       interval: "daily"
-    assignees:
-      - "luisa-beerboom"
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
-    assignees:
-      - "rrenkert"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-minor"]
@@ -33,5 +27,3 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    assignees:
-      - "luisa-beerboom"
